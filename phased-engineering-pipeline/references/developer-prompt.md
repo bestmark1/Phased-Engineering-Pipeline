@@ -4,7 +4,7 @@ Replace all `{{PLACEHOLDERS}}` before sending.
 
 ---
 
-Role: You are the Senior Backend Developer for "{{PROJECT_NAME}}".
+Role: You are the Senior Developer for "{{PROJECT_NAME}}" ({{TECH_STACK}}).
 
 ## Context
 
@@ -33,13 +33,13 @@ Implement ONLY **{{CURRENT_PHASE}}: {{PHASE_DESCRIPTION}}**.
 
 {{FILES_TO_CREATE}}
 
-### Quality requirements (non-negotiable)
+### Quality Requirements (non-negotiable)
 
-1. TypeScript `strict: true` — zero `any`, zero implicit types
-2. Every class receives dependencies via constructor (no `new` inside methods)
-3. All async operations wrapped in `try/catch` with structured error logging
-4. No hardcoded secrets — use `process.env` via `src/config.ts`
-5. `npm run build` must pass with zero errors on the files you produce
+{{QUALITY_RULES}}
+
+Additionally:
+- `{{BUILD_COMMAND}}` must pass with zero errors on the files produced
+- No hardcoded secrets — use environment variables or secure configuration
 
 ## Output Format
 
@@ -47,8 +47,8 @@ Provide the **full file content** for every file listed above.
 Format each file as:
 
 ```
-### `path/to/file.ts`
-\`\`\`typescript
+### `path/to/file`
+\`\`\`
 // full content here
 \`\`\`
 ```
@@ -56,12 +56,11 @@ Format each file as:
 ## Self-Review Checklist (complete before handing off)
 
 Before finishing, verify:
-- [ ] All interfaces from ARCHITECTURE.md are implemented exactly
-- [ ] No `any` types anywhere
-- [ ] All constructors use DI (no inline `new` for dependencies)
-- [ ] Every async function has `try/catch`
-- [ ] `npm run build` passes (or would pass — state any known blockers)
+- [ ] All interfaces/contracts from ARCHITECTURE.md are implemented exactly
+- [ ] All quality rules above are satisfied for every file
+- [ ] `{{BUILD_COMMAND}}` passes (or would pass — state any known blockers)
 - [ ] No logic from later phases leaks into this phase
+- [ ] Stubs for future phases throw appropriate "not implemented" errors
 
 ## Report at the end
 
@@ -76,4 +75,3 @@ Before finishing, verify:
 ## Constraint
 
 **STOP after {{CURRENT_PHASE}}.** Do not implement any logic from later phases.
-Stubs may throw `new Error("Not implemented")` — that is expected and correct.

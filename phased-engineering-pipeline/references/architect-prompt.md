@@ -10,21 +10,31 @@ Goal: Create a complete Architecture Design Document for "{{PROJECT_NAME}}".
 
 IMPORTANT: Before writing anything, access and analyze the official documentation at {{DOCS_URL}}. Use it as the primary source of truth for the latest API methods, specifications, and integration standards.
 
+## PRD Context
+
+The following Product Requirements Document has been approved:
+
+```
+{{PRD_SUMMARY}}
+```
+
+The architecture MUST satisfy all acceptance criteria defined in the PRD.
+Every user story must be traceable to an architectural component.
+
 ## Context
 
 {{PROJECT_DESCRIPTION}}
 
-## Integration requirements
+## Integration Requirements
 
 {{INTEGRATION_REQUIREMENTS}}
-*(Example: "REST API via Express.js", "gRPC server", "CLI tool + webhook")*
 
-## Future extensibility
+## Future Extensibility
 
 {{FUTURE_EXTENSIBILITY}}
-*(Example: "AI/RAG integration", "multi-tenant support", "plugin system")*
 
 ## Tech Stack
+
 {{TECH_STACK_DETAIL}}
 
 ## Task
@@ -35,12 +45,11 @@ IMPORTANT: Before writing anything, access and analyze the official documentatio
    - **C4 Context Diagram** — system landscape: external actors, system boundaries, integrations
    - **C4 Container Diagram** — internal modules: list each component from `{{SYSTEM_COMPONENTS}}`
    - **Sequence Diagram** — primary happy-path flow through the system
-4. Define core **TypeScript interfaces** (strict mode) for each component in `{{CORE_INTERFACES}}`:
-   *(Example format: `IProvider` — describe responsibility in 1 sentence)*
-   Include at minimum: one data model, one service interface, one infrastructure interface
+4. Define core **{{INTERFACE_STYLE}}** for each component in `{{CORE_INTERFACES}}`:
+   Include at minimum: one data model, one service contract, one infrastructure contract
 5. Outline error handling strategies:
    - Fault tolerance: how the system behaves when one dependency fails
-   - Structured JSON logging format with `traceId` for request correlation
+   - Structured logging format with correlation ID for request tracing
    - Retry/backoff policy for transient failures
 
 ## Output Format
@@ -52,16 +61,18 @@ IMPORTANT: Before writing anything, access and analyze the official documentatio
 ## 2. C4 Context Diagram (Mermaid)
 ## 3. C4 Container Diagram (Mermaid)
 ## 4. Sequence Diagram — Primary Flow (Mermaid)
-## 5. TypeScript Interfaces
+## 5. Core Interfaces / Contracts
 ## 6. Core Data Models
 ## 7. Error Handling Strategy
-## 8. Logging Format (JSON schema with example)
-## 9. Open Questions (your clarifying questions — see constraint below)
+## 8. Logging Format (structured, with example)
+## 9. PRD Traceability Matrix
+    | User Story | Architectural Component | Notes |
+## 10. Open Questions (your clarifying questions — see constraint below)
 ```
 
 ## Constraint — Clarifying Questions REQUIRED
 
-Before finalizing the architecture document, ask me **3-5 clarifying questions** covering:
+Before finalizing the architecture document, ask **3-5 clarifying questions** covering:
 - Scalability and performance expectations (load, latency SLAs)
 - Error handling priorities (fail-fast vs resilient-degrade)
 - Key external dependencies and their failure modes
