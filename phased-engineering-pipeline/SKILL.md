@@ -2,6 +2,8 @@
 name: phased-engineering-pipeline
 description: |
   Full-system BMAD engineering: analyst research, PRD, architecture, planning, coding, QA validation.
+  Includes: AGENTS.md project map, docs/ knowledge base, decision logs, tech debt tracking,
+  enhanced self-review loop, STRICT_MODE for prototyping, llms.txt reference caching.
   Use when: building from scratch, "design + plan + code", user says "build", "architect",
   "implement a full system", "phased pipeline", "BMAD pipeline", "create project", "new feature end-to-end".
   Does NOT handle: debugging existing code, single-function tasks, one-shot fixes.

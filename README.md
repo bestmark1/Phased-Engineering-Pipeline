@@ -1,6 +1,6 @@
 # phased-engineering-pipeline
 
-> Claude Code skill that orchestrates eight specialized agents through a full BMAD engineering pipeline: **Analyst → PM → Architect → Tech Lead → Developer** with parallel SOLID and SRE code reviewers, then **QA validation**. Includes auto git commits, feature branch workflow, and CI/CD awareness.
+> Claude Code skill that orchestrates eight specialized agents through a full BMAD engineering pipeline: **Analyst → PM → Architect → Tech Lead → Developer** with parallel SOLID and SRE code reviewers, then **QA validation**. Includes auto git commits, feature branch workflow, CI/CD awareness, knowledge base (`docs/`), AGENTS.md project map, decision logs, and tech debt tracking.
 
 ---
 
@@ -11,33 +11,55 @@ Instead of asking Claude to "build a system" and hoping for the best, this skill
 ```
 [Analyst] → [PM] → PRD.md → ⛔ USER APPROVAL
   → git: create feature/{slug} branch, commit PRD
-  → [Architect] → ARCHITECTURE.md → ⛔ USER APPROVAL → git: commit
-    → [Tech Lead] → IMPLEMENTATION_PLAN.md → ⛔ USER APPROVAL → git: commit
+  → [Architect] → ARCHITECTURE.md + AGENTS.md + docs/ → ⛔ USER APPROVAL → git: commit
+    → [Tech Lead] → IMPLEMENTATION_PLAN.md (with Decision Log) → ⛔ USER APPROVAL → git: commit
       → loop per plan phase:
-          [Developer] → git: commit code
+          [Developer] → self-review loop → git: commit code
           → [Reviewer SOLID] ‖ [Reviewer SRE]
           → both APPROVE → next phase
-      → [QA Agent] → validates PRD acceptance criteria
+      → [QA Agent] → validates PRD acceptance criteria → updates QUALITY_SCORE.md
           → QA PASS → git: push → gh pr create → ⛔ USER REVIEWS DIFF
 ```
 
-**Phase 0a — Domain Analysis** — A Domain Analyst researches the problem space, stakeholders, competitors, and risks. Asks 5-8 clarifying questions.
+**Phase 0a — Domain Analysis** — A Domain Analyst researches the problem space, stakeholders, competitors, and risks. Asks 5-8 clarifying questions. Saves distilled vendor docs to `docs/references/{tool}-llms.txt` for reuse.
 
 **Phase 0b — Product Requirements** — A Product Manager converts research into `PRD.md` with user stories (As a / I want / So that), acceptance criteria (Given / When / Then), and success metrics.
 
-**Phase 1 — Architecture** — A Senior Architect reads the official docs, asks 3-5 clarifying questions, then produces `ARCHITECTURE.md` with C4 diagrams (Mermaid), contracts/interfaces, and error handling strategy.
+**Phase 1 — Architecture** — A Senior Architect reads the official docs, asks 3-5 clarifying questions, then produces:
+- `ARCHITECTURE.md` with C4 diagrams (Mermaid), contracts/interfaces, dependency layer order, error handling strategy
+- `AGENTS.md` — ~100 line project map (table of contents, not a manual)
+- `docs/` knowledge base scaffold per project principles
 
-**Phase 2 — Implementation Plan** — A Tech Lead converts the approved architecture into `IMPLEMENTATION_PLAN.md` with exact files, contracts, and a runnable Definition of Done per phase.
+**Phase 2 — Implementation Plan** — A Tech Lead converts the approved architecture into `IMPLEMENTATION_PLAN.md` with exact files, contracts, a runnable Definition of Done, and a **Decision Log** (chose X over Y because…) per phase.
 
-**Phase 3 — Coding loop** — For each plan phase: a Senior Developer implements only that phase, auto-commits, then two reviewers run **in parallel**:
-- **Reviewer SOLID** — checks architecture, DI, type safety, naming
+**Phase 3 — Coding loop** — For each plan phase: a Senior Developer implements only that phase, performs an explicit **self-review loop** (verify → fix → re-verify), logs deferred items to `docs/tech-debt-tracker.md`, auto-commits, then two reviewers run **in parallel**:
+- **Reviewer SOLID** — checks architecture, DI, type safety, naming, layer violations
 - **Reviewer SRE** — checks resilience, error boundaries, security, resource leaks
 
 Both must return `APPROVE` before the next phase starts.
 
-**Phase 4 — QA Validation** — A QA Engineer extracts every acceptance criterion from the PRD, traces through code, runs tests/build/lint, detects scope creep. Binary verdict: `QA PASS` or failure list.
+**Phase 4 — QA Validation** — A QA Engineer extracts every acceptance criterion from the PRD, traces through code, runs tests/build/lint, detects scope creep, updates `docs/QUALITY_SCORE.md`. Binary verdict: `QA PASS` or failure list.
 
 **Finish** — Push feature branch, create PR via `gh pr create`, verify CI checks, user reviews diff before merge.
+
+---
+
+## New in v2 — Harness Engineering Upgrade
+
+Inspired by OpenAI's [Harness Engineering](https://openai.com/index/harness-engineering/) practices:
+
+| Feature | Description |
+|---------|-------------|
+| `docs/` knowledge base | Scaffold created by Architect, populated throughout pipeline |
+| `AGENTS.md` | Project map (~100 lines): entry points, conventions, key contracts |
+| Decision Log | Each plan phase documents choices made and why |
+| Tech Debt Tracker | `docs/tech-debt-tracker.md` — tracked debt is acceptable, hidden is not |
+| Self-Review Loop | Developer: verify → self-fix → re-verify before handing off |
+| `STRICT_MODE` | `false` = advisory reviews for prototyping, `true` = all gates blocking |
+| llms.txt caching | Analyst saves distilled docs once; subsequent agents reuse |
+| Quality Score | QA updates `docs/QUALITY_SCORE.md` with coverage grades per layer |
+| Layer violations | SOLID reviewer checks dependency flow direction |
+| Boring tech principle | Architect avoids "magic" libraries; prefers stable, documented deps |
 
 ---
 
@@ -87,6 +109,7 @@ Fill these placeholders before spawning agents. The skill is **tech-stack agnost
 | `{{QUALITY_RULES}}` | Language-specific quality rules | null safety, no dynamic, const constructors |
 | `{{INTERFACE_STYLE}}` | How contracts are defined | abstract class / mixin |
 | `{{DOCS_URL}}` | Official docs URL | https://docs.flutter.dev/ |
+| `{{STRICT_MODE}}` | Gate enforcement | `true` (default, all gates blocking) |
 
 **Pre-built stack profiles included:** Flutter/Dart, TypeScript/Node.js, Python/FastAPI, Go.
 
@@ -96,16 +119,37 @@ Fill these placeholders before spawning agents. The skill is **tech-stack agnost
 
 ```
 phased-engineering-pipeline/
-├── SKILL.md                         # Entry point (357 lines)
+├── SKILL.md                         # Entry point (~400 lines)
 └── references/
-    ├── analyst-prompt.md            # Phase 0a: Domain Analyst
+    ├── analyst-prompt.md            # Phase 0a: Domain Analyst (+ llms.txt caching)
     ├── pm-prompt.md                 # Phase 0b: Product Manager → PRD
-    ├── architect-prompt.md          # Phase 1: Senior System Architect
-    ├── tech-lead-prompt.md          # Phase 2: Tech Lead
-    ├── developer-prompt.md          # Phase 3: Senior Developer
-    ├── reviewer-solid-prompt.md     # Reviewer: Principal Staff Engineer (SOLID)
+    ├── architect-prompt.md          # Phase 1: Senior System Architect (+ AGENTS.md, docs/)
+    ├── tech-lead-prompt.md          # Phase 2: Tech Lead (+ Decision Log)
+    ├── developer-prompt.md          # Phase 3: Senior Developer (+ self-review loop, tech debt)
+    ├── reviewer-solid-prompt.md     # Reviewer: Principal Staff Engineer (+ layer violations)
     ├── reviewer-sre-prompt.md       # Reviewer: SRE & Security Auditor
-    └── qa-prompt.md                 # Phase 4: QA Engineer
+    ├── qa-prompt.md                 # Phase 4: QA Engineer (+ QUALITY_SCORE.md)
+    └── docs-scaffold.md             # Template for docs/ knowledge base structure
+```
+
+---
+
+## Knowledge Base (docs/)
+
+Architect creates this structure after Phase 1. Subsequent agents populate it:
+
+```
+docs/
+├── design-docs/
+│   ├── index.md              # Design decisions catalog
+│   └── core-beliefs.md       # Project principles
+├── exec-plans/
+│   ├── active/               # Current IMPLEMENTATION_PLAN.md
+│   └── completed/            # Archived plans after merge
+├── references/
+│   └── {tool}-llms.txt       # Distilled vendor docs (from Analyst)
+├── QUALITY_SCORE.md           # Updated by QA after validation
+└── tech-debt-tracker.md       # Updated by Developer/Reviewers when deferring
 ```
 
 ---
