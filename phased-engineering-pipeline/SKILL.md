@@ -42,6 +42,7 @@ Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in reference pr
 | `{{QUALITY_RULES}}` | Language-specific quality rules | null safety, no dynamic, const constructors, DI |
 | `{{INTERFACE_STYLE}}` | How contracts are defined | abstract class / mixin |
 | `{{DOCS_URL}}` | Official docs for target platform | https://docs.flutter.dev/ |
+| `{{STRICT_MODE}}` | Gate enforcement level | `true` (default) |
 
 <details>
 <summary>Stack profile examples</summary>
@@ -66,6 +67,37 @@ Documents produced during the pipeline:
 - [ ] Code + self-review reports (Phase 3 — Developer, per plan phase)
 - [ ] Review verdicts (Phase 3 — Reviewers, per plan phase)
 - [ ] QA Validation Report (Phase 4 — QA)
+- [ ] `AGENTS.md` (Phase 1 — Architect)
+- [ ] `docs/` knowledge base scaffold (Phase 1 — Architect)
+- [ ] `docs/tech-debt-tracker.md` entries (Phase 3 — Developer/Reviewers)
+- [ ] `docs/QUALITY_SCORE.md` (Phase 4 — QA)
+
+---
+
+## Project Knowledge Base
+
+After Phase 1, Architect creates this structure (see `references/docs-scaffold.md` for templates):
+
+```
+docs/
+├── design-docs/
+│   ├── index.md              # Catalog of design decisions
+│   └── core-beliefs.md       # Project principles
+├── exec-plans/
+│   ├── active/               # Current IMPLEMENTATION_PLAN.md
+│   └── completed/            # Archived plans after merge
+├── references/
+│   └── {tool}-llms.txt       # Distilled vendor docs (from Analyst)
+├── QUALITY_SCORE.md           # Updated by QA after validation
+└── tech-debt-tracker.md       # Updated by Developer/Reviewers when deferring
+```
+
+- **Analyst** saves distilled docs to `docs/references/{tool}-llms.txt`
+- **Architect** creates scaffold + populates `core-beliefs.md`
+- **Developer** appends to `tech-debt-tracker.md` when deferring
+- **Reviewers** append to `tech-debt-tracker.md` when flagging non-critical issues
+- **QA** updates `QUALITY_SCORE.md` after validation
+- **Tech Lead** moves completed plans to `exec-plans/completed/`
 
 ---
 
@@ -95,7 +127,7 @@ Copy this and track progress:
 - [ ] Provide approved PRD summary as `{{PRD_SUMMARY}}`
 - [ ] Spawn Architect agent → asks 3-5 clarifying questions → produces `ARCHITECTURE.md`
 - [ ] ⛔ STOP — wait for user to approve architecture
-- [ ] Commit: `git add ARCHITECTURE.md && git commit -m "[phase-1] architecture: {project}"`
+- [ ] Commit: `git add ARCHITECTURE.md AGENTS.md docs/ && git commit -m "[phase-1] architecture: {project}"`
 
 **Phase 2 — Implementation Plan**
 - [ ] Read `references/tech-lead-prompt.md`
@@ -137,7 +169,7 @@ Copy this and track progress:
 
 **Provide to agent:** Project idea (1-2 sentences), `{{TECH_STACK}}`, `{{DOCS_URL}}`
 
-**Expected output:** Domain Research Notes covering: problem space, stakeholders, existing solutions, domain terminology, risks, constraints, open questions.
+**Expected output:** Domain Research Notes covering: problem space, stakeholders, existing solutions, domain terminology, risks, constraints, open questions. If `{{DOCS_URL}}` provided, also saves distilled reference to `docs/references/{tool}-llms.txt`.
 
 Read full prompt: `references/analyst-prompt.md`
 
@@ -161,7 +193,12 @@ Read full prompt: `references/pm-prompt.md`
 
 **Provide to agent:** PRD summary, `{{PROJECT_NAME}}`, `{{TECH_STACK}}`, `{{DOCS_URL}}`
 
-**Expected output:** `ARCHITECTURE.md` with C4 diagrams (Mermaid), contracts/interfaces (`{{INTERFACE_STYLE}}`), error handling strategy, PRD Traceability Matrix.
+**Expected output:**
+- `ARCHITECTURE.md` with C4 diagrams (Mermaid), contracts/interfaces (`{{INTERFACE_STYLE}}`), dependency layer order, error handling strategy, PRD Traceability Matrix
+- `AGENTS.md` — project map (~100 lines): pointers to key files, entry points, conventions
+- `docs/` scaffold — knowledge base structure per `references/docs-scaffold.md`
+
+**Design principle:** Prefer stable, well-documented dependencies with good training set coverage. Avoid "magic" libraries.
 
 Read full prompt: `references/architect-prompt.md`
 
@@ -173,7 +210,7 @@ Read full prompt: `references/architect-prompt.md`
 
 **Provide to agent:** Approved architecture summary + PRD acceptance criteria.
 
-**Expected output:** `IMPLEMENTATION_PLAN.md` with sequential phases, each containing: files to create, contracts to implement, Definition of Done (`{{TEST_COMMAND}}` / `{{BUILD_COMMAND}}`), PRD coverage per phase.
+**Expected output:** `IMPLEMENTATION_PLAN.md` with sequential phases, each containing: files to create, contracts to implement, Definition of Done (`{{TEST_COMMAND}}` / `{{BUILD_COMMAND}}`), Decision Log (chose X over Y because...), PRD coverage per phase.
 
 Read full prompt: `references/tech-lead-prompt.md`
 
@@ -185,14 +222,15 @@ Read full prompt: `references/tech-lead-prompt.md`
 
 **Per plan phase:**
 1. Spawn Developer for current phase only (constraint: STOP after this phase)
-2. Developer self-reviews before handing off
-3. Auto-commit phase code
-4. Spawn both reviewers IN PARALLEL with Developer's output
-5. Gate: both must return exact strings:
+2. Developer performs self-review loop: verify → self-fix → re-verify until clean
+3. Developer logs any deferred items to `docs/tech-debt-tracker.md`
+4. Auto-commit phase code
+5. Spawn both reviewers IN PARALLEL with Developer's output
+6. Gate: both must return exact strings:
    - `APPROVE: Architecture is solid.`
    - `APPROVE: System is secure and resilient.`
-6. If either returns issues: Developer fixes → recommit → both reviewers re-run
-7. Mark phase complete. Move to next plan phase.
+7. If either returns issues: Developer fixes → self-review again → recommit → both reviewers re-run
+8. Mark phase complete. Move to next plan phase.
 
 Read full prompts:
 - Developer: `references/developer-prompt.md`
@@ -224,7 +262,7 @@ Agents commit automatically at each gate. Format: `[phase-N]` prefix.
 | Trigger | Commit Message | Files |
 |---------|---------------|-------|
 | PRD approved | `[phase-0] PRD: {project}` | `PRD.md` |
-| Architecture approved | `[phase-1] architecture: {project}` | `ARCHITECTURE.md` |
+| Architecture approved | `[phase-1] architecture: {project}` | `ARCHITECTURE.md`, `AGENTS.md`, `docs/` |
 | Plan approved | `[phase-2] plan: {project}` | `IMPLEMENTATION_PLAN.md` |
 | Coding phase N passes review | `[phase-3.N] implement: {phase name}` | All phase files |
 | Developer fix after review | `[phase-3.N] fix: {issue summary}` | Changed files |
@@ -249,6 +287,8 @@ Rules:
 | PR created | CI results available | Show to user. User decides merge. |
 
 Do not proceed past a ⛔ gate without user writing approval in chat.
+
+**`{{STRICT_MODE}}` = `false` (prototype mode):** PRD/Architecture/Plan gates remain blocking. Review and QA gates become advisory — log issues but don't block progress. Useful for rapid prototyping where speed > correctness.
 
 ---
 

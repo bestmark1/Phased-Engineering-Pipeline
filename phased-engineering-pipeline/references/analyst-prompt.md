@@ -56,6 +56,19 @@ Measurable outcomes that define "done" for the first version.
 What is IN scope vs explicitly OUT of scope.
 ```
 
+## Additional Output — Reference Caching
+
+If `{{DOCS_URL}}` is provided, access the documentation and save a distilled summary to:
+`docs/references/{tool-name}-llms.txt`
+
+This file should contain:
+- Key API methods and their signatures
+- Configuration options and defaults
+- Common patterns and best practices
+- Known limitations and gotchas
+
+Keep it concise (<200 lines). Subsequent agents will reference this file instead of re-fetching the docs.
+
 ## Constraint
 
 Research only. Do not design solutions, propose architecture, or write code.

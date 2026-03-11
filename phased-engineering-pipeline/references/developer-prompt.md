@@ -53,14 +53,26 @@ Format each file as:
 \`\`\`
 ```
 
-## Self-Review Checklist (complete before handing off)
+## Self-Review Loop (mandatory before handing off)
 
-Before finishing, verify:
+After writing all code, perform an explicit self-review pass:
+
+### Pass 1: Verify
 - [ ] All interfaces/contracts from ARCHITECTURE.md are implemented exactly
 - [ ] All quality rules above are satisfied for every file
 - [ ] `{{BUILD_COMMAND}}` passes (or would pass — state any known blockers)
 - [ ] No logic from later phases leaks into this phase
 - [ ] Stubs for future phases throw appropriate "not implemented" errors
+
+### Pass 2: Self-Fix
+If Pass 1 found ANY issue — fix it immediately. Do NOT hand off known problems.
+After fixing, re-run Pass 1 to confirm the fix didn't break something else.
+
+### Pass 3: Tech Debt
+If you intentionally skip something, use a stub, or defer a quality improvement:
+- Add an entry to `docs/tech-debt-tracker.md`:
+  `| <date> | {{CURRENT_PHASE}} | <item> | <reason> | <priority> | Open |`
+- Do NOT hide debt — tracked debt is acceptable, hidden debt is not.
 
 ## Report at the end
 
@@ -68,7 +80,9 @@ Before finishing, verify:
 ### Self-Review Report
 - Implemented: [list what was built]
 - Build status: PASS / PASS with notes / BLOCKED (reason)
+- Self-review passes: [number of passes before clean]
 - Files changed: [list]
+- Tech debt added: [list items added to tracker, or "none"]
 - Notes for reviewers: [anything unusual]
 ```
 

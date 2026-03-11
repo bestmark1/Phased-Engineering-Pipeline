@@ -23,6 +23,8 @@ Review the following code for **{{CURRENT_PHASE}}** of the project.
    - Are responsibilities strictly segregated?
    - Does any class/module violate Single Responsibility Principle?
    - Is there any feature creep from later phases?
+   - Do dependencies flow in the correct direction per ARCHITECTURE.md layer order?
+     (e.g., Service → Repository is OK; Repository → Service is a violation)
 
 2. **Dependency Injection**
    - Are all dependencies passed via constructor, factory, or framework DI?

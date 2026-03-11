@@ -80,6 +80,18 @@ Flag any functionality that exists without a corresponding user story.
 ## Verdict
 ```
 
+## Additional Output — Quality Score
+
+After validation, update `docs/QUALITY_SCORE.md`:
+
+```
+| Domain / Layer | Coverage | Gaps | Last Checked |
+|----------------|----------|------|--------------|
+| <layer name> | <% of AC covered> | <missing items> | <today's date> |
+```
+
+One row per architectural layer or domain area. This file is cumulative — update existing rows, add new ones.
+
 ## Action — Binary Output
 
 **If ALL acceptance criteria pass AND all commands succeed:**

@@ -69,6 +69,10 @@ Break the build into logical, sequential phases. For each phase specify:
 **Definition of Done:**
 - Run `<command>` → expected output
 
+**Decisions:**
+- Chose X over Y because [reason]
+- Deferred Z to docs/tech-debt-tracker.md because [reason]
+
 **PRD Coverage:**
 - Covers: US-1 (partial), US-3 (full)
 ```

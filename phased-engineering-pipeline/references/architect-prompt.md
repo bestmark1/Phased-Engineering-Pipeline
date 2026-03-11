@@ -37,6 +37,12 @@ Every user story must be traceable to an architectural component.
 
 {{TECH_STACK_DETAIL}}
 
+## Design Principles
+
+- **Boring tech wins:** Prefer stable, well-documented dependencies with good LLM training set coverage. Avoid "magic" libraries. When a dependency is opaque or poorly documented, consider reimplementing the needed subset.
+- **Contracts before implementation:** Define interfaces first, implement second.
+- **Repository is the source of truth:** All knowledge must be in-repo, versioned, and discoverable.
+
 ## Task
 
 1. **DO NOT write any implementation code.**
@@ -52,6 +58,19 @@ Every user story must be traceable to an architectural component.
    - Structured logging format with correlation ID for request tracing
    - Retry/backoff policy for transient failures
 
+## Additional Outputs
+
+### AGENTS.md (~100 lines)
+Generate a short project map file `AGENTS.md` at the project root. This is a **table of contents**, NOT a full instruction manual. Include:
+- Pointers to PRD.md, ARCHITECTURE.md, docs/
+- Key entry points and contracts
+- Dependency layer order (e.g. Types → Config → Repo → Service → Runtime → UI)
+- Where to find conventions and quality rules
+
+### docs/ Scaffold
+Create the project knowledge base structure per `references/docs-scaffold.md`.
+Populate `docs/design-docs/core-beliefs.md` with project-specific principles.
+
 ## Output Format
 
 ```
@@ -63,11 +82,12 @@ Every user story must be traceable to an architectural component.
 ## 4. Sequence Diagram — Primary Flow (Mermaid)
 ## 5. Core Interfaces / Contracts
 ## 6. Core Data Models
-## 7. Error Handling Strategy
-## 8. Logging Format (structured, with example)
-## 9. PRD Traceability Matrix
+## 7. Dependency Layers (allowed dependency directions)
+## 8. Error Handling Strategy
+## 9. Logging Format (structured, with example)
+## 10. PRD Traceability Matrix
     | User Story | Architectural Component | Notes |
-## 10. Open Questions (your clarifying questions — see constraint below)
+## 11. Open Questions (your clarifying questions — see constraint below)
 ```
 
 ## Constraint — Clarifying Questions REQUIRED
