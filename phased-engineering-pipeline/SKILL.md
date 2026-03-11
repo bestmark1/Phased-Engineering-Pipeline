@@ -73,6 +73,37 @@ Documents produced during the pipeline:
 - [ ] `docs/` knowledge base scaffold (Phase 1 — Architect)
 - [ ] `docs/tech-debt-tracker.md` entries (Phase 3 — Developer/Reviewers)
 - [ ] `docs/QUALITY_SCORE.md` (Phase 4 — QA)
+- [ ] `PROGRESS.md` (all phases — auto-updated by each agent)
+
+---
+
+## Progress Tracker
+
+Every agent updates `PROGRESS.md` when starting and finishing their phase. This file is the single source of truth for pipeline status.
+
+```markdown
+# {{PROJECT_NAME}} — Progress
+
+| Phase | Agent | Status | Started | Finished | Notes |
+|-------|-------|--------|---------|----------|-------|
+| 0a Analysis | Analyst | ⏳ Pending | — | — | |
+| 0b PRD | PM | ⏳ Pending | — | — | |
+| 1 Architecture | Architect | ⏳ Pending | — | — | |
+| 2 Plan | Tech Lead | ⏳ Pending | — | — | |
+| 3.1 {phase} | Developer | ⏳ Pending | — | — | |
+| 3.1 Review | SOLID + SRE | ⏳ Pending | — | — | |
+| ... | ... | ... | ... | ... | |
+| 4 QA | QA | ⏳ Pending | — | — | |
+| Finish | — | ⏳ Pending | — | — | |
+```
+
+**Status values:** `⏳ Pending` → `🔄 In Progress` → `✅ Done` / `✅ Approved` / `❌ Rejected` / `🔁 Re-doing`
+
+**Rules:**
+- Architect creates `PROGRESS.md` during Phase 1 (scaffold), pre-filling rows from `IMPLEMENTATION_PLAN.md` phases
+- Each agent updates their row status + timestamp when starting and finishing
+- On rejection / re-review, status changes to `🔁 Re-doing`
+- `PROGRESS.md` is committed with every auto-commit (add to `git add` list)
 
 ---
 
@@ -272,6 +303,7 @@ Agents commit automatically at each gate. Format: `[phase-N]` prefix.
 
 Rules:
 - Use `git add <specific files>` — never `git add .` or `git add -A`
+- Always include `PROGRESS.md` in every commit: `git add PROGRESS.md <other files>`
 - Commit message must be a single line, no body
 - Do NOT push until all phases complete (push only at Finish)
 

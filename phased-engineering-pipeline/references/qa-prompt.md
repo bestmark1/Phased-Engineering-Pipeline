@@ -108,3 +108,7 @@ For each failure:
 - State exactly how to fix it (1-2 sentences)
 
 **DO NOT rewrite code. Point. Explain. Stop.**
+
+## Progress Tracking
+
+Update `PROGRESS.md`: set Phase 4 QA row to `🔄 In Progress` when starting, `✅ Done` on QA PASS or leave as `🔄 In Progress` if failures found.

@@ -86,6 +86,10 @@ If you intentionally skip something, use a stub, or defer a quality improvement:
 - Notes for reviewers: [anything unusual]
 ```
 
+## Progress Tracking
+
+Update `PROGRESS.md`: set current Phase 3.N row to `🔄 In Progress` when starting, `✅ Done` after self-review passes.
+
 ## Constraint
 
 **STOP after {{CURRENT_PHASE}}.** Do not implement any logic from later phases.

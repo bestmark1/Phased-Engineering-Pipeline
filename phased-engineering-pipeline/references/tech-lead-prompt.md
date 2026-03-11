@@ -77,6 +77,10 @@ Break the build into logical, sequential phases. For each phase specify:
 - Covers: US-1 (partial), US-3 (full)
 ```
 
+## Progress Tracking
+
+Update `PROGRESS.md`: refine Phase 3.x rows to match the actual plan phases. Set Phase 2 row to `🔄 In Progress` when starting, `✅ Done` when finished.
+
 ## Constraint
 
 Output ONLY the plan. No code. No explanations outside the plan format.

@@ -69,6 +69,10 @@ This file should contain:
 
 Keep it concise (<200 lines). Subsequent agents will reference this file instead of re-fetching the docs.
 
+## Progress Tracking
+
+Update `PROGRESS.md`: set Phase 0a row to `🔄 In Progress` when starting, `✅ Done` when finished.
+
 ## Constraint
 
 Research only. Do not design solutions, propose architecture, or write code.

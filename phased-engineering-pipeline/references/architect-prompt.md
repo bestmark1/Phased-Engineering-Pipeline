@@ -90,6 +90,10 @@ Populate `docs/design-docs/core-beliefs.md` with project-specific principles.
 ## 11. Open Questions (your clarifying questions — see constraint below)
 ```
 
+## Progress Tracking
+
+Create `PROGRESS.md` with the template from SKILL.md. Pre-fill Phase 3.x rows from the implementation plan once known (Architect creates the initial file; Tech Lead will refine rows). Set Phase 1 row to `🔄 In Progress` when starting, `✅ Done` when finished.
+
 ## Constraint — Clarifying Questions REQUIRED
 
 Before finalizing the architecture document, ask **3-5 clarifying questions** covering:

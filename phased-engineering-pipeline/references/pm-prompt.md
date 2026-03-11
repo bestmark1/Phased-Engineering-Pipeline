@@ -66,6 +66,10 @@ Anything unresolved that may affect architecture or implementation.
 4. Goals must be measurable
 5. Non-goals must be explicit — prevents scope creep
 
+## Progress Tracking
+
+Update `PROGRESS.md`: set Phase 0b row to `🔄 In Progress` when starting, `✅ Done` when finished.
+
 ## Constraint
 
 Requirements only. Do not propose architecture, database schemas, or code.
