@@ -67,9 +67,47 @@ Generate a short project map file `AGENTS.md` at the project root. This is a **t
 - Dependency layer order (e.g. Types → Config → Repo → Service → Runtime → UI)
 - Where to find conventions and quality rules
 
+### CONSTITUTION.md
+Generate `CONSTITUTION.md` at the project root — the project governance document. Consolidates all rules that agents and humans must follow:
+
+```markdown
+# Constitution — {{PROJECT_NAME}}
+
+## Project Identity
+One-paragraph description of what this project is and who it serves.
+
+## Development Principles
+[Expand from core-beliefs.md — 5-7 principles specific to THIS project]
+
+## Quality Rules
+{{QUALITY_RULES}} — spelled out with examples of what passes/fails.
+
+## Coding Conventions
+- Naming: [language-specific conventions]
+- File structure: [where things go]
+- Interface style: {{INTERFACE_STYLE}}
+- Error handling: [project-specific strategy from Architecture]
+
+## Dependency Rules
+- Allowed dependency directions (from Architecture layer diagram)
+- Approved external dependencies and version constraints
+- Process for adding new dependencies
+
+## Review Standards
+- What SOLID reviewer checks for
+- What SRE reviewer checks for
+- What triggers a re-review
+
+## Scope Boundaries
+- What is IN scope (from PRD goals)
+- What is OUT of scope (from PRD non-goals)
+- Process for scope changes
+```
+
+This replaces `docs/design-docs/core-beliefs.md` — the constitution IS the beliefs, plus actionable rules.
+
 ### docs/ Scaffold
 Create the project knowledge base structure per `references/docs-scaffold.md`.
-Populate `docs/design-docs/core-beliefs.md` with project-specific principles.
 
 ## Output Format
 
