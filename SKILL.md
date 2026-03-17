@@ -3,8 +3,8 @@ name: phased-engineering-pipeline
 description: |
   Full-system BMAD engineering: analyst research, PRD, spec clarification, architecture, constitution,
   planning, cross-artifact analysis, coding, QA validation.
-  Includes: AGENTS.md project map, CONSTITUTION.md governance, docs/ knowledge base, decision logs,
-  tech debt tracking, enhanced self-review loop, STRICT_MODE for prototyping, llms.txt reference caching.
+  Includes: SPEC_PLAN/ artifact hub, AGENTS.md project map, CONSTITUTION.md governance, docs/ knowledge base,
+  decision logs, tech debt tracking, enhanced self-review loop, STRICT_MODE for prototyping, llms.txt reference caching.
   Use when: building from scratch, "design + plan + code", user says "build", "architect",
   "implement a full system", "phased pipeline", "BMAD pipeline", "create project", "new feature end-to-end".
   Does NOT handle: debugging existing code, single-function tasks, one-shot fixes.
@@ -15,12 +15,12 @@ description: |
 Ten specialized agents. Eight gates. Feature branches. Auto-commits.
 
 ```
-[Analyst] → [PM] → PRD.md → ⛔ USER APPROVAL
-  → [Clarifier] → Spec Clarification Report → ⛔ CLARIFY PASS
-  → git: create feature/{slug} branch, commit PRD
-  → [Architect] → ARCHITECTURE.md + CONSTITUTION.md → ⛔ USER APPROVAL → git: commit
-    → [Tech Lead] → IMPLEMENTATION_PLAN.md → ⛔ USER APPROVAL → git: commit
-      → [Analyzer] → Cross-Artifact Analysis → ⛔ ANALYZE PASS
+[Analyst] → [PM] → SPEC_PLAN/PRD.md → ⛔ USER APPROVAL
+  → [Clarifier] → SPEC_PLAN/clarification-report.md → ⛔ CLARIFY PASS
+  → git: create feature/{slug} branch, mkdir SPEC_PLAN/, commit PRD
+  → [Architect] → SPEC_PLAN/ARCHITECTURE.md + SPEC_PLAN/CONSTITUTION.md → ⛔ USER APPROVAL → git: commit
+    → [Tech Lead] → SPEC_PLAN/IMPLEMENTATION_PLAN.md → ⛔ USER APPROVAL → git: commit
+      → [Analyzer] → SPEC_PLAN/cross-artifact-analysis.md → ⛔ ANALYZE PASS
       → loop per plan phase:
           [Developer] → git: commit code
           → [Reviewer SOLID] ‖ [Reviewer SRE]
@@ -66,12 +66,12 @@ Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in reference pr
 Documents produced during the pipeline:
 
 - [ ] Domain Research Notes (Phase 0a — Analyst)
-- [ ] `PRD.md` (Phase 0b — PM)
-- [ ] Spec Clarification Report (Phase 0c — Clarifier)
-- [ ] `ARCHITECTURE.md` (Phase 1 — Architect)
-- [ ] `CONSTITUTION.md` (Phase 1 — Architect)
-- [ ] `IMPLEMENTATION_PLAN.md` (Phase 2 — Tech Lead)
-- [ ] Cross-Artifact Analysis Report (Phase 2b — Analyzer)
+- [ ] `SPEC_PLAN/PRD.md` (Phase 0b — PM)
+- [ ] `SPEC_PLAN/clarification-report.md` (Phase 0c — Clarifier)
+- [ ] `SPEC_PLAN/ARCHITECTURE.md` (Phase 1 — Architect)
+- [ ] `SPEC_PLAN/CONSTITUTION.md` (Phase 1 — Architect)
+- [ ] `SPEC_PLAN/IMPLEMENTATION_PLAN.md` (Phase 2 — Tech Lead)
+- [ ] `SPEC_PLAN/cross-artifact-analysis.md` (Phase 2b — Analyzer)
 - [ ] Code + self-review reports (Phase 3 — Developer, per plan phase)
 - [ ] Review verdicts (Phase 3 — Reviewers, per plan phase)
 - [ ] QA Validation Report (Phase 4 — QA)
@@ -115,12 +115,37 @@ Every agent updates `PROGRESS.md` when starting and finishing their phase. This 
 
 ---
 
+## Artifact Hub (`SPEC_PLAN/`)
+
+Every agent saves its primary artifact to `SPEC_PLAN/` at project root. This is the **single source of truth** for all specs and plans — always up-to-date, always in one place.
+
+```
+SPEC_PLAN/
+├── PRD.md                        # Phase 0b — PM
+├── clarification-report.md       # Phase 0c — Clarifier
+├── ARCHITECTURE.md               # Phase 1 — Architect
+├── CONSTITUTION.md               # Phase 1 — Architect
+├── IMPLEMENTATION_PLAN.md        # Phase 2 — Tech Lead
+├── cross-artifact-analysis.md    # Phase 2b — Analyzer
+└── qa-validation-report.md       # Phase 4 — QA
+```
+
+**Rules:**
+- Architect creates `SPEC_PLAN/` directory during Phase 1 (scaffold)
+- Each agent writes directly to `SPEC_PLAN/<artifact>` (not root, then copy)
+- On update/revision (e.g., PRD updated after clarification), overwrite in-place
+- `SPEC_PLAN/` is included in every auto-commit: `git add SPEC_PLAN/ PROGRESS.md <other files>`
+- Root-level `CONSTITUTION.md` is a **symlink** or copy from `SPEC_PLAN/CONSTITUTION.md` for quick access
+
+---
+
 ## Project Knowledge Base
 
 After Phase 1, Architect creates this structure (see `references/docs-scaffold.md` for templates):
 
 ```
-CONSTITUTION.md                # Project governance (created by Architect, root level)
+SPEC_PLAN/                         # ← Artifact Hub (all specs & plans)
+CONSTITUTION.md                    # Symlink → SPEC_PLAN/CONSTITUTION.md
 docs/
 ├── design-docs/
 │   └── index.md              # Catalog of design decisions
@@ -134,10 +159,10 @@ docs/
 ```
 
 - **Analyst** saves distilled docs to `docs/references/{tool}-llms.txt`
-- **Architect** creates scaffold + `CONSTITUTION.md` (project governance at root)
+- **Architect** creates `SPEC_PLAN/` hub + scaffold + `CONSTITUTION.md`
 - **Developer** appends to `tech-debt-tracker.md` when deferring
 - **Reviewers** append to `tech-debt-tracker.md` when flagging non-critical issues
-- **QA** updates `QUALITY_SCORE.md` after validation
+- **QA** updates `QUALITY_SCORE.md` after validation + saves report to `SPEC_PLAN/qa-validation-report.md`
 - **Tech Lead** moves completed plans to `exec-plans/completed/`
 
 ---
@@ -155,39 +180,39 @@ Copy this and track progress:
 **Phase 0b — Product Requirements**
 - [ ] Read `references/pm-prompt.md`
 - [ ] Paste Domain Research Notes
-- [ ] Spawn PM agent → produces `PRD.md` with user stories + acceptance criteria
+- [ ] Spawn PM agent → produces `SPEC_PLAN/PRD.md` with user stories + acceptance criteria
 - [ ] ⛔ STOP — wait for user to approve PRD
 
 **Phase 0c — Spec Clarification**
 - [ ] Read `references/clarify-prompt.md`
-- [ ] Paste approved `PRD.md` content
-- [ ] Spawn Clarifier agent → scans for ambiguities, contradictions, gaps
+- [ ] Paste approved `SPEC_PLAN/PRD.md` content
+- [ ] Spawn Clarifier agent → scans for ambiguities, contradictions, gaps → saves `SPEC_PLAN/clarification-report.md`
 - [ ] If `CLARIFY PASS` → proceed
-- [ ] If critical issues found → present to user → resolve → update PRD.md
+- [ ] If critical issues found → present to user → resolve → update `SPEC_PLAN/PRD.md`
 
 **Feature Branch Creation**
 - [ ] Derive `{slug}` from PRD title (kebab-case, e.g. `weather-tracker`)
-- [ ] `git checkout -b feature/{slug}`
-- [ ] Commit: `git add PRD.md && git commit -m "[phase-0] PRD: {project}"`
+- [ ] `mkdir -p SPEC_PLAN && git checkout -b feature/{slug}`
+- [ ] Commit: `git add SPEC_PLAN/PRD.md && git commit -m "[phase-0] PRD: {project}"`
 
 **Phase 1 — Architecture**
 - [ ] Read `references/architect-prompt.md`
 - [ ] Provide approved PRD summary as `{{PRD_SUMMARY}}`
-- [ ] Spawn Architect agent → asks 3-5 clarifying questions → produces `ARCHITECTURE.md` + `CONSTITUTION.md`
+- [ ] Spawn Architect agent → asks 3-5 clarifying questions → produces `SPEC_PLAN/ARCHITECTURE.md` + `SPEC_PLAN/CONSTITUTION.md`
 - [ ] ⛔ STOP — wait for user to approve architecture
-- [ ] Commit: `git add ARCHITECTURE.md CONSTITUTION.md AGENTS.md docs/ && git commit -m "[phase-1] architecture: {project}"`
+- [ ] Commit: `git add SPEC_PLAN/ AGENTS.md docs/ && git commit -m "[phase-1] architecture: {project}"`
 
 **Phase 2 — Implementation Plan**
 - [ ] Read `references/tech-lead-prompt.md`
 - [ ] Paste approved architecture summary
-- [ ] Spawn Tech Lead agent → produces `IMPLEMENTATION_PLAN.md`
+- [ ] Spawn Tech Lead agent → produces `SPEC_PLAN/IMPLEMENTATION_PLAN.md`
 - [ ] ⛔ STOP — wait for user to approve plan
-- [ ] Commit: `git add IMPLEMENTATION_PLAN.md && git commit -m "[phase-2] plan: {project}"`
+- [ ] Commit: `git add SPEC_PLAN/IMPLEMENTATION_PLAN.md && git commit -m "[phase-2] plan: {project}"`
 
 **Phase 2b — Cross-Artifact Analysis**
 - [ ] Read `references/analyze-prompt.md`
-- [ ] Provide `PRD.md`, `ARCHITECTURE.md`, `IMPLEMENTATION_PLAN.md`
-- [ ] Spawn Analyzer agent → checks coverage, consistency, terminology
+- [ ] Provide `SPEC_PLAN/PRD.md`, `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/IMPLEMENTATION_PLAN.md`
+- [ ] Spawn Analyzer agent → checks coverage, consistency, terminology → saves `SPEC_PLAN/cross-artifact-analysis.md`
 - [ ] If `ANALYZE PASS` → proceed to coding
 - [ ] If inconsistencies found → resolve → re-run Analyzer
 
@@ -236,7 +261,7 @@ Read full prompt: `references/analyst-prompt.md`
 
 **Provide to agent:** Domain Research Notes from Analyst.
 
-**Expected output:** `PRD.md` containing: problem statement, goals/non-goals, user stories (As a / I want / So that), acceptance criteria (Given / When / Then), success metrics. Every user story must have ≥2 acceptance criteria.
+**Expected output:** `SPEC_PLAN/PRD.md` containing: problem statement, goals/non-goals, user stories (As a / I want / So that), acceptance criteria (Given / When / Then), success metrics. Every user story must have ≥2 acceptance criteria.
 
 Read full prompt: `references/pm-prompt.md`
 
@@ -246,16 +271,16 @@ Read full prompt: `references/pm-prompt.md`
 
 **When to spawn:** After user approves `PRD.md`, before Architecture.
 
-**Provide to agent:** Full `PRD.md` content.
+**Provide to agent:** Full `SPEC_PLAN/PRD.md` content.
 
-**Expected output:** Spec Clarification Report with:
+**Expected output:** `SPEC_PLAN/clarification-report.md` with:
 - Ambiguity scan (vague language, missing edge cases, undefined terms)
 - Contradiction check (conflicting user stories or acceptance criteria)
 - Gap analysis (incomplete flows, untestable criteria)
 - Dependency check (unconstrained external dependencies, unspecified ordering)
 - Binary verdict: `CLARIFY PASS` or detailed report with Critical/Warning issues + Questions for Product Owner
 
-**If critical issues found:** Present to user, resolve, update PRD.md before proceeding.
+**If critical issues found:** Present to user, resolve, update `SPEC_PLAN/PRD.md` before proceeding.
 
 Read full prompt: `references/clarify-prompt.md`
 
@@ -263,13 +288,13 @@ Read full prompt: `references/clarify-prompt.md`
 
 ## Phase 1: Architect Agent
 
-**When to spawn:** After user explicitly approves `PRD.md`.
+**When to spawn:** After user explicitly approves `SPEC_PLAN/PRD.md`.
 
 **Provide to agent:** PRD summary, `{{PROJECT_NAME}}`, `{{TECH_STACK}}`, `{{DOCS_URL}}`
 
 **Expected output:**
-- `ARCHITECTURE.md` with C4 diagrams (Mermaid), contracts/interfaces (`{{INTERFACE_STYLE}}`), dependency layer order, error handling strategy, PRD Traceability Matrix
-- `CONSTITUTION.md` — project governance: principles, quality rules, coding conventions, dependency rules, review standards, scope boundaries
+- `SPEC_PLAN/ARCHITECTURE.md` with C4 diagrams (Mermaid), contracts/interfaces (`{{INTERFACE_STYLE}}`), dependency layer order, error handling strategy, PRD Traceability Matrix
+- `SPEC_PLAN/CONSTITUTION.md` — project governance: principles, quality rules, coding conventions, dependency rules, review standards, scope boundaries
 - `AGENTS.md` — project map (~100 lines): pointers to key files, entry points, conventions
 - `docs/` scaffold — knowledge base structure per `references/docs-scaffold.md`
 
@@ -281,11 +306,11 @@ Read full prompt: `references/architect-prompt.md`
 
 ## Phase 2: Tech Lead Agent
 
-**When to spawn:** After user explicitly approves `ARCHITECTURE.md`.
+**When to spawn:** After user explicitly approves `SPEC_PLAN/ARCHITECTURE.md`.
 
 **Provide to agent:** Approved architecture summary + PRD acceptance criteria.
 
-**Expected output:** `IMPLEMENTATION_PLAN.md` with sequential phases, each containing: files to create, contracts to implement, Definition of Done (`{{TEST_COMMAND}}` / `{{BUILD_COMMAND}}`), Decision Log (chose X over Y because...), PRD coverage per phase.
+**Expected output:** `SPEC_PLAN/IMPLEMENTATION_PLAN.md` with sequential phases, each containing: files to create, contracts to implement, Definition of Done (`{{TEST_COMMAND}}` / `{{BUILD_COMMAND}}`), Decision Log (chose X over Y because...), PRD coverage per phase.
 
 Read full prompt: `references/tech-lead-prompt.md`
 
@@ -293,11 +318,11 @@ Read full prompt: `references/tech-lead-prompt.md`
 
 ## Phase 2b: Cross-Artifact Analyzer Agent
 
-**When to spawn:** After user approves `IMPLEMENTATION_PLAN.md`, before coding starts.
+**When to spawn:** After user approves `SPEC_PLAN/IMPLEMENTATION_PLAN.md`, before coding starts.
 
-**Provide to agent:** `PRD.md`, `ARCHITECTURE.md`, `IMPLEMENTATION_PLAN.md`.
+**Provide to agent:** `SPEC_PLAN/PRD.md`, `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/IMPLEMENTATION_PLAN.md`.
 
-**Expected output:** Cross-Artifact Analysis Report with:
+**Expected output:** `SPEC_PLAN/cross-artifact-analysis.md` with:
 - PRD → Architecture coverage (every user story maps to a component)
 - Architecture → Plan coverage (every component has implementation phases)
 - Plan → PRD AC mapping (every acceptance criterion has a plan phase)
@@ -338,7 +363,7 @@ Read full prompts:
 
 **When to spawn:** After ALL coding phases pass both reviewers.
 
-**Provide to agent:** `PRD.md` (full) + all project source code.
+**Provide to agent:** `SPEC_PLAN/PRD.md` (full) + all project source code.
 
 **Expected output:** QA Validation Report with:
 - Acceptance criteria coverage table (criterion → code location → status)
@@ -356,14 +381,14 @@ Agents commit automatically at each gate. Format: `[phase-N]` prefix.
 
 | Trigger | Commit Message | Files |
 |---------|---------------|-------|
-| PRD approved | `[phase-0] PRD: {project}` | `PRD.md` |
-| Clarification resolved | `[phase-0c] clarify: {project}` | `PRD.md` (if updated) |
-| Architecture approved | `[phase-1] architecture: {project}` | `ARCHITECTURE.md`, `CONSTITUTION.md`, `AGENTS.md`, `docs/` |
-| Plan approved | `[phase-2] plan: {project}` | `IMPLEMENTATION_PLAN.md` |
-| Analysis passed | `[phase-2b] analyze: {project}` | — (report only) |
+| PRD approved | `[phase-0] PRD: {project}` | `SPEC_PLAN/PRD.md` |
+| Clarification resolved | `[phase-0c] clarify: {project}` | `SPEC_PLAN/clarification-report.md`, `SPEC_PLAN/PRD.md` (if updated) |
+| Architecture approved | `[phase-1] architecture: {project}` | `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/CONSTITUTION.md`, `AGENTS.md`, `docs/` |
+| Plan approved | `[phase-2] plan: {project}` | `SPEC_PLAN/IMPLEMENTATION_PLAN.md` |
+| Analysis passed | `[phase-2b] analyze: {project}` | `SPEC_PLAN/cross-artifact-analysis.md` |
 | Coding phase N passes review | `[phase-3.N] implement: {phase name}` | All phase files |
 | Developer fix after review | `[phase-3.N] fix: {issue summary}` | Changed files |
-| QA passes | `[phase-4] QA validation passed` | Test files if any |
+| QA passes | `[phase-4] QA validation passed` | `SPEC_PLAN/qa-validation-report.md`, test files if any |
 
 Rules:
 - Use `git add <specific files>` — never `git add .` or `git add -A`
