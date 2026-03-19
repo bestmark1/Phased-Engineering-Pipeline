@@ -80,6 +80,55 @@ Documents produced during the pipeline:
 - [ ] `docs/tech-debt-tracker.md` entries (Phase 3 — Developer/Reviewers)
 - [ ] `docs/QUALITY_SCORE.md` (Phase 4 — QA)
 - [ ] `PROGRESS.md` (all phases — auto-updated by each agent)
+- [ ] `HANDOFF.md` (each phase — written by finishing agent, read by next agent)
+
+---
+
+## Handoff Protocol
+
+Каждая стадия пайплайна — **отдельная сессия или субагент**. Состояние между стадиями передаётся через `HANDOFF.md` в корне проекта. Это сохраняет cache hit rate высоким и контекст чистым.
+
+**Правило:** агент, завершающий стадию, **пишет** `HANDOFF.md`. Агент, начинающий следующую стадию, **читает** его первым делом.
+
+### Шаблон `HANDOFF.md`
+
+```markdown
+## Context
+Краткое описание: что делали и зачем.
+
+## Decisions
+Ключевые архитектурные и технические решения, принятые в этой стадии.
+
+## Changes
+Файлы созданы/изменены и что именно изменилось в каждом.
+
+## Status
+Текущее состояние — что работает, что нет (pass/fail).
+
+## Next Steps
+Что нужно сделать на следующей стадии для продолжения.
+```
+
+### Кто пишет → кто читает
+
+| Стадия завершена | Пишет HANDOFF.md | Читает следующий |
+|---|---|---|
+| Phase 0a (Analyst) | Analyst | PM |
+| Phase 0b (PM) | PM | Clarifier |
+| Phase 0c (Clarifier) | Clarifier | Architect |
+| Phase 1 (Architect) | Architect | Tech Lead |
+| Phase 2 (Tech Lead) | Tech Lead | Analyzer |
+| Phase 2b (Analyzer) | Analyzer | Developer (phase 3.1) |
+| Phase 3.N (Developer) | Developer | Reviewer SOLID + SRE |
+| Phase 3.N (Review done) | Reviewers | Developer (next phase) или QA |
+| Phase 4 (QA) | QA | — (финал) |
+
+### Правила
+
+- `HANDOFF.md` **перезаписывается** при каждой новой стадии (не накапливается)
+- Включается в каждый авто-коммит: `git add HANDOFF.md PROGRESS.md <other files>`
+- Раздел **Decisions** обязателен — именно он предотвращает повторные вопросы в новой сессии
+- Если агент начинает работу без `HANDOFF.md` — должен запросить у пользователя контекст явно
 
 ---
 
@@ -216,22 +265,27 @@ Copy this and track progress:
 - [ ] Fill `{{PROJECT_NAME}}`, `{{TECH_STACK}}`, `{{DOCS_URL}}`
 - [ ] Spawn Analyst agent → asks 5-8 clarifying questions
 - [ ] Answer questions → Analyst produces Domain Research Notes
+- [ ] Analyst writes `HANDOFF.md` (Context: project idea; Decisions: scope confirmed; Changes: Domain Research Notes; Status: pass; Next Steps: PM creates PRD)
 - [ ] `TaskUpdate(phase-0a, completed)`
 
 **Phase 0b — Product Requirements**
 - [ ] `TaskUpdate(phase-0b, in_progress)`
+- [ ] Read `HANDOFF.md` ← контекст от Analyst
 - [ ] Read `references/pm-prompt.md`
 - [ ] Paste Domain Research Notes
 - [ ] Spawn PM agent → produces `SPEC_PLAN/PRD.md` with user stories + acceptance criteria
+- [ ] PM writes `HANDOFF.md` (Context: PRD created; Decisions: scope/non-goals; Changes: SPEC_PLAN/PRD.md; Status: awaiting approval; Next Steps: Clarifier scans PRD)
 - [ ] `TaskUpdate(phase-0b, blocked)` notes="awaiting user PRD approval"
 - [ ] ⛔ STOP — wait for user to approve PRD
 - [ ] `TaskUpdate(phase-0b, completed)`
 
 **Phase 0c — Spec Clarification**
 - [ ] `TaskUpdate(phase-0c, in_progress)`
+- [ ] Read `HANDOFF.md` ← контекст от PM
 - [ ] Read `references/clarify-prompt.md`
 - [ ] Paste approved `SPEC_PLAN/PRD.md` content
 - [ ] Spawn Clarifier agent → scans for ambiguities, contradictions, gaps → saves `SPEC_PLAN/clarification-report.md`
+- [ ] Clarifier writes `HANDOFF.md` (Context: clarification result; Decisions: resolved ambiguities; Changes: clarification-report.md; Status: PASS or issues; Next Steps: Architect)
 - [ ] If `CLARIFY PASS` → `TaskUpdate(phase-0c, completed)` → proceed
 - [ ] If critical issues found → present to user → resolve → update `SPEC_PLAN/PRD.md` → re-run
 
@@ -242,50 +296,60 @@ Copy this and track progress:
 
 **Phase 1 — Architecture**
 - [ ] `TaskUpdate(phase-1, in_progress)`
+- [ ] Read `HANDOFF.md` ← контекст от Clarifier
 - [ ] Read `references/architect-prompt.md`
 - [ ] Provide approved PRD summary as `{{PRD_SUMMARY}}`
 - [ ] Spawn Architect agent → asks 3-5 clarifying questions → produces `SPEC_PLAN/ARCHITECTURE.md` + `SPEC_PLAN/CONSTITUTION.md`
+- [ ] Architect writes `HANDOFF.md` (Context: architecture designed; Decisions: tech choices, layer structure; Changes: ARCHITECTURE.md, CONSTITUTION.md, AGENTS.md, docs/; Status: awaiting approval; Next Steps: Tech Lead creates plan)
 - [ ] `TaskUpdate(phase-1, blocked)` notes="awaiting user architecture approval"
 - [ ] ⛔ STOP — wait for user to approve architecture
 - [ ] `TaskUpdate(phase-1, completed)`
-- [ ] Commit: `git add SPEC_PLAN/ AGENTS.md docs/ && git commit -m "[phase-1] architecture: {project}"`
+- [ ] Commit: `git add SPEC_PLAN/ AGENTS.md docs/ HANDOFF.md && git commit -m "[phase-1] architecture: {project}"`
 
 **Phase 2 — Implementation Plan**
 - [ ] `TaskUpdate(phase-2, in_progress)`
+- [ ] Read `HANDOFF.md` ← контекст от Architect
 - [ ] Read `references/tech-lead-prompt.md`
 - [ ] Paste approved architecture summary
 - [ ] Spawn Tech Lead agent → produces `SPEC_PLAN/IMPLEMENTATION_PLAN.md`
+- [ ] Tech Lead writes `HANDOFF.md` (Context: plan created; Decisions: phase split, DoD per phase; Changes: IMPLEMENTATION_PLAN.md; Status: awaiting approval; Next Steps: Analyzer checks consistency)
 - [ ] `TaskUpdate(phase-2, blocked)` notes="awaiting user plan approval"
 - [ ] ⛔ STOP — wait for user to approve plan
 - [ ] `TaskUpdate(phase-2, completed)`
-- [ ] Commit: `git add SPEC_PLAN/IMPLEMENTATION_PLAN.md && git commit -m "[phase-2] plan: {project}"`
+- [ ] Commit: `git add SPEC_PLAN/IMPLEMENTATION_PLAN.md HANDOFF.md && git commit -m "[phase-2] plan: {project}"`
 
 **Phase 2b — Cross-Artifact Analysis**
 - [ ] `TaskUpdate(phase-2b, in_progress)`
+- [ ] Read `HANDOFF.md` ← контекст от Tech Lead
 - [ ] Read `references/analyze-prompt.md`
 - [ ] Provide `SPEC_PLAN/PRD.md`, `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/IMPLEMENTATION_PLAN.md`
 - [ ] Spawn Analyzer agent → checks coverage, consistency, terminology → saves `SPEC_PLAN/cross-artifact-analysis.md`
+- [ ] Analyzer writes `HANDOFF.md` (Context: cross-artifact check; Decisions: resolved gaps; Changes: cross-artifact-analysis.md; Status: PASS or issues; Next Steps: Developer starts phase 3.1)
 - [ ] If `ANALYZE PASS` → `TaskUpdate(phase-2b, completed)` → proceed to coding
 - [ ] If inconsistencies found → resolve → re-run Analyzer
 
 **Phase 3 — Coding (repeat per plan phase)**
 - [ ] `TaskUpdate(phase-3.N, in_progress)`
+- [ ] Read `HANDOFF.md` ← контекст от предыдущей стадии
 - [ ] Read `references/developer-prompt.md`
 - [ ] Fill `{{CURRENT_PHASE}}`, `{{PHASE_DESCRIPTION}}`, `{{FILES_TO_CREATE}}`
 - [ ] Spawn Developer agent → produces code + self-review report
-- [ ] Commit: `git add <phase files> && git commit -m "[phase-3.N] implement: {phase name}"`
+- [ ] Developer writes `HANDOFF.md` (Context: phase N implemented; Decisions: implementation choices; Changes: list of files; Status: self-review pass; Next Steps: SOLID + SRE review)
+- [ ] Commit: `git add <phase files> HANDOFF.md && git commit -m "[phase-3.N] implement: {phase name}"`
 - [ ] `TaskUpdate(phase-3.N-review, in_progress)`
 - [ ] Spawn Reviewer SOLID (`references/reviewer-solid-prompt.md`) IN PARALLEL with:
 - [ ] Spawn Reviewer SRE (`references/reviewer-sre-prompt.md`)
-- [ ] Both return `APPROVE` → `TaskUpdate(phase-3.N-review, completed)` → `TaskUpdate(phase-3.N, completed)` → next plan phase
+- [ ] Both return `APPROVE` → Reviewers write `HANDOFF.md` (Status: both APPROVE; Next Steps: next phase or QA) → `TaskUpdate(phase-3.N-review, completed)` → `TaskUpdate(phase-3.N, completed)` → next plan phase
 - [ ] Any reviewer returns issues → Developer fixes → recommit → re-run BOTH reviewers
 - [ ] Repeat review loop until `APPROVE` from both
 
 **Phase 4 — QA Validation**
 - [ ] `TaskUpdate(phase-4, in_progress)`
+- [ ] Read `HANDOFF.md` ← контекст от последнего Developer/Review
 - [ ] Read `references/qa-prompt.md`
 - [ ] Provide PRD.md + all project code
 - [ ] Spawn QA agent → extracts acceptance criteria → traces code → runs `{{TEST_COMMAND}}` + `{{BUILD_COMMAND}}` + `{{LINT_COMMAND}}`
+- [ ] QA writes `HANDOFF.md` (Context: QA validation; Decisions: —; Changes: qa-validation-report.md; Status: QA PASS or failures; Next Steps: push + PR)
 - [ ] QA returns `QA PASS` → `TaskUpdate(phase-4, completed)` → proceed to finish
 - [ ] QA returns issues → Developer fixes → recommit → QA re-validates
 
@@ -439,14 +503,14 @@ Agents commit automatically at each gate. Format: `[phase-N]` prefix.
 
 | Trigger | Commit Message | Files |
 |---------|---------------|-------|
-| PRD approved | `[phase-0] PRD: {project}` | `SPEC_PLAN/PRD.md` |
-| Clarification resolved | `[phase-0c] clarify: {project}` | `SPEC_PLAN/clarification-report.md`, `SPEC_PLAN/PRD.md` (if updated) |
-| Architecture approved | `[phase-1] architecture: {project}` | `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/CONSTITUTION.md`, `AGENTS.md`, `docs/` |
-| Plan approved | `[phase-2] plan: {project}` | `SPEC_PLAN/IMPLEMENTATION_PLAN.md` |
-| Analysis passed | `[phase-2b] analyze: {project}` | `SPEC_PLAN/cross-artifact-analysis.md` |
-| Coding phase N passes review | `[phase-3.N] implement: {phase name}` | All phase files |
-| Developer fix after review | `[phase-3.N] fix: {issue summary}` | Changed files |
-| QA passes | `[phase-4] QA validation passed` | `SPEC_PLAN/qa-validation-report.md`, test files if any |
+| PRD approved | `[phase-0] PRD: {project}` | `SPEC_PLAN/PRD.md`, `HANDOFF.md` |
+| Clarification resolved | `[phase-0c] clarify: {project}` | `SPEC_PLAN/clarification-report.md`, `SPEC_PLAN/PRD.md` (if updated), `HANDOFF.md` |
+| Architecture approved | `[phase-1] architecture: {project}` | `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/CONSTITUTION.md`, `AGENTS.md`, `docs/`, `HANDOFF.md` |
+| Plan approved | `[phase-2] plan: {project}` | `SPEC_PLAN/IMPLEMENTATION_PLAN.md`, `HANDOFF.md` |
+| Analysis passed | `[phase-2b] analyze: {project}` | `SPEC_PLAN/cross-artifact-analysis.md`, `HANDOFF.md` |
+| Coding phase N passes review | `[phase-3.N] implement: {phase name}` | All phase files, `HANDOFF.md` |
+| Developer fix after review | `[phase-3.N] fix: {issue summary}` | Changed files, `HANDOFF.md` |
+| QA passes | `[phase-4] QA validation passed` | `SPEC_PLAN/qa-validation-report.md`, test files if any, `HANDOFF.md` |
 
 Rules:
 - Use `git add <specific files>` — never `git add .` or `git add -A`
