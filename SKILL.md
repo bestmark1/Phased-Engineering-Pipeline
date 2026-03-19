@@ -44,9 +44,11 @@ Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in reference pr
 | `{{BUILD_COMMAND}}` | Build verification | `flutter build apk --debug` |
 | `{{TEST_COMMAND}}` | Test runner | `flutter test` |
 | `{{LINT_COMMAND}}` | Linter / static analysis | `flutter analyze` |
+| `{{TYPECHECK_COMMAND}}` | Type checker (if separate) | `dart analyze` / `tsc --noEmit` |
 | `{{QUALITY_RULES}}` | Language-specific quality rules | null safety, no dynamic, const constructors, DI |
 | `{{INTERFACE_STYLE}}` | How contracts are defined | abstract class / mixin |
 | `{{DOCS_URL}}` | Official docs for target platform | https://docs.flutter.dev/ |
+| `{{ROLLBACK_COMMAND}}` | How to undo last change | `git revert HEAD` / `git reset --hard HEAD~1` |
 | `{{STRICT_MODE}}` | Gate enforcement level | `true` (default) |
 
 <details>
@@ -81,6 +83,60 @@ Documents produced during the pipeline:
 - [ ] `docs/QUALITY_SCORE.md` (Phase 4 — QA)
 - [ ] `PROGRESS.md` (all phases — auto-updated by each agent)
 - [ ] `HANDOFF.md` (each phase — written by finishing agent, read by next agent)
+
+---
+
+## Verification Protocol
+
+«Claude говорит, что готово» не имеет инженерной ценности. Каждая стадия должна иметь явное определение «как агент узнает, что сделал правильно» — иначе задача не готова для автономного выполнения.
+
+### Уровни верификации
+
+| Уровень | Инструменты | Применяется |
+|---|---|---|
+| **Базовый** | exit codes, lint, typecheck, unit tests | Каждая coding-фаза (Phase 3) |
+| **Средний** | integration tests, contract tests, smoke tests | QA (Phase 4) |
+| **Высокий** | production logs, метрики, ручные чеклисты | После деплоя (вне пайплайна) |
+
+### Правила exit codes
+
+Любая команда верификации **обязана** вернуть exit code 0. Ненулевой exit code = FAIL, агент не продолжает.
+
+```
+{{LINT_COMMAND}}       # exit 0 required
+{{TYPECHECK_COMMAND}}  # exit 0 required
+{{TEST_COMMAND}}       # exit 0 required
+{{BUILD_COMMAND}}      # exit 0 required
+```
+
+Агент должен явно проверять: `echo "Exit: $?"` или аналог, и включать результат в HANDOFF.md → Status.
+
+### Верификация по стадиям
+
+| Стадия | Команды | Verdict формат | Условие FAIL |
+|---|---|---|---|
+| Phase 0c (Clarifier) | — (документ) | `CLARIFY PASS` / `CLARIFY FAIL: <список>` | Critical issues найдены |
+| Phase 2b (Analyzer) | — (документ) | `ANALYZE PASS` / `ANALYZE FAIL: <список>` | Orphaned items или contradictions |
+| Phase 3 (Developer) | lint + typecheck + unit tests | `VERIFY PASS` / `VERIFY FAIL: <команда exit N>` | Любой exit code ≠ 0 |
+| Phase 3 (Reviewer) | — (код-ревью) | `APPROVE: Architecture is solid.` / `REJECT: <issues>` | Любое замечание Critical/High |
+| Phase 4 (QA) | все три команды + AC coverage | `QA PASS` / `QA FAIL: <список критериев>` | Любой тест упал или AC не покрыт |
+| CI | `gh pr checks` | `CI PASS` / `CI FAIL: <check name>` | Любой check ≠ success |
+
+### Rollback условия
+
+Откат выполняется командой `{{ROLLBACK_COMMAND}}` при:
+- Developer зафиксировал код, но оба ревьюера вернули REJECT на 3-м и более круге
+- QA вернул FAIL и Developer не может исправить без изменения архитектуры
+- CI упал по причине infra (не lint/test) — откат до последнего зелёного коммита
+
+### CI как гейт (не advisory)
+
+CI **блокирует** переход к мержу. Если CI упал:
+- lint/test/typecheck failure → Developer обязан исправить и перепушить
+- build failure → поверхность пользователю, не автофикс
+- infra failure → `{{ROLLBACK_COMMAND}}`, поверхность пользователю
+
+> Если не можешь чётко сформулировать «как Claude узнает, что сделал правильно» — задача не готова для автономного выполнения.
 
 ---
 
@@ -464,7 +520,12 @@ Read full prompt: `references/analyze-prompt.md`
 
 **Per plan phase:**
 1. Spawn Developer for current phase only (constraint: STOP after this phase)
-2. Developer performs self-review loop: verify → self-fix → re-verify until clean
+2. Developer performs self-review loop:
+   - Run `{{LINT_COMMAND}}` → must exit 0
+   - Run `{{TYPECHECK_COMMAND}}` → must exit 0
+   - Run `{{TEST_COMMAND}}` → must exit 0, 0 failures
+   - If any fails → fix → re-run that command → repeat until all exit 0
+   - Output explicit verdict: `VERIFY PASS` or `VERIFY FAIL: <command> exited <N>`
 3. Developer logs any deferred items to `docs/tech-debt-tracker.md`
 4. Auto-commit phase code
 5. Spawn both reviewers IN PARALLEL with Developer's output
@@ -552,7 +613,7 @@ gh pr checks --watch
   - If lint/analyze failure → Developer fixes → recommit → push
   - If test failure → Developer fixes → recommit → push
   - If build failure → surface to user (may need config change)
-- CI is **informational, not blocking** — user decides whether to merge despite failures
+- CI is **a hard gate** — do not present PR as ready until all checks pass (lint/test/build failures must be fixed)
 
 Expected CI pipeline (GitHub Actions on push to main):
 1. `{{LINT_COMMAND}}`
