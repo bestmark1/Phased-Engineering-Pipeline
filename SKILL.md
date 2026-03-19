@@ -83,6 +83,42 @@ Documents produced during the pipeline:
 
 ---
 
+## Task Tool Protocol
+
+Every stage transition must be an **explicit tool call** — not text output. This gives a programmatically verifiable signal that a phase started or ended.
+
+**Rules:**
+- At pipeline start: `TaskCreate` one task per phase (status: `pending`)
+- When phase begins: `TaskUpdate` → `in_progress`
+- When phase ends successfully: `TaskUpdate` → `completed`
+- When gate blocks (user approval needed): `TaskUpdate` → `blocked`, notes = what's awaited
+- When phase fails / needs redo: `TaskUpdate` → `in_progress` again, notes = reason
+
+**Phase → Task mapping:**
+
+| Phase | TaskCreate title | Notes field |
+|-------|-----------------|-------------|
+| 0a | `Analyst: domain research` | — |
+| 0b | `PM: PRD` | — |
+| 0c | `Clarifier: spec clarification` | — |
+| 1 | `Architect: architecture + constitution` | — |
+| 2 | `Tech Lead: implementation plan` | — |
+| 2b | `Analyzer: cross-artifact analysis` | — |
+| 3.N | `Developer: phase N — {phase name}` | per plan phase |
+| 3.N review | `Review: phase N — SOLID + SRE` | per plan phase |
+| 4 | `QA: validation` | — |
+| Finish | `Finish: PR + CI` | — |
+
+**Example transition sequence:**
+```
+TaskUpdate(id, status="completed")           # current phase done
+TaskUpdate(id_next, status="in_progress")    # next phase starts
+```
+
+> `PROGRESS.md` remains the human-readable record. Task tools provide the machine-verifiable signal. Both must stay in sync.
+
+---
+
 ## Progress Tracker
 
 Every agent updates `PROGRESS.md` when starting and finishing their phase. This file is the single source of truth for pipeline status.
@@ -171,24 +207,33 @@ docs/
 
 Copy this and track progress:
 
+**Pipeline Init**
+- [ ] `TaskCreate` one task per phase (see Task Tool Protocol table above), all status `pending`
+
 **Phase 0a — Domain Analysis**
+- [ ] `TaskUpdate(phase-0a, in_progress)`
 - [ ] Read `references/analyst-prompt.md`
 - [ ] Fill `{{PROJECT_NAME}}`, `{{TECH_STACK}}`, `{{DOCS_URL}}`
 - [ ] Spawn Analyst agent → asks 5-8 clarifying questions
 - [ ] Answer questions → Analyst produces Domain Research Notes
+- [ ] `TaskUpdate(phase-0a, completed)`
 
 **Phase 0b — Product Requirements**
+- [ ] `TaskUpdate(phase-0b, in_progress)`
 - [ ] Read `references/pm-prompt.md`
 - [ ] Paste Domain Research Notes
 - [ ] Spawn PM agent → produces `SPEC_PLAN/PRD.md` with user stories + acceptance criteria
+- [ ] `TaskUpdate(phase-0b, blocked)` notes="awaiting user PRD approval"
 - [ ] ⛔ STOP — wait for user to approve PRD
+- [ ] `TaskUpdate(phase-0b, completed)`
 
 **Phase 0c — Spec Clarification**
+- [ ] `TaskUpdate(phase-0c, in_progress)`
 - [ ] Read `references/clarify-prompt.md`
 - [ ] Paste approved `SPEC_PLAN/PRD.md` content
 - [ ] Spawn Clarifier agent → scans for ambiguities, contradictions, gaps → saves `SPEC_PLAN/clarification-report.md`
-- [ ] If `CLARIFY PASS` → proceed
-- [ ] If critical issues found → present to user → resolve → update `SPEC_PLAN/PRD.md`
+- [ ] If `CLARIFY PASS` → `TaskUpdate(phase-0c, completed)` → proceed
+- [ ] If critical issues found → present to user → resolve → update `SPEC_PLAN/PRD.md` → re-run
 
 **Feature Branch Creation**
 - [ ] Derive `{slug}` from PRD title (kebab-case, e.g. `weather-tracker`)
@@ -196,49 +241,62 @@ Copy this and track progress:
 - [ ] Commit: `git add SPEC_PLAN/PRD.md && git commit -m "[phase-0] PRD: {project}"`
 
 **Phase 1 — Architecture**
+- [ ] `TaskUpdate(phase-1, in_progress)`
 - [ ] Read `references/architect-prompt.md`
 - [ ] Provide approved PRD summary as `{{PRD_SUMMARY}}`
 - [ ] Spawn Architect agent → asks 3-5 clarifying questions → produces `SPEC_PLAN/ARCHITECTURE.md` + `SPEC_PLAN/CONSTITUTION.md`
+- [ ] `TaskUpdate(phase-1, blocked)` notes="awaiting user architecture approval"
 - [ ] ⛔ STOP — wait for user to approve architecture
+- [ ] `TaskUpdate(phase-1, completed)`
 - [ ] Commit: `git add SPEC_PLAN/ AGENTS.md docs/ && git commit -m "[phase-1] architecture: {project}"`
 
 **Phase 2 — Implementation Plan**
+- [ ] `TaskUpdate(phase-2, in_progress)`
 - [ ] Read `references/tech-lead-prompt.md`
 - [ ] Paste approved architecture summary
 - [ ] Spawn Tech Lead agent → produces `SPEC_PLAN/IMPLEMENTATION_PLAN.md`
+- [ ] `TaskUpdate(phase-2, blocked)` notes="awaiting user plan approval"
 - [ ] ⛔ STOP — wait for user to approve plan
+- [ ] `TaskUpdate(phase-2, completed)`
 - [ ] Commit: `git add SPEC_PLAN/IMPLEMENTATION_PLAN.md && git commit -m "[phase-2] plan: {project}"`
 
 **Phase 2b — Cross-Artifact Analysis**
+- [ ] `TaskUpdate(phase-2b, in_progress)`
 - [ ] Read `references/analyze-prompt.md`
 - [ ] Provide `SPEC_PLAN/PRD.md`, `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/IMPLEMENTATION_PLAN.md`
 - [ ] Spawn Analyzer agent → checks coverage, consistency, terminology → saves `SPEC_PLAN/cross-artifact-analysis.md`
-- [ ] If `ANALYZE PASS` → proceed to coding
+- [ ] If `ANALYZE PASS` → `TaskUpdate(phase-2b, completed)` → proceed to coding
 - [ ] If inconsistencies found → resolve → re-run Analyzer
 
 **Phase 3 — Coding (repeat per plan phase)**
+- [ ] `TaskUpdate(phase-3.N, in_progress)`
 - [ ] Read `references/developer-prompt.md`
 - [ ] Fill `{{CURRENT_PHASE}}`, `{{PHASE_DESCRIPTION}}`, `{{FILES_TO_CREATE}}`
 - [ ] Spawn Developer agent → produces code + self-review report
 - [ ] Commit: `git add <phase files> && git commit -m "[phase-3.N] implement: {phase name}"`
+- [ ] `TaskUpdate(phase-3.N-review, in_progress)`
 - [ ] Spawn Reviewer SOLID (`references/reviewer-solid-prompt.md`) IN PARALLEL with:
 - [ ] Spawn Reviewer SRE (`references/reviewer-sre-prompt.md`)
-- [ ] Both return `APPROVE` → mark phase done → next plan phase
+- [ ] Both return `APPROVE` → `TaskUpdate(phase-3.N-review, completed)` → `TaskUpdate(phase-3.N, completed)` → next plan phase
 - [ ] Any reviewer returns issues → Developer fixes → recommit → re-run BOTH reviewers
 - [ ] Repeat review loop until `APPROVE` from both
 
 **Phase 4 — QA Validation**
+- [ ] `TaskUpdate(phase-4, in_progress)`
 - [ ] Read `references/qa-prompt.md`
 - [ ] Provide PRD.md + all project code
 - [ ] Spawn QA agent → extracts acceptance criteria → traces code → runs `{{TEST_COMMAND}}` + `{{BUILD_COMMAND}}` + `{{LINT_COMMAND}}`
-- [ ] QA returns `QA PASS` → proceed to finish
+- [ ] QA returns `QA PASS` → `TaskUpdate(phase-4, completed)` → proceed to finish
 - [ ] QA returns issues → Developer fixes → recommit → QA re-validates
 
 **Finish**
+- [ ] `TaskUpdate(finish, in_progress)`
 - [ ] `git push -u origin feature/{slug}`
 - [ ] `gh pr create --title "feat: {project}" --body "PRD + Architecture + N phases implemented. QA passed."`
 - [ ] Verify CI checks: `gh pr checks`
+- [ ] `TaskUpdate(finish, blocked)` notes="awaiting user merge decision"
 - [ ] ⛔ STOP — user reviews diff, decides merge
+- [ ] `TaskUpdate(finish, completed)`
 - [ ] Trigger `finishing-a-development-branch` skill
 
 ---
