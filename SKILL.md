@@ -426,4 +426,4 @@ Before ending the session or claiming completion:
 
 ## Notes for Plane MCP
 
-Plane MCP Server supports multiple transport methods, including HTTP with OAuth, HTTP with PAT token, and Local Stdio for self-hosted instances. Plane documents setup paths for Claude.ai, Claude Desktop, Cursor, VS Code, and other editors, and states that the MCP server enables agents to interact with Plane project-management capabilities. citeturn986666view2turn986666view3
+Plane MCP Server supports multiple transport methods, including HTTP with OAuth, HTTP with PAT token, and Local Stdio for self-hosted instances. Plane documents setup paths for Claude.ai, Claude Desktop, Cursor, VS Code, and other editors, and states that the MCP server enables agents to interact with Plane project-management capabilities.
