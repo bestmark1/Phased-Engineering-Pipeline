@@ -4,9 +4,11 @@ description: |
   Full-system phased engineering with product framing and disciplined execution:
   Narrative, MRD, PRD, clarification, architecture, constitution, phase planning,
   cross-artifact analysis, execution-by-phase, QA validation, and optional Plane MCP sync.
-  Includes: SPEC_PLAN/ artifact hub, PROJECT_INDEX.md navigation hub, AGENTS.md project map,
-  CONSTITUTION.md governance, docs/ knowledge base, decision logs, tech debt tracking,
-  self-review loop, STRICT_MODE, llms.txt reference caching, and execution-state tracking in Plane.
+  Includes: SPEC_PLAN/ artifact hub, PROJECT_INDEX.md navigation hub, AGENTS.md project map
+  (short five-question formula), CONSTITUTION.md governance, docs/ knowledge base with
+  docs/surprises.md, decision logs, tech debt tracking, tests-as-requirements policy,
+  black-box acceptance criteria, self-review loop, session-archaeology retro, STRICT_MODE,
+  llms.txt reference caching, and execution-state tracking in Plane.
 use_when:
   - Building from scratch
   - "Design + plan + code"
@@ -48,6 +50,7 @@ Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Op
 → [QA Agent] → validates PRD acceptance criteria + phase DoD trace
 → issues? → fix → re-validate
 → QA PASS
+→ [Retro] → session archaeology → minimal improvements to AGENTS.md / docs
 → git: push → gh pr create
 → ⛔ USER REVIEWS DIFF
 ```
@@ -433,6 +436,28 @@ Before ending the session or claiming completion:
 - [ ] Update `docs/surprises.md` if anything non-obvious was discovered
 - [ ] Move the Plane item to `Done` if complete
 - [ ] Note the next highest-priority open item
+
+## Retro: session archaeology
+
+After QA PASS and before opening the PR, run a short retro over the pipeline session itself.
+The pipeline must improve the project's working environment for the *next* session.
+
+Answer three questions by walking back through this session's history:
+1. **Where did the agent stall?** — repeated attempts, wrong assumptions, dead ends.
+2. **What context was missing?** — a doc, a script, a command, an AGENTS.md pointer
+   that would have prevented the stall.
+3. **What questions came up more than once?** — recurring questions signal a missing doc.
+
+Then apply the smallest possible fixes:
+- add a pointer or command to `AGENTS.md` (respect the 60-line cap),
+- add an entry to `docs/surprises.md`,
+- add or fix a doc in `docs/`,
+- record anything larger in `docs/tech-debt-tracker.md`.
+
+Rules:
+- This step is advisory, not a blocking gate: no findings → say so in one line and move on.
+- Fixes must be minimal and structural (pointers, docs, scripts) — never new process for its own sake.
+- Record what was changed in `HANDOFF.md`.
 
 ## Recommended git discipline
 
