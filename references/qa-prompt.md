@@ -33,6 +33,9 @@ For each criterion, trace through the code and determine:
 - Is it tested? (find the specific test)
 - Does the implementation match the expected behavior?
 
+Validate the observable behavior (black box), not the internals: the criterion
+passes if the user-visible outcome matches, regardless of how it is implemented.
+
 ### Step 3: Run Verification Commands
 ```bash
 {{BUILD_COMMAND}}

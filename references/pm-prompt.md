@@ -63,8 +63,12 @@ Anything unresolved that may affect architecture or implementation.
 1. Every user story follows "As a / I want / So that" format
 2. Every acceptance criterion follows "Given / When / Then" format
 3. Acceptance criteria must be testable (no vague words like "fast", "nice", "easy")
-4. Goals must be measurable
-5. Non-goals must be explicit — prevents scope creep
+4. **Acceptance criteria are black-box and product-level.** Describe what the user
+   or an external system observes — never implementation details (table names,
+   function names, internal IDs, framework specifics). The implementation must be
+   fully replaceable without rewriting a single criterion.
+5. Goals must be measurable
+6. Non-goals must be explicit — prevents scope creep
 
 ## Progress Tracking
 
