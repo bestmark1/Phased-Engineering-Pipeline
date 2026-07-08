@@ -60,12 +60,16 @@ Every user story must be traceable to an architectural component.
 
 ## Additional Outputs
 
-### AGENTS.md (~100 lines)
-Generate a short project map file `AGENTS.md` at the project root. This is a **table of contents**, NOT a full instruction manual. Include:
-- Pointers to PRD.md, ARCHITECTURE.md, docs/
-- Key entry points and contracts
-- Dependency layer order (e.g. Types → Config → Repo → Service → Runtime → UI)
-- Where to find conventions and quality rules
+### AGENTS.md (≤60 lines, hard limit)
+Generate a short project map file `AGENTS.md` at the project root. This is a **table of contents**, NOT a full instruction manual and NOT a novel. It must answer exactly five questions:
+
+1. **What is this project** — 2-3 sentences, no marketing.
+2. **Where are the docs and how to get an outline** — pointers to `PROJECT_INDEX.md`, `SPEC_PLAN/PRD.md`, `SPEC_PLAN/ARCHITECTURE.md`, `docs/` (including `docs/surprises.md`), plus the command or path to scan the docs tree.
+3. **How to run the environment** — the one command (or minimal set) for dev, build, and test. If setup needs more than one command, point to the script that wraps it.
+4. **Related projects / repos** — sibling repos, deploy targets, external dashboards. Omit the section entirely if there are none.
+5. **What is forbidden without explicit permission** — protected files, destructive commands, scope rules (e.g. "no new dependencies without CONSTITUTION.md process").
+
+Rules: pointers instead of prose; if a topic needs explanation, link to a doc in `docs/` instead of inlining it. Detailed context lives in the docs tree, never in AGENTS.md.
 
 ### CONSTITUTION.md
 Generate `CONSTITUTION.md` at the project root — the project governance document. Consolidates all rules that agents and humans must follow:

@@ -231,6 +231,11 @@ Produces:
 - `docs/README.md`
 - initial `docs/EXECUTION_RULES.md`
 
+`AGENTS.md` is ≤60 lines and answers exactly five questions:
+what the project is; where docs are and how to get an outline;
+how to run the environment with one command; related repos;
+what is forbidden without permission. Pointers, not prose.
+
 ### 6) Tech Lead
 Produces:
 - `SPEC_PLAN/IMPLEMENTATION_PLAN.md`
