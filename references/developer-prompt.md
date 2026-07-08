@@ -74,6 +74,13 @@ If you intentionally skip something, use a stub, or defer a quality improvement:
   `| <date> | {{CURRENT_PHASE}} | <item> | <reason> | <priority> | Open |`
 - Do NOT hide debt — tracked debt is acceptable, hidden debt is not.
 
+### Pass 4: Surprises
+If you hit anything non-obvious during this phase — strange library behavior,
+a workaround, a hidden constraint, a decision future sessions must not undo:
+- Add an entry to `docs/surprises.md`:
+  `| <date> | {{CURRENT_PHASE}} | <surprise> | <why it matters> |`
+- Only project-specific facts. Do NOT record general knowledge.
+
 ## Report at the end
 
 ```
@@ -83,6 +90,7 @@ If you intentionally skip something, use a stub, or defer a quality improvement:
 - Self-review passes: [number of passes before clean]
 - Files changed: [list]
 - Tech debt added: [list items added to tracker, or "none"]
+- Surprises recorded: [list items added to docs/surprises.md, or "none"]
 - Notes for reviewers: [anything unusual]
 ```
 

@@ -74,6 +74,12 @@ Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Op
 5. **Navigation must remain maintainable**
    - Agents may propose restructuring long docs into a parent summary plus child docs.
 
+6. **Document surprises, not general knowledge**
+   - `docs/` must capture only what an agent cannot derive from general knowledge:
+     strange decisions, workarounds, non-obvious constraints, dangerous places.
+   - Never document what a framework or database is.
+   - Test for every doc entry: "what breaks the next session if it doesn't know this?"
+
 ## Pipeline modes
 
 Choose the lightest mode that preserves quality.
@@ -145,6 +151,7 @@ Inside `SPEC_PLAN/`:
 Inside `docs/`:
 - `README.md`
 - `EXECUTION_RULES.md`
+- `surprises.md`
 - `tech-debt-tracker.md`
 - `QUALITY_SCORE.md`
 - optional subfolders: `product/`, `architecture/`, `delivery/`, `decisions/`, `archive/`
@@ -172,6 +179,7 @@ SPEC_PLAN/
 docs/
   README.md
   EXECUTION_RULES.md
+  surprises.md
   product/
   architecture/
   delivery/
@@ -264,6 +272,7 @@ During work:
 - stay inside phase scope
 - log blockers
 - record deferred work
+- record surprises in `docs/surprises.md` (non-obvious behavior, workarounds, hidden constraints)
 - run verification commands
 
 After work:
@@ -409,6 +418,7 @@ Before ending the session or claiming completion:
 - [ ] Update `PROGRESS.md`
 - [ ] Update `HANDOFF.md`
 - [ ] Update `docs/tech-debt-tracker.md` if anything is deferred
+- [ ] Update `docs/surprises.md` if anything non-obvious was discovered
 - [ ] Move the Plane item to `Done` if complete
 - [ ] Note the next highest-priority open item
 
