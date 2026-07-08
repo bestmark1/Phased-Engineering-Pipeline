@@ -74,7 +74,14 @@ Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Op
 5. **Navigation must remain maintainable**
    - Agents may propose restructuring long docs into a parent summary plus child docs.
 
-6. **Document surprises, not general knowledge**
+6. **Tests are requirements**
+   - Every test locks in a PRD acceptance criterion or an architecture constraint,
+     and must name it.
+   - A test without a requirement freezes an accidental implementation:
+     future sessions will maintain the test instead of fixing the approach.
+   - Agents may propose tests but must state what requirement each one fixes.
+
+7. **Document surprises, not general knowledge**
    - `docs/` must capture only what an agent cannot derive from general knowledge:
      strange decisions, workarounds, non-obvious constraints, dangerous places.
    - Never document what a framework or database is.

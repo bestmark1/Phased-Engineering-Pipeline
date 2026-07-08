@@ -40,6 +40,10 @@ Implement ONLY **{{CURRENT_PHASE}}: {{PHASE_DESCRIPTION}}**.
 Additionally:
 - `{{BUILD_COMMAND}}` must pass with zero errors on the files produced
 - No hardcoded secrets — use environment variables or secure configuration
+- **No tests without a requirement.** Every new test must name the PRD
+  acceptance criterion or architecture constraint it locks in (a comment or
+  the test description is enough). A test that only freezes your current
+  implementation is noise — do not write it.
 
 ## Output Format
 

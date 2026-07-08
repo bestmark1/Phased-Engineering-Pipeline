@@ -97,6 +97,15 @@ One-paragraph description of what this project is and who it serves.
 - Approved external dependencies and version constraints
 - Process for adding new dependencies
 
+## Test Policy
+- A test is a requirement, not decoration. Every new test must state which
+  PRD acceptance criterion or architecture constraint it locks in.
+- Tests without a stated requirement are noise: they freeze an accidental
+  implementation and future sessions will maintain the test instead of
+  reconsidering the code.
+- An agent may propose a test, but must explain what product or architecture
+  requirement it fixes before adding it.
+
 ## Review Standards
 - What SOLID reviewer checks for
 - What SRE reviewer checks for

@@ -45,6 +45,11 @@ Report results for each command.
 Check: does the code do anything NOT specified in the PRD?
 Flag any functionality that exists without a corresponding user story.
 
+### Step 5: Detect Orphan Tests
+Check every test: does it trace to a PRD acceptance criterion or a documented
+architecture constraint? Flag tests that only freeze the current implementation —
+they are requirements nobody approved.
+
 ## Output Format
 
 ```
@@ -76,6 +81,9 @@ Flag any functionality that exists without a corresponding user story.
 
 ### Scope Creep
 - [list any code without corresponding user story]
+
+### Orphan Tests
+- [list any tests that trace to no acceptance criterion or architecture constraint]
 
 ## Verdict
 ```
