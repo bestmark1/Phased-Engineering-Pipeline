@@ -15,6 +15,7 @@ docs/
 ├── references/
 │   └── {tool}-llms.txt       # Distilled vendor docs (created by Analyst)
 ├── QUALITY_SCORE.md           # Domain/layer quality grades (updated by QA)
+├── surprises.md               # Project-specific surprises only (updated by Developer/Reviewers)
 └── tech-debt-tracker.md       # Known debt items (updated by Developer/Reviewers)
 ```
 
@@ -39,6 +40,23 @@ docs/
 |------|-------|------|--------|----------|--------|
 ```
 
+### docs/surprises.md
+
+```markdown
+# Surprises — {{PROJECT_NAME}}
+
+Only facts an agent CANNOT derive from general knowledge:
+strange decisions, workarounds, non-obvious constraints, historical reasons,
+dangerous places, local agreements.
+
+Do NOT explain what a framework, database, or HTTP is — that is general knowledge.
+A good entry answers: "what is non-standard here, and what breaks the next session
+if it doesn't know this?"
+
+| Date | Phase | Surprise | Why it matters |
+|------|-------|----------|----------------|
+```
+
 ### docs/QUALITY_SCORE.md
 
 ```markdown
@@ -55,6 +73,8 @@ Updated by QA agent after each validation pass.
 - **Architect** creates the scaffold and `CONSTITUTION.md` (project root)
 - **Analyst** saves distilled docs to `docs/references/{tool}-llms.txt`
 - **Developer** appends to `docs/tech-debt-tracker.md` when deferring
+- **Developer** appends to `docs/surprises.md` when hitting non-obvious behavior, workarounds, or hidden constraints
 - **Reviewers** append to `docs/tech-debt-tracker.md` when flagging non-critical issues
+- **Reviewers** append to `docs/surprises.md` when a finding reveals a project-specific trap
 - **QA** updates `docs/QUALITY_SCORE.md` after validation
 - **Tech Lead** moves completed plans to `docs/exec-plans/completed/` after merge

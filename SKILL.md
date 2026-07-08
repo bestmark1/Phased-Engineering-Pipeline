@@ -4,9 +4,11 @@ description: |
   Full-system phased engineering with product framing and disciplined execution:
   Narrative, MRD, PRD, clarification, architecture, constitution, phase planning,
   cross-artifact analysis, execution-by-phase, QA validation, and optional Plane MCP sync.
-  Includes: SPEC_PLAN/ artifact hub, PROJECT_INDEX.md navigation hub, AGENTS.md project map,
-  CONSTITUTION.md governance, docs/ knowledge base, decision logs, tech debt tracking,
-  self-review loop, STRICT_MODE, llms.txt reference caching, and execution-state tracking in Plane.
+  Includes: SPEC_PLAN/ artifact hub, PROJECT_INDEX.md navigation hub, AGENTS.md project map
+  (short five-question formula), CONSTITUTION.md governance, docs/ knowledge base with
+  docs/surprises.md, decision logs, tech debt tracking, tests-as-requirements policy,
+  black-box acceptance criteria, self-review loop, session-archaeology retro, STRICT_MODE,
+  llms.txt reference caching, and execution-state tracking in Plane.
 use_when:
   - Building from scratch
   - "Design + plan + code"
@@ -48,6 +50,7 @@ Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Op
 → [QA Agent] → validates PRD acceptance criteria + phase DoD trace
 → issues? → fix → re-validate
 → QA PASS
+→ [Retro] → session archaeology → minimal improvements to AGENTS.md / docs
 → git: push → gh pr create
 → ⛔ USER REVIEWS DIFF
 ```
@@ -73,6 +76,19 @@ Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Op
 
 5. **Navigation must remain maintainable**
    - Agents may propose restructuring long docs into a parent summary plus child docs.
+
+6. **Tests are requirements**
+   - Every test locks in a PRD acceptance criterion or an architecture constraint,
+     and must name it.
+   - A test without a requirement freezes an accidental implementation:
+     future sessions will maintain the test instead of fixing the approach.
+   - Agents may propose tests but must state what requirement each one fixes.
+
+7. **Document surprises, not general knowledge**
+   - `docs/` must capture only what an agent cannot derive from general knowledge:
+     strange decisions, workarounds, non-obvious constraints, dangerous places.
+   - Never document what a framework or database is.
+   - Test for every doc entry: "what breaks the next session if it doesn't know this?"
 
 ## Pipeline modes
 
@@ -145,6 +161,7 @@ Inside `SPEC_PLAN/`:
 Inside `docs/`:
 - `README.md`
 - `EXECUTION_RULES.md`
+- `surprises.md`
 - `tech-debt-tracker.md`
 - `QUALITY_SCORE.md`
 - optional subfolders: `product/`, `architecture/`, `delivery/`, `decisions/`, `archive/`
@@ -172,6 +189,7 @@ SPEC_PLAN/
 docs/
   README.md
   EXECUTION_RULES.md
+  surprises.md
   product/
   architecture/
   delivery/
@@ -223,6 +241,11 @@ Produces:
 - `docs/README.md`
 - initial `docs/EXECUTION_RULES.md`
 
+`AGENTS.md` is ≤60 lines and answers exactly five questions:
+what the project is; where docs are and how to get an outline;
+how to run the environment with one command; related repos;
+what is forbidden without permission. Pointers, not prose.
+
 ### 6) Tech Lead
 Produces:
 - `SPEC_PLAN/IMPLEMENTATION_PLAN.md`
@@ -264,6 +287,7 @@ During work:
 - stay inside phase scope
 - log blockers
 - record deferred work
+- record surprises in `docs/surprises.md` (non-obvious behavior, workarounds, hidden constraints)
 - run verification commands
 
 After work:
@@ -409,8 +433,31 @@ Before ending the session or claiming completion:
 - [ ] Update `PROGRESS.md`
 - [ ] Update `HANDOFF.md`
 - [ ] Update `docs/tech-debt-tracker.md` if anything is deferred
+- [ ] Update `docs/surprises.md` if anything non-obvious was discovered
 - [ ] Move the Plane item to `Done` if complete
 - [ ] Note the next highest-priority open item
+
+## Retro: session archaeology
+
+After QA PASS and before opening the PR, run a short retro over the pipeline session itself.
+The pipeline must improve the project's working environment for the *next* session.
+
+Answer three questions by walking back through this session's history:
+1. **Where did the agent stall?** — repeated attempts, wrong assumptions, dead ends.
+2. **What context was missing?** — a doc, a script, a command, an AGENTS.md pointer
+   that would have prevented the stall.
+3. **What questions came up more than once?** — recurring questions signal a missing doc.
+
+Then apply the smallest possible fixes:
+- add a pointer or command to `AGENTS.md` (respect the 60-line cap),
+- add an entry to `docs/surprises.md`,
+- add or fix a doc in `docs/`,
+- record anything larger in `docs/tech-debt-tracker.md`.
+
+Rules:
+- This step is advisory, not a blocking gate: no findings → say so in one line and move on.
+- Fixes must be minimal and structural (pointers, docs, scripts) — never new process for its own sake.
+- Record what was changed in `HANDOFF.md`.
 
 ## Recommended git discipline
 

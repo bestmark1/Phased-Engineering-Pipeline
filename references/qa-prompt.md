@@ -33,6 +33,9 @@ For each criterion, trace through the code and determine:
 - Is it tested? (find the specific test)
 - Does the implementation match the expected behavior?
 
+Validate the observable behavior (black box), not the internals: the criterion
+passes if the user-visible outcome matches, regardless of how it is implemented.
+
 ### Step 3: Run Verification Commands
 ```bash
 {{BUILD_COMMAND}}
@@ -44,6 +47,11 @@ Report results for each command.
 ### Step 4: Detect Scope Creep
 Check: does the code do anything NOT specified in the PRD?
 Flag any functionality that exists without a corresponding user story.
+
+### Step 5: Detect Orphan Tests
+Check every test: does it trace to a PRD acceptance criterion or a documented
+architecture constraint? Flag tests that only freeze the current implementation —
+they are requirements nobody approved.
 
 ## Output Format
 
@@ -76,6 +84,9 @@ Flag any functionality that exists without a corresponding user story.
 
 ### Scope Creep
 - [list any code without corresponding user story]
+
+### Orphan Tests
+- [list any tests that trace to no acceptance criterion or architecture constraint]
 
 ## Verdict
 ```

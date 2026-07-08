@@ -1,497 +1,476 @@
 ---
 name: phased-engineering-pipeline
 description: |
-  Full-system BMAD engineering: analyst research, PRD, spec clarification, architecture, constitution,
-  planning, cross-artifact analysis, coding, QA validation.
-  Includes: AGENTS.md project map, CONSTITUTION.md governance, docs/ knowledge base, decision logs,
-  tech debt tracking, enhanced self-review loop, STRICT_MODE for prototyping, llms.txt reference caching.
-  Use when: building from scratch, "design + plan + code", user says "build", "architect",
-  "implement a full system", "phased pipeline", "BMAD pipeline", "create project", "new feature end-to-end".
-  Does NOT handle: debugging existing code, single-function tasks, one-shot fixes.
+  Full-system phased engineering with product framing and disciplined execution:
+  Narrative, MRD, PRD, clarification, architecture, constitution, phase planning,
+  cross-artifact analysis, execution-by-phase, QA validation, and optional Plane MCP sync.
+  Includes: SPEC_PLAN/ artifact hub, PROJECT_INDEX.md navigation hub, AGENTS.md project map
+  (short five-question formula), CONSTITUTION.md governance, docs/ knowledge base with
+  docs/surprises.md, decision logs, tech debt tracking, tests-as-requirements policy,
+  black-box acceptance criteria, self-review loop, session-archaeology retro, STRICT_MODE,
+  llms.txt reference caching, and execution-state tracking in Plane.
+use_when:
+  - Building from scratch
+  - "Design + plan + code"
+  - User says "build", "architect", "implement a full system", "phased pipeline", "BMAD pipeline", "new feature end-to-end"
+does_not_handle:
+  - Debugging an existing bug with no project framing
+  - Single-function edits
+  - One-shot fixes with no planning value
 ---
 
-# Phased Engineering Pipeline (BMAD)
+# Phased Engineering Pipeline v3
 
-Ten specialized agents. Eight gates. Feature branches. Auto-commits.
+Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Optional Plane MCP sync.
 
+```text
+[Narrative Lead] → SPEC_PLAN/Narrative.md
+→ [Market PM] → SPEC_PLAN/MRD.md            (Full mode only)
+→ [Product PM] → SPEC_PLAN/PRD.md
+→ ⛔ USER APPROVAL
+→ [Clarifier] → SPEC_PLAN/clarification-report.md
+→ ⛔ CLARIFY PASS
+→ git: create feature/{slug} branch, mkdir SPEC_PLAN/, commit approved product artifacts
+→ [Architect] → SPEC_PLAN/ARCHITECTURE.md + SPEC_PLAN/CONSTITUTION.md + PROJECT_INDEX.md + AGENTS.md + docs/
+→ ⛔ USER APPROVAL
+→ git: commit architecture artifacts
+→ [Tech Lead] → SPEC_PLAN/IMPLEMENTATION_PLAN.md + SPEC_PLAN/phase-registry.md
+→ ⛔ USER APPROVAL
+→ git: commit execution plan
+→ [Analyzer] → SPEC_PLAN/cross-artifact-analysis.md
+→ ⛔ ANALYZE PASS
+→ [Plane Sync] → optional Plane project/module/cycle/work items + SPEC_PLAN/plane-sync.md
+→ loop per implementation phase:
+   [Developer: current phase only]
+   → self-review loop (verify → fix → re-verify)
+   → git: commit code
+   → [Reviewer SOLID] ‖ [Reviewer SRE]
+   → issues? fix → recommit → re-review
+   → both APPROVE → update PROGRESS.md / HANDOFF.md / Plane → next phase
+→ [QA Agent] → validates PRD acceptance criteria + phase DoD trace
+→ issues? → fix → re-validate
+→ QA PASS
+→ [Retro] → session archaeology → minimal improvements to AGENTS.md / docs
+→ git: push → gh pr create
+→ ⛔ USER REVIEWS DIFF
 ```
-[Analyst] → [PM] → PRD.md → ⛔ USER APPROVAL
-  → [Clarifier] → Spec Clarification Report → ⛔ CLARIFY PASS
-  → git: create feature/{slug} branch, commit PRD
-  → [Architect] → ARCHITECTURE.md + CONSTITUTION.md → ⛔ USER APPROVAL → git: commit
-    → [Tech Lead] → IMPLEMENTATION_PLAN.md → ⛔ USER APPROVAL → git: commit
-      → [Analyzer] → Cross-Artifact Analysis → ⛔ ANALYZE PASS
-      → loop per plan phase:
-          [Developer] → git: commit code
-          → [Reviewer SOLID] ‖ [Reviewer SRE]
-          → issues? → fix → recommit → re-review
-          → both APPROVE → next phase
-      → [QA Agent] → validates PRD acceptance criteria
-          → issues? → fix → re-validate
-          → QA PASS → git: push → gh pr create → ⛔ USER REVIEWS DIFF
-```
 
----
+## Core principles
+
+1. **Meaning vs execution**
+   - Markdown artifacts in repo are the source of truth for meaning:
+     strategy, requirements, architecture, rules, decisions, and long-lived context.
+   - Plane is the source of truth for execution state:
+     open work, active work, blockers, and completion status.
+
+2. **Phase isolation**
+   - Developer may execute only the active implementation phase.
+   - Future-phase work is deferred unless explicitly allowed by the implementation plan.
+
+3. **Verification over vibes**
+   - “Looks good” is not evidence.
+   - Every phase must define commands, checks, and observable completion criteria.
+
+4. **Tracked debt is acceptable; hidden debt is not**
+   - Deferred work goes to `docs/tech-debt-tracker.md` or the linked Plane item.
+
+5. **Navigation must remain maintainable**
+   - Agents may propose restructuring long docs into a parent summary plus child docs.
+
+6. **Tests are requirements**
+   - Every test locks in a PRD acceptance criterion or an architecture constraint,
+     and must name it.
+   - A test without a requirement freezes an accidental implementation:
+     future sessions will maintain the test instead of fixing the approach.
+   - Agents may propose tests but must state what requirement each one fixes.
+
+7. **Document surprises, not general knowledge**
+   - `docs/` must capture only what an agent cannot derive from general knowledge:
+     strange decisions, workarounds, non-obvious constraints, dangerous places.
+   - Never document what a framework or database is.
+   - Test for every doc entry: "what breaks the next session if it doesn't know this?"
+
+## Pipeline modes
+
+Choose the lightest mode that preserves quality.
+
+### Lite mode
+Use:
+- internal tools
+- constrained features
+- improvements to an existing product
+- cases where market framing is already known
+
+Flow:
+`Narrative → PRD → Clarifier → Architecture → Plan → Build`
+
+### Full mode
+Use:
+- net-new products
+- unclear ICP / segment / positioning
+- roadmap-sensitive initiatives
+- strategic work where market framing matters
+
+Flow:
+`Narrative → MRD → PRD → Clarifier → Architecture → Plan → Build`
 
 ## Configuration
 
-Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in reference prompts resolves from this table.
+Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in prompts resolves from this table.
 
-| Placeholder | Description | Example (Flutter) |
+| Placeholder | Description | Example |
 |---|---|---|
 | `{{PROJECT_NAME}}` | Project name | Weather Tracker |
-| `{{TECH_STACK}}` | Runtime + language + frameworks | Flutter 3.x, Dart 3.x, Riverpod, Dio |
-| `{{BUILD_COMMAND}}` | Build verification | `flutter build apk --debug` |
-| `{{TEST_COMMAND}}` | Test runner | `flutter test` |
-| `{{LINT_COMMAND}}` | Linter / static analysis | `flutter analyze` |
-| `{{QUALITY_RULES}}` | Language-specific quality rules | null safety, no dynamic, const constructors, DI |
-| `{{INTERFACE_STYLE}}` | How contracts are defined | abstract class / mixin |
-| `{{DOCS_URL}}` | Official docs for target platform | https://docs.flutter.dev/ |
-| `{{STRICT_MODE}}` | Gate enforcement level | `true` (default) |
+| `{{PIPELINE_MODE}}` | `lite` or `full` | `full` |
+| `{{TECH_STACK}}` | Runtime + language + frameworks | Node.js, TypeScript strict, Next.js |
+| `{{BUILD_COMMAND}}` | Build verification | `npm run build` |
+| `{{TEST_COMMAND}}` | Test runner | `npm test` |
+| `{{LINT_COMMAND}}` | Linter / static analysis | `npm run lint` |
+| `{{TYPECHECK_COMMAND}}` | Type checker if separate | `tsc --noEmit` |
+| `{{QUALITY_RULES}}` | Stack-specific quality rules | strict TS, no `any`, constructor DI |
+| `{{INTERFACE_STYLE}}` | Contract style | TypeScript interfaces |
+| `{{DOCS_URL}}` | Official docs URL | `https://nextjs.org/docs` |
+| `{{ROLLBACK_COMMAND}}` | How to undo last change | `git revert HEAD` |
+| `{{STRICT_MODE}}` | `true` blocks gates, `false` advisory | `true` |
+| `{{PLANE_ENABLED}}` | `true` or `false` | `true` |
+| `{{PLANE_PROJECT}}` | Plane project or workspace shorthand | `FIT` |
+| `{{PLANE_MODULE}}` | Current stream / epic / module | `Onboarding` |
+| `{{PLANE_CYCLE}}` | Current cycle / sprint / milestone | `May-1` |
 
-<details>
-<summary>Stack profile examples</summary>
+## Artifact manifest
 
-**TypeScript/Node.js:** `TECH_STACK=Node.js, TypeScript strict` / `BUILD=npm run build` / `TEST=npm test` / `LINT=npm run lint` / `QUALITY=strict: true, no any, DI via constructor` / `INTERFACE=TypeScript interface`
+Required outputs by the end of the pipeline:
 
-**Python/FastAPI:** `TECH_STACK=Python 3.12, FastAPI, SQLAlchemy` / `BUILD=python -m build` / `TEST=pytest` / `LINT=ruff check .` / `QUALITY=type hints, no bare except, pydantic models` / `INTERFACE=ABC / Protocol`
+- `PROJECT_INDEX.md`
+- `AGENTS.md`
+- `PROGRESS.md`
+- `HANDOFF.md`
 
-**Go:** `TECH_STACK=Go 1.23, gin, pgx` / `BUILD=go build ./...` / `TEST=go test ./...` / `LINT=golangci-lint run` / `QUALITY=error wrapping, no naked returns, context propagation` / `INTERFACE=Go interface`
-</details>
+Inside `SPEC_PLAN/`:
+- `Narrative.md`
+- `MRD.md` (Full mode only)
+- `PRD.md`
+- `clarification-report.md`
+- `ARCHITECTURE.md`
+- `CONSTITUTION.md`
+- `IMPLEMENTATION_PLAN.md`
+- `phase-registry.md`
+- `cross-artifact-analysis.md`
+- `plane-sync.md` (when Plane is enabled)
 
----
+Inside `docs/`:
+- `README.md`
+- `EXECUTION_RULES.md`
+- `surprises.md`
+- `tech-debt-tracker.md`
+- `QUALITY_SCORE.md`
+- optional subfolders: `product/`, `architecture/`, `delivery/`, `decisions/`, `archive/`
 
-## Artifact Manifest
+## Required repository structure
 
-Documents produced during the pipeline:
+```text
+PROJECT_INDEX.md
+AGENTS.md
+PROGRESS.md
+HANDOFF.md
 
-- [ ] Domain Research Notes (Phase 0a — Analyst)
-- [ ] `PRD.md` (Phase 0b — PM)
-- [ ] Spec Clarification Report (Phase 0c — Clarifier)
-- [ ] `ARCHITECTURE.md` (Phase 1 — Architect)
-- [ ] `CONSTITUTION.md` (Phase 1 — Architect)
-- [ ] `IMPLEMENTATION_PLAN.md` (Phase 2 — Tech Lead)
-- [ ] Cross-Artifact Analysis Report (Phase 2b — Analyzer)
-- [ ] Code + self-review reports (Phase 3 — Developer, per plan phase)
-- [ ] Review verdicts (Phase 3 — Reviewers, per plan phase)
-- [ ] QA Validation Report (Phase 4 — QA)
-- [ ] `AGENTS.md` (Phase 1 — Architect)
-- [ ] `docs/` knowledge base scaffold (Phase 1 — Architect)
-- [ ] `docs/tech-debt-tracker.md` entries (Phase 3 — Developer/Reviewers)
-- [ ] `docs/QUALITY_SCORE.md` (Phase 4 — QA)
-- [ ] `PROGRESS.md` (all phases — auto-updated by each agent)
+SPEC_PLAN/
+  Narrative.md
+  MRD.md                      # Full mode only
+  PRD.md
+  clarification-report.md
+  ARCHITECTURE.md
+  CONSTITUTION.md
+  IMPLEMENTATION_PLAN.md
+  phase-registry.md
+  cross-artifact-analysis.md
+  plane-sync.md               # when Plane enabled
 
----
-
-## Progress Tracker
-
-Every agent updates `PROGRESS.md` when starting and finishing their phase. This file is the single source of truth for pipeline status.
-
-```markdown
-# {{PROJECT_NAME}} — Progress
-
-| Phase | Agent | Status | Started | Finished | Notes |
-|-------|-------|--------|---------|----------|-------|
-| 0a Analysis | Analyst | ⏳ Pending | — | — | |
-| 0b PRD | PM | ⏳ Pending | — | — | |
-| 0c Clarify | Clarifier | ⏳ Pending | — | — | |
-| 1 Architecture | Architect | ⏳ Pending | — | — | |
-| 2 Plan | Tech Lead | ⏳ Pending | — | — | |
-| 2b Analyze | Analyzer | ⏳ Pending | — | — | |
-| 3.1 {phase} | Developer | ⏳ Pending | — | — | |
-| 3.1 Review | SOLID + SRE | ⏳ Pending | — | — | |
-| ... | ... | ... | ... | ... | |
-| 4 QA | QA | ⏳ Pending | — | — | |
-| Finish | — | ⏳ Pending | — | — | |
-```
-
-**Status values:** `⏳ Pending` → `🔄 In Progress` → `✅ Done` / `✅ Approved` / `❌ Rejected` / `🔁 Re-doing`
-
-**Rules:**
-- Architect creates `PROGRESS.md` during Phase 1 (scaffold), pre-filling rows from `IMPLEMENTATION_PLAN.md` phases
-- Each agent updates their row status + timestamp when starting and finishing
-- On rejection / re-review, status changes to `🔁 Re-doing`
-- `PROGRESS.md` is committed with every auto-commit (add to `git add` list)
-
----
-
-## Project Knowledge Base
-
-After Phase 1, Architect creates this structure (see `references/docs-scaffold.md` for templates):
-
-```
-CONSTITUTION.md                # Project governance (created by Architect, root level)
 docs/
-├── design-docs/
-│   └── index.md              # Catalog of design decisions
-├── exec-plans/
-│   ├── active/               # Current IMPLEMENTATION_PLAN.md
-│   └── completed/            # Archived plans after merge
-├── references/
-│   └── {tool}-llms.txt       # Distilled vendor docs (from Analyst)
-├── QUALITY_SCORE.md           # Updated by QA after validation
-└── tech-debt-tracker.md       # Updated by Developer/Reviewers when deferring
+  README.md
+  EXECUTION_RULES.md
+  surprises.md
+  product/
+  architecture/
+  delivery/
+  decisions/
+  tech-debt-tracker.md
+  QUALITY_SCORE.md
+  archive/
 ```
 
-- **Analyst** saves distilled docs to `docs/references/{tool}-llms.txt`
-- **Architect** creates scaffold + `CONSTITUTION.md` (project governance at root)
-- **Developer** appends to `tech-debt-tracker.md` when deferring
-- **Reviewers** append to `tech-debt-tracker.md` when flagging non-critical issues
-- **QA** updates `QUALITY_SCORE.md` after validation
-- **Tech Lead** moves completed plans to `exec-plans/completed/`
-
----
-
-## Workflow Checklist
-
-Copy this and track progress:
-
-**Phase 0a — Domain Analysis**
-- [ ] Read `references/analyst-prompt.md`
-- [ ] Fill `{{PROJECT_NAME}}`, `{{TECH_STACK}}`, `{{DOCS_URL}}`
-- [ ] Spawn Analyst agent → asks 5-8 clarifying questions
-- [ ] Answer questions → Analyst produces Domain Research Notes
-
-**Phase 0b — Product Requirements**
-- [ ] Read `references/pm-prompt.md`
-- [ ] Paste Domain Research Notes
-- [ ] Spawn PM agent → produces `PRD.md` with user stories + acceptance criteria
-- [ ] ⛔ STOP — wait for user to approve PRD
-
-**Phase 0c — Spec Clarification**
-- [ ] Read `references/clarify-prompt.md`
-- [ ] Paste approved `PRD.md` content
-- [ ] Spawn Clarifier agent → scans for ambiguities, contradictions, gaps
-- [ ] If `CLARIFY PASS` → proceed
-- [ ] If critical issues found → present to user → resolve → update PRD.md
-
-**Feature Branch Creation**
-- [ ] Derive `{slug}` from PRD title (kebab-case, e.g. `weather-tracker`)
-- [ ] `git checkout -b feature/{slug}`
-- [ ] Commit: `git add PRD.md && git commit -m "[phase-0] PRD: {project}"`
-
-**Phase 1 — Architecture**
-- [ ] Read `references/architect-prompt.md`
-- [ ] Provide approved PRD summary as `{{PRD_SUMMARY}}`
-- [ ] Spawn Architect agent → asks 3-5 clarifying questions → produces `ARCHITECTURE.md` + `CONSTITUTION.md`
-- [ ] ⛔ STOP — wait for user to approve architecture
-- [ ] Commit: `git add ARCHITECTURE.md CONSTITUTION.md AGENTS.md docs/ && git commit -m "[phase-1] architecture: {project}"`
-
-**Phase 2 — Implementation Plan**
-- [ ] Read `references/tech-lead-prompt.md`
-- [ ] Paste approved architecture summary
-- [ ] Spawn Tech Lead agent → produces `IMPLEMENTATION_PLAN.md`
-- [ ] ⛔ STOP — wait for user to approve plan
-- [ ] Commit: `git add IMPLEMENTATION_PLAN.md && git commit -m "[phase-2] plan: {project}"`
-
-**Phase 2b — Cross-Artifact Analysis**
-- [ ] Read `references/analyze-prompt.md`
-- [ ] Provide `PRD.md`, `ARCHITECTURE.md`, `IMPLEMENTATION_PLAN.md`
-- [ ] Spawn Analyzer agent → checks coverage, consistency, terminology
-- [ ] If `ANALYZE PASS` → proceed to coding
-- [ ] If inconsistencies found → resolve → re-run Analyzer
-
-**Phase 3 — Coding (repeat per plan phase)**
-- [ ] Read `references/developer-prompt.md`
-- [ ] Fill `{{CURRENT_PHASE}}`, `{{PHASE_DESCRIPTION}}`, `{{FILES_TO_CREATE}}`
-- [ ] Spawn Developer agent → produces code + self-review report
-- [ ] Commit: `git add <phase files> && git commit -m "[phase-3.N] implement: {phase name}"`
-- [ ] Spawn Reviewer SOLID (`references/reviewer-solid-prompt.md`) IN PARALLEL with:
-- [ ] Spawn Reviewer SRE (`references/reviewer-sre-prompt.md`)
-- [ ] Both return `APPROVE` → mark phase done → next plan phase
-- [ ] Any reviewer returns issues → Developer fixes → recommit → re-run BOTH reviewers
-- [ ] Repeat review loop until `APPROVE` from both
-
-**Phase 4 — QA Validation**
-- [ ] Read `references/qa-prompt.md`
-- [ ] Provide PRD.md + all project code
-- [ ] Spawn QA agent → extracts acceptance criteria → traces code → runs `{{TEST_COMMAND}}` + `{{BUILD_COMMAND}}` + `{{LINT_COMMAND}}`
-- [ ] QA returns `QA PASS` → proceed to finish
-- [ ] QA returns issues → Developer fixes → recommit → QA re-validates
-
-**Finish**
-- [ ] `git push -u origin feature/{slug}`
-- [ ] `gh pr create --title "feat: {project}" --body "PRD + Architecture + N phases implemented. QA passed."`
-- [ ] Verify CI checks: `gh pr checks`
-- [ ] ⛔ STOP — user reviews diff, decides merge
-- [ ] Trigger `finishing-a-development-branch` skill
-
----
-
-## Phase 0a: Analyst Agent
-
-**When to spawn:** At the very start — before any technical decisions.
-
-**Provide to agent:** Project idea (1-2 sentences), `{{TECH_STACK}}`, `{{DOCS_URL}}`
-
-**Expected output:** Domain Research Notes covering: problem space, stakeholders, existing solutions, domain terminology, risks, constraints, open questions. If `{{DOCS_URL}}` provided, also saves distilled reference to `docs/references/{tool}-llms.txt`.
-
-Read full prompt: `references/analyst-prompt.md`
-
----
-
-## Phase 0b: Product Manager Agent
-
-**When to spawn:** After Analyst completes research.
-
-**Provide to agent:** Domain Research Notes from Analyst.
-
-**Expected output:** `PRD.md` containing: problem statement, goals/non-goals, user stories (As a / I want / So that), acceptance criteria (Given / When / Then), success metrics. Every user story must have ≥2 acceptance criteria.
-
-Read full prompt: `references/pm-prompt.md`
-
----
-
-## Phase 0c: Spec Clarifier Agent
-
-**When to spawn:** After user approves `PRD.md`, before Architecture.
-
-**Provide to agent:** Full `PRD.md` content.
-
-**Expected output:** Spec Clarification Report with:
-- Ambiguity scan (vague language, missing edge cases, undefined terms)
-- Contradiction check (conflicting user stories or acceptance criteria)
-- Gap analysis (incomplete flows, untestable criteria)
-- Dependency check (unconstrained external dependencies, unspecified ordering)
-- Binary verdict: `CLARIFY PASS` or detailed report with Critical/Warning issues + Questions for Product Owner
-
-**If critical issues found:** Present to user, resolve, update PRD.md before proceeding.
-
-Read full prompt: `references/clarify-prompt.md`
-
----
-
-## Phase 1: Architect Agent
-
-**When to spawn:** After user explicitly approves `PRD.md`.
-
-**Provide to agent:** PRD summary, `{{PROJECT_NAME}}`, `{{TECH_STACK}}`, `{{DOCS_URL}}`
-
-**Expected output:**
-- `ARCHITECTURE.md` with C4 diagrams (Mermaid), contracts/interfaces (`{{INTERFACE_STYLE}}`), dependency layer order, error handling strategy, PRD Traceability Matrix
-- `CONSTITUTION.md` — project governance: principles, quality rules, coding conventions, dependency rules, review standards, scope boundaries
-- `AGENTS.md` — project map (~100 lines): pointers to key files, entry points, conventions
-- `docs/` scaffold — knowledge base structure per `references/docs-scaffold.md`
-
-**Design principle:** Prefer stable, well-documented dependencies with good training set coverage. Avoid "magic" libraries.
-
-Read full prompt: `references/architect-prompt.md`
-
----
-
-## Phase 2: Tech Lead Agent
-
-**When to spawn:** After user explicitly approves `ARCHITECTURE.md`.
-
-**Provide to agent:** Approved architecture summary + PRD acceptance criteria.
-
-**Expected output:** `IMPLEMENTATION_PLAN.md` with sequential phases, each containing: files to create, contracts to implement, Definition of Done (`{{TEST_COMMAND}}` / `{{BUILD_COMMAND}}`), Decision Log (chose X over Y because...), PRD coverage per phase.
-
-Read full prompt: `references/tech-lead-prompt.md`
-
----
-
-## Phase 2b: Cross-Artifact Analyzer Agent
-
-**When to spawn:** After user approves `IMPLEMENTATION_PLAN.md`, before coding starts.
-
-**Provide to agent:** `PRD.md`, `ARCHITECTURE.md`, `IMPLEMENTATION_PLAN.md`.
-
-**Expected output:** Cross-Artifact Analysis Report with:
-- PRD → Architecture coverage (every user story maps to a component)
-- Architecture → Plan coverage (every component has implementation phases)
-- Plan → PRD AC mapping (every acceptance criterion has a plan phase)
-- Terminology consistency check (same terms used across all 3 documents)
-- Constraint propagation check (non-functional requirements flow through all artifacts)
-- Binary verdict: `ANALYZE PASS` or detailed report with Coverage Matrix, Inconsistencies, Orphaned Items
-
-**If inconsistencies found:** Resolve (update relevant artifact) → re-run Analyzer.
-
-Read full prompt: `references/analyze-prompt.md`
-
----
-
-## Phase 3: Developer + Review Loop
-
-**When to spawn:** After user explicitly approves `IMPLEMENTATION_PLAN.md`.
-
-**Per plan phase:**
-1. Spawn Developer for current phase only (constraint: STOP after this phase)
-2. Developer performs self-review loop: verify → self-fix → re-verify until clean
-3. Developer logs any deferred items to `docs/tech-debt-tracker.md`
-4. Auto-commit phase code
-5. Spawn both reviewers IN PARALLEL with Developer's output
-6. Gate: both must return exact strings:
-   - `APPROVE: Architecture is solid.`
-   - `APPROVE: System is secure and resilient.`
-7. If either returns issues: Developer fixes → self-review again → recommit → both reviewers re-run
-8. Mark phase complete. Move to next plan phase.
-
-Read full prompts:
-- Developer: `references/developer-prompt.md`
-- Reviewer SOLID: `references/reviewer-solid-prompt.md`
-- Reviewer SRE: `references/reviewer-sre-prompt.md`
-
----
-
-## Phase 4: QA Agent
-
-**When to spawn:** After ALL coding phases pass both reviewers.
-
-**Provide to agent:** `PRD.md` (full) + all project source code.
-
-**Expected output:** QA Validation Report with:
-- Acceptance criteria coverage table (criterion → code location → status)
-- `{{TEST_COMMAND}}`, `{{BUILD_COMMAND}}`, `{{LINT_COMMAND}}` results
-- Scope creep detection (code that exists but no PRD criterion covers it)
-- Binary verdict: `QA PASS` or failure list
-
-Read full prompt: `references/qa-prompt.md`
-
----
-
-## Auto-Commit Protocol
-
-Agents commit automatically at each gate. Format: `[phase-N]` prefix.
-
-| Trigger | Commit Message | Files |
-|---------|---------------|-------|
-| PRD approved | `[phase-0] PRD: {project}` | `PRD.md` |
-| Clarification resolved | `[phase-0c] clarify: {project}` | `PRD.md` (if updated) |
-| Architecture approved | `[phase-1] architecture: {project}` | `ARCHITECTURE.md`, `CONSTITUTION.md`, `AGENTS.md`, `docs/` |
-| Plan approved | `[phase-2] plan: {project}` | `IMPLEMENTATION_PLAN.md` |
-| Analysis passed | `[phase-2b] analyze: {project}` | — (report only) |
-| Coding phase N passes review | `[phase-3.N] implement: {phase name}` | All phase files |
-| Developer fix after review | `[phase-3.N] fix: {issue summary}` | Changed files |
-| QA passes | `[phase-4] QA validation passed` | Test files if any |
+## Role outputs
+
+### 1) Narrative Lead
+Produces `SPEC_PLAN/Narrative.md`:
+- product story
+- why now
+- user world / operating context
+- top constraints
+- non-goals
+- obvious risks and assumptions
+
+### 2) Market PM (Full mode)
+Produces `SPEC_PLAN/MRD.md`:
+- target user / ICP
+- JTBD
+- alternatives and competitive context
+- positioning hypothesis
+- success frame and market constraints
+
+### 3) Product PM
+Produces `SPEC_PLAN/PRD.md`:
+- user stories
+- acceptance criteria
+- success metrics
+- out-of-scope items
+
+### 4) Clarifier
+Produces `SPEC_PLAN/clarification-report.md`:
+- unanswered questions
+- default assumptions chosen
+- risk created by missing answers
+- what can still proceed safely
+
+### 5) Architect
+Produces:
+- `SPEC_PLAN/ARCHITECTURE.md`
+- `SPEC_PLAN/CONSTITUTION.md`
+- `PROJECT_INDEX.md`
+- `AGENTS.md`
+- `docs/README.md`
+- initial `docs/EXECUTION_RULES.md`
+
+`AGENTS.md` is ≤60 lines and answers exactly five questions:
+what the project is; where docs are and how to get an outline;
+how to run the environment with one command; related repos;
+what is forbidden without permission. Pointers, not prose.
+
+### 6) Tech Lead
+Produces:
+- `SPEC_PLAN/IMPLEMENTATION_PLAN.md`
+- `SPEC_PLAN/phase-registry.md`
+
+Each phase in `IMPLEMENTATION_PLAN.md` must include:
+- goal
+- scope
+- exact files touched
+- dependencies
+- Definition of Done
+- verification commands
+- rollback notes
+- deferred work format
+
+### 7) Analyzer
+Produces `SPEC_PLAN/cross-artifact-analysis.md`:
+- contradictions across Narrative/MRD/PRD/Architecture/Plan
+- missing dependencies
+- phase ordering risks
+- acceptance criteria with no implementation path
+- architecture decisions with no validation path
+
+### 8) Plane Sync (optional but mandatory when Plane is enabled)
+Produces/updates:
+- Plane work items
+- `SPEC_PLAN/plane-sync.md`
+
+### 9) Developer
+Implements **only** the current phase.
+
+Before writing code:
+- read current phase in `IMPLEMENTATION_PLAN.md`
+- confirm scope in `phase-registry.md`
+- check or create Plane item if enabled
+- move Plane item to `In Progress` if starting execution
+
+During work:
+- stay inside phase scope
+- log blockers
+- record deferred work
+- record surprises in `docs/surprises.md` (non-obvious behavior, workarounds, hidden constraints)
+- run verification commands
+
+After work:
+- update `PROGRESS.md`
+- update `HANDOFF.md`
+- move Plane item to `Done` only after required validation is complete
+
+### 10) Reviewer SOLID
+Checks:
+- layering
+- dependency direction
+- naming and API clarity
+- type safety
+- contract fidelity
+- interface segregation / DI discipline
+
+### 11) Reviewer SRE
+Checks:
+- resilience
+- rollback safety
+- error boundaries
+- resource handling
+- observability hooks
+- security and failure mode coverage
+
+### 12) QA Agent
+Checks:
+- PRD acceptance criteria traceability
+- test / build / lint / typecheck exit codes
+- scope creep
+- quality score updates
+- remaining phase gaps
+
+## Plane execution rule
+
+If Plane MCP is available and `{{PLANE_ENABLED}}=true`, Plane is mandatory for execution tracking.
+
+### Responsibility split
+- Local markdown artifacts are the source of truth for:
+  - strategy
+  - product framing
+  - requirements
+  - architecture
+  - implementation planning
+  - project rules and context
+- Plane is the source of truth for:
+  - execution state
+  - open work
+  - in-progress work
+  - completion status
+  - blockers
+  - operational priority
+
+### Mandatory execution behavior
+Before starting implementation work, the agent must:
+1. Check the relevant open items in Plane.
+2. Identify the item for the current implementation phase.
+3. If the work is not yet represented in Plane, create the item first.
+4. Move the item to `In Progress` when execution begins.
+5. Move the item to `Done` only after implementation and required validation/review are complete.
+6. Then select the next highest-priority item from the current module, milestone, or active phase grouping.
+
+### Restrictions
+- Do not execute untracked implementation work when Plane is enabled.
+- Do not treat markdown files as the live execution board.
+- Do not infer completion from code changes alone; update Plane explicitly.
+- Do not pull work from future phases unless the implementation plan explicitly allows it.
+
+### Conflict rule
+If Plane status and local markdown meaning diverge:
+- local markdown artifacts win for scope, meaning, and intent
+- Plane wins for current execution status
+
+## Phase isolation rule
+
+Developer may execute only the active implementation phase.
 
 Rules:
-- Use `git add <specific files>` — never `git add .` or `git add -A`
-- Always include `PROGRESS.md` in every commit: `git add PROGRESS.md <other files>`
-- Commit message must be a single line, no body
-- Do NOT push until all phases complete (push only at Finish)
+- Never pull tasks from future phases.
+- Never change files outside the current phase scope unless:
+  1. required for a blocking bug fix inside the current phase, and
+  2. recorded in `HANDOFF.md` and `PROGRESS.md`.
+- If a needed change belongs to a future phase, log:
+  `Deferred to Phase N: <reason>`
+- Reviewers review only the current phase diff against:
+  - current phase Definition of Done
+  - PRD acceptance criteria touched by that phase
+  - architecture constraints relevant to that phase
 
----
+## Documentation restructure policy
 
-## Stop Conditions
+Agents must preserve navigability.
 
-| Gate | Trigger | Action |
-|------|---------|--------|
-| After Phase 0b | `PRD.md` produced | Show to user. Wait for approval. |
-| After Phase 0c | Clarifier returns non-PASS | Present critical issues → resolve → update PRD. |
-| After Phase 1 | `ARCHITECTURE.md` produced | Show to user. Wait for approval. |
-| After Phase 2 | `IMPLEMENTATION_PLAN.md` produced | Show to user. Wait for approval. |
-| After Phase 2b | Analyzer returns non-PASS | Resolve inconsistencies → re-run Analyzer. |
-| Review issue | Either reviewer returns non-APPROVE | Developer fixes → re-run BOTH reviewers. |
-| QA issue | QA returns non-PASS | Developer fixes → QA re-validates. |
-| PR created | CI results available | Show to user. User decides merge. |
+Trigger a restructure proposal when:
+- a file becomes too long to scan comfortably,
+- a file mixes product + architecture + delivery concerns,
+- the root index no longer reflects the actual docs tree,
+- multiple documents duplicate the same source of truth.
 
-Do not proceed past a ⛔ gate without user writing approval in chat.
+Preferred actions:
+1. Split by concern.
+2. Keep the parent file as summary + links.
+3. Move old detail into `docs/archive/`.
+4. Update `PROJECT_INDEX.md`.
+5. Record the restructure in `HANDOFF.md` and `PROGRESS.md`.
 
-**`{{STRICT_MODE}}` = `false` (prototype mode):** PRD/Architecture/Plan gates remain blocking. Review and QA gates become advisory — log issues but don't block progress. Useful for rapid prototyping where speed > correctness.
+Agents may propose restructure proactively.
+Agents must not silently change canonical meaning during restructure.
 
----
+## Verification protocol
 
-## CI/CD Awareness
+Claude saying “done” has no engineering value.
 
-After `gh pr create`, check CI status:
+Every stage must define how success is observed.
 
-```
-gh pr checks --watch
-```
+### Verification levels
 
-- **All checks pass** → notify user, ready for merge review
-- **Check fails** → read failure log: `gh pr checks --json name,state,description`
-  - If lint/analyze failure → Developer fixes → recommit → push
-  - If test failure → Developer fixes → recommit → push
-  - If build failure → surface to user (may need config change)
-- CI is **informational, not blocking** — user decides whether to merge despite failures
+| Level | Tools | Applies to |
+|---|---|---|
+| Basic | exit codes, lint, typecheck, unit tests | every coding phase |
+| Medium | integration tests, contract tests, smoke tests | QA |
+| High | production logs, metrics, manual checklists | post-deploy, outside this skill |
 
-Expected CI pipeline (GitHub Actions on push to main):
-1. `{{LINT_COMMAND}}`
-2. `{{TEST_COMMAND}}`
-3. `{{BUILD_COMMAND}}`
+### Exit-code rules
+Any required verification command must return exit code 0.
+Non-zero exit code = FAIL.
+Agent must not continue through a blocking gate.
 
----
+## Pre-execution checklist
 
-## Examples
+Before any code changes:
+- [ ] Read current phase in `IMPLEMENTATION_PLAN.md`
+- [ ] Confirm current phase scope in `phase-registry.md`
+- [ ] Check open Plane items if Plane is enabled
+- [ ] Confirm the work item exists in Plane
+- [ ] Move item to `In Progress` if starting execution
+- [ ] Confirm work is inside active phase scope
 
-### Example 1 — Flutter Mobile App
+## Post-execution checklist
 
-```
-PROJECT_NAME:    Weather Tracker
-TECH_STACK:      Flutter 3.x, Dart 3.x, Riverpod, Dio, Hive
-BUILD_COMMAND:   flutter build apk --debug
-TEST_COMMAND:    flutter test
-LINT_COMMAND:    flutter analyze
-QUALITY_RULES:   null safety, no dynamic, const constructors, DI via Riverpod
-INTERFACE_STYLE: abstract class / mixin
-DOCS_URL:        https://docs.flutter.dev/
-```
+Before ending the session or claiming completion:
+- [ ] Validate against phase Definition of Done
+- [ ] Update `PROGRESS.md`
+- [ ] Update `HANDOFF.md`
+- [ ] Update `docs/tech-debt-tracker.md` if anything is deferred
+- [ ] Update `docs/surprises.md` if anything non-obvious was discovered
+- [ ] Move the Plane item to `Done` if complete
+- [ ] Note the next highest-priority open item
 
-### Example 2 — Go Microservice
+## Retro: session archaeology
 
-```
-PROJECT_NAME:    Payment Gateway Proxy
-TECH_STACK:      Go 1.23, gin, pgx, Stripe SDK
-BUILD_COMMAND:   go build ./...
-TEST_COMMAND:    go test ./...
-LINT_COMMAND:    golangci-lint run
-QUALITY_RULES:   error wrapping, no naked returns, context propagation
-INTERFACE_STYLE: Go interface
-DOCS_URL:        https://stripe.com/docs/api
-```
+After QA PASS and before opening the PR, run a short retro over the pipeline session itself.
+The pipeline must improve the project's working environment for the *next* session.
 
----
+Answer three questions by walking back through this session's history:
+1. **Where did the agent stall?** — repeated attempts, wrong assumptions, dead ends.
+2. **What context was missing?** — a doc, a script, a command, an AGENTS.md pointer
+   that would have prevented the stall.
+3. **What questions came up more than once?** — recurring questions signal a missing doc.
 
-## Recovery Procedures
+Then apply the smallest possible fixes:
+- add a pointer or command to `AGENTS.md` (respect the 60-line cap),
+- add an entry to `docs/surprises.md`,
+- add or fix a doc in `docs/`,
+- record anything larger in `docs/tech-debt-tracker.md`.
 
-### User rejects PRD (Phase 0b)
-1. Ask: "What's missing? Scope too wide? Wrong user stories?"
-2. Re-spawn PM with original research notes + user feedback
-3. Present revised `PRD.md` — ⛔ STOP again for approval
+Rules:
+- This step is advisory, not a blocking gate: no findings → say so in one line and move on.
+- Fixes must be minimal and structural (pointers, docs, scripts) — never new process for its own sake.
+- Record what was changed in `HANDOFF.md`.
 
-### User rejects Architecture (Phase 1)
-1. Ask: "What needs to change — diagrams, interfaces, error strategy?"
-2. Re-spawn Architect with original prompt + user feedback
-3. Architect may skip clarifying questions if already answered
-4. Present revised `ARCHITECTURE.md` — ⛔ STOP again
+## Recommended git discipline
 
-### User rejects Implementation Plan (Phase 2)
-1. Ask: "Too many phases? Wrong file structure? Missing DoD?"
-2. Re-spawn Tech Lead with approved `ARCHITECTURE.md` + user feedback
-3. Present revised `IMPLEMENTATION_PLAN.md` — ⛔ STOP again
+- Create `feature/{slug}` branch after product approval.
+- Commit after each major artifact gate:
+  - product artifacts
+  - architecture artifacts
+  - implementation plan
+  - each code phase
+  - QA fixes
+- Use small, phase-aligned commits.
+- Do not combine multiple implementation phases in one commit.
 
-### Developer returns BLOCKED
-1. Surface the exact blocker to the user verbatim
-2. Ask: "Should I (a) adjust the architecture, (b) skip this file, or (c) proceed with a stub?"
-3. Re-spawn Developer with same phase prompt + resolution
-4. Do NOT proceed to reviewers until Developer returns non-BLOCKED report
+## Notes for Plane MCP
 
-### Review loop stuck (3+ rounds without both APPROVE)
-1. Show user the outstanding issues from the last review round
-2. Ask: "Should I (a) let Developer try again, (b) accept as-is, or (c) simplify phase scope?"
-3. Do NOT auto-continue. User decides.
-
-### QA fails after all coding phases
-1. Show QA failure report to user
-2. Developer fixes specific failing acceptance criteria
-3. Recommit fixes with `[phase-4] fix: {criterion}`
-4. Re-run QA agent — only on previously-failing criteria if possible
-
-### CI check fails after PR
-1. Read failure details: `gh pr checks --json name,state,description`
-2. If fixable (lint/test) → Developer fixes → push → re-check
-3. If infra issue → surface to user, do not auto-fix
-
-### Agent produces no output / times out
-1. Re-spawn the same agent with identical prompt (transient failure)
-2. If second attempt also fails — surface to user with exact agent name and phase
-
----
-
-## Integration
-
-- **Feature isolation:** Use `using-git-worktrees` skill if user prefers worktree-based isolation instead of branch switching
-- **Finish flow:** After QA pass + PR created, trigger `finishing-a-development-branch` skill for merge/cleanup options
-- **Parallel agents:** Phase 3 reviewers run in parallel — use `dispatching-parallel-agents` skill
+Plane MCP Server supports multiple transport methods, including HTTP with OAuth, HTTP with PAT token, and Local Stdio for self-hosted instances. Plane documents setup paths for Claude.ai, Claude Desktop, Cursor, VS Code, and other editors, and states that the MCP server enables agents to interact with Plane project-management capabilities.
