@@ -41,8 +41,15 @@ passes if the user-visible outcome matches, regardless of how it is implemented.
 {{BUILD_COMMAND}}
 {{TEST_COMMAND}}
 {{LINT_COMMAND}}
+{{EVAL_COMMAND}}
 ```
 Report results for each command.
+
+`{{EVAL_COMMAND}}` applies only when the product contains an LLM component — its
+behavior cannot be proven by build/test/lint, which show that the code runs, not that
+its output is acceptable. When `{{EVAL_COMMAND}}` is empty, skip it and say so in one
+line. Do not invent eval metrics here; the eval suite is defined in
+`SPEC_PLAN/EVAL_PLAN.md` and executed by dedicated tooling.
 
 ### Step 4: Detect Scope Creep
 Check: does the code do anything NOT specified in the PRD?
@@ -62,9 +69,14 @@ they are requirements nobody approved.
 
 | # | User Story | Criterion | Status | Evidence |
 |---|-----------|-----------|--------|----------|
-| AC-1 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL | file:function |
-| AC-2 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL | file:function |
+| AC-1 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | file:function |
+| AC-2 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | file:function |
 | ... | ... | ... | ... | ... |
+
+`UNKNOWN` means the criterion could not be verified from available evidence — the
+behavior is not observable in the code, requires a runtime environment you do not have,
+or depends on an artifact outside this phase. Use it instead of guessing. A criterion
+with no checkable evidence is `UNKNOWN`, never `FAIL`.
 
 ## Verification Commands
 
@@ -73,6 +85,19 @@ they are requirements nobody approved.
 | {{BUILD_COMMAND}} | PASS/FAIL | ... |
 | {{TEST_COMMAND}} | PASS/FAIL | ... |
 | {{LINT_COMMAND}} | PASS/FAIL | ... |
+| {{EVAL_COMMAND}} | PASS/FAIL/SKIPPED | skipped when the product has no LLM component |
+
+## Run Cost
+
+| Metric | Value |
+|--------|-------|
+| Tokens in / out | ... |
+| Wall-clock duration | ... |
+| Approximate cost | ... |
+| Review round-trips this phase | ... |
+
+Report-only. Do not fail the gate on cost or duration — there is no calibrated budget
+yet. These numbers accumulate in `PROGRESS.md` until a baseline exists.
 
 ## Gaps
 
@@ -103,7 +128,7 @@ After validation, update `docs/QUALITY_SCORE.md`:
 
 One row per architectural layer or domain area. This file is cumulative — update existing rows, add new ones.
 
-## Action — Binary Output
+## Action — Verdict
 
 **If ALL acceptance criteria pass AND all commands succeed:**
 Reply with:
@@ -113,10 +138,28 @@ QA PASS: All acceptance criteria verified.
 
 **If ANY criterion fails OR any command fails:**
 Provide the full report above with specific failures.
-For each failure:
-- State the exact criterion that failed
-- State what the code does instead
-- State exactly how to fix it (1-2 sentences)
+For each failure emit a structured finding:
+
+```json
+{
+  "criterion": "AC-3",
+  "status": "FAIL",
+  "severity": "blocking",
+  "evidence": "src/app/join/[sessionId]/page.tsx — no handler for an expired session id",
+  "fix": "Render the expired-session state when the lookup returns null.",
+  "rubric_version": "qa-v1"
+}
+```
+
+**If any criterion is `UNKNOWN`:**
+Do not issue QA PASS, and do not convert it to a failure either. Report:
+```
+QA INCONCLUSIVE: <n> criteria could not be verified.
+```
+List each `UNKNOWN` criterion with the specific evidence that would settle it. The
+owner decides whether to obtain that evidence or accept the risk. Forcing a binary
+verdict here produces either a false approval or a false block — both cost more than
+an honest "cannot tell".
 
 **DO NOT rewrite code. Point. Explain. Stop.**
 
