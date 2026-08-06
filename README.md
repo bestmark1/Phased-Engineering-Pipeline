@@ -38,7 +38,7 @@ Instead of asking Claude to "build a system" and hoping for the best, this skill
 
 Both must return `APPROVE` before the next phase starts.
 
-**Phase 4 — QA Validation** — A QA Engineer extracts every acceptance criterion from the PRD, traces through code, runs tests/build/lint, detects scope creep, updates `docs/QUALITY_SCORE.md`. Binary verdict: `QA PASS` or failure list.
+**Phase 4 — QA Validation** — A QA Engineer extracts every acceptance criterion from the PRD, traces through code, runs tests/build/lint, detects scope creep, updates `docs/QUALITY_SCORE.md`. Verdict is `QA PASS`, a list of structured findings, or `QA INCONCLUSIVE` when criteria cannot be verified from available evidence.
 
 **Finish** — Push feature branch, create PR via `gh pr create`, verify CI checks, user reviews diff before merge.
 
@@ -60,6 +60,32 @@ Inspired by OpenAI's [Harness Engineering](https://openai.com/index/harness-engi
 | Quality Score | QA updates `docs/QUALITY_SCORE.md` with coverage grades per layer |
 | Layer violations | SOLID reviewer checks dependency flow direction |
 | Boring tech principle | Architect avoids "magic" libraries; prefers stable, documented deps |
+
+---
+
+## New in v3 — Gate Discipline
+
+The pipeline's reviewers are themselves LLMs. v3 treats them as such: as fallible judges
+that cost money, drift, and share blind spots with the model that wrote the code.
+
+| Feature | Description |
+|---------|-------------|
+| Evidence hierarchy | Environment checks > tests > contracts > human review > LLM judge. A judge never overrides a stronger source |
+| Deterministic-first gates | build / lint / typecheck / test run before any reviewer is invoked — a linter proves for free what an LLM guesses at |
+| Review depth by risk | `low` / `medium` / `high` per phase. A config bump does not cost what a payment flow costs |
+| Structured verdicts | `criterion` / `status` / `severity` / `evidence` / `fix` / `rubric_version` instead of prose a developer cannot act on |
+| `UNKNOWN` verdict | A criterion with no checkable evidence is not a failure. Forcing binary answers manufactures both false approvals and false blocks |
+| Critic loop | Fix only the findings, re-review only the failing criteria, escalate after three rounds on one criterion |
+| Escalation over repetition | Re-running one reviewer measures judge stability, not code quality. Escalate on uncertainty instead |
+| Agent guardrails | Refuse out-of-scope deletion, secret leakage into commits or logs, history rewrites, and unrequested outward-facing actions |
+| Run economics | Tokens, duration, cost and review round-trips recorded per phase — report-only until a baseline exists |
+| Eval hooks | Optional `{{EVAL_COMMAND}}` and `SPEC_PLAN/EVAL_PLAN.md` for products containing an LLM. The pipeline calls eval tooling; it does not reimplement metrics or judges |
+
+**On repeated runs.** Requiring the same reviewer to pass an artifact k times in a row is
+not a reliability gain — repeated calls to one model with one prompt are correlated, and
+unanimity rejects correct work at compounding rates (a judge that approves good work 90%
+of the time passes it only 73% of the time across three runs). v3 escalates on genuine
+uncertainty instead, at roughly 1.1–1.3× cost rather than 3×.
 
 ---
 

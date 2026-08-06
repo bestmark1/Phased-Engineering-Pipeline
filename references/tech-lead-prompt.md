@@ -63,6 +63,16 @@ For those phases:
 - Do not design metrics or judges here. Delegate to dedicated eval skills and
   established runners; this plan only says what must be evaluated and when.
 
+**Cold start.** A new project has no production traces, so most eval tooling has nothing
+to consume. Do not defer evaluation until traces exist. Instead, derive the first cases
+from the PRD: every acceptance criterion about model behavior is already an eval case
+needing only a concrete input and a checkable property of the output. Plan 10–20 of
+these, and mark the phase after which real outputs become available — that is when
+issue-discovery and golden-dataset tooling starts to apply, and not before.
+
+Flag in the plan that the spec-derived cases must be written by the owner. A model that
+authors both the behavior and the standard it is judged against proves nothing.
+
 If no phase involves an LLM, leave `{{EVAL_COMMAND}}` empty and skip this section —
 most projects need nothing here.
 
