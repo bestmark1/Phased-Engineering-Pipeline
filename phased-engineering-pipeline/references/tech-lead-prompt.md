@@ -40,6 +40,31 @@ Break the build into logical, sequential phases. For each phase specify:
    - Example: "Run `{{BUILD_COMMAND}}` — zero errors"
    - Example: "Run `{{TEST_COMMAND}}` — all tests green"
    - Example: "GET /health returns 200 with expected JSON shape"
+5. **Review depth** — `low`, `medium`, or `high`, never below `{{DEFAULT_REVIEW_DEPTH}}`:
+   - `low` — docs, comments, copy, config values, dependency bumps
+   - `medium` — ordinary feature or bugfix work
+   - `high` — auth, payments, data migrations, deletion paths, external API contracts,
+     secrets handling, anything `CONSTITUTION.md` marks critical
+
+   Depth sets the review topology for the phase. Assigning `high` everywhere defeats the
+   purpose: it makes a trivial config change cost as much as a payment flow, and the
+   owner stops reading verdicts that always look the same.
+
+## Eval planning — only when the product contains an LLM
+
+If any phase produces behavior driven by a model (prompts, agents, RAG, classification,
+generation), build/test/lint cannot show whether it works — they prove the code runs,
+not that its output is acceptable.
+
+For those phases:
+- Define `{{EVAL_COMMAND}}` and name the phase that introduces it.
+- Write eval criteria into `SPEC_PLAN/EVAL_PLAN.md` **before** the phase that needs
+  them, next to the acceptance criteria they extend.
+- Do not design metrics or judges here. Delegate to dedicated eval skills and
+  established runners; this plan only says what must be evaluated and when.
+
+If no phase involves an LLM, leave `{{EVAL_COMMAND}}` empty and skip this section —
+most projects need nothing here.
 
 ## Recommended Phase Pattern (adapt to the actual architecture)
 
@@ -68,6 +93,8 @@ Break the build into logical, sequential phases. For each phase specify:
 
 **Definition of Done:**
 - Run `<command>` → expected output
+
+**Review depth:** low / medium / high — one line of justification
 
 **Decisions:**
 - Chose X over Y because [reason]

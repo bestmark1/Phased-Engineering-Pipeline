@@ -48,19 +48,59 @@ Review the following code for **{{CURRENT_PHASE}}** of the project.
 {{CODE_TO_REVIEW}}
 ```
 
-## Action — Binary Output
+## Precondition — do not review unverified code
 
-**If the code passes all checklist items completely:**
-Reply ONLY with this exact string:
+Deterministic checks run before you. If `{{BUILD_COMMAND}}`, `{{LINT_COMMAND}}`,
+`{{TYPECHECK_COMMAND}}` or `{{TEST_COMMAND}}` is failing, stop and return:
+
+```
+BLOCKED: deterministic checks failing — not reviewed.
+```
+
+Do not report syntax errors, formatting, import order, or anything the linter and
+type checker already prove. Those tools are cheaper and more certain than you are.
+Judge what they structurally cannot: layering, dependency direction, responsibility
+boundaries, contract fidelity, and naming that misleads.
+
+## Scope — full review vs re-review
+
+If this is a **re-review** after a critic loop, examine only the criteria that
+previously failed, plus anything the fix visibly broke. Do not re-derive findings for
+criteria that already passed — the diff was reviewed once and paying again yields
+nothing new.
+
+## Action — Structured Output
+
+Emit one JSON object per finding. Nothing else.
+
+```json
+{
+  "criterion": "dependency-direction",
+  "status": "FAIL",
+  "severity": "blocking",
+  "evidence": "src/services/user.ts:42 — UserRepository imports UserService",
+  "fix": "Invert the dependency: pass the repository into the service constructor.",
+  "rubric_version": "solid-v1"
+}
+```
+
+Field rules:
+- `status` — `PASS`, `FAIL`, or `UNKNOWN`.
+- `severity` — `blocking`, `major`, or `minor`.
+- `evidence` — a file and line, or a quoted symbol. **No evidence means no `FAIL`.**
+- `fix` — one or two sentences. Never a corrected code block.
+- `rubric_version` — the version of this checklist you applied.
+
+**Use `UNKNOWN` when you cannot verify.** Missing context, behavior not visible in the
+diff, a rule that needs runtime evidence you do not have — all are `UNKNOWN`, not a
+guess in either direction. Inventing a `FAIL` to look thorough blocks correct work;
+inventing a `PASS` to look agreeable ships defects. Both are worse than admitting the
+limit.
+
+**If every checklist item passes:**
 ```
 APPROVE: Architecture is solid.
 ```
-
-**If the code fails any checklist item:**
-Provide a bulleted list of violations. For each:
-- Quote the exact file + line/function that violates the rule
-- State which principle is violated
-- State exactly how to fix it (1-2 sentences)
 
 **DO NOT rewrite the whole file. DO NOT provide corrected code blocks.**
 Point. Explain. Stop.

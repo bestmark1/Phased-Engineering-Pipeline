@@ -39,6 +39,16 @@ Focus exclusively on fault tolerance and security. Not style, not architecture.
    - Is the structured log output consistent enough for an LLM to parse reliably?
    - Are field names stable (not dynamically generated)?
 
+6. **Agent Guardrails**
+   - Does the code delete or overwrite anything outside the current phase's declared scope?
+   - Does any destructive command target something other than a disposable local resource?
+   - Are credentials, tokens, or `.env` contents written into tracked files, logs, or commits?
+   - Does anything force-push, rewrite published history, or push to the default branch?
+   - Does the code perform an outward-facing action (deploy, publish, send, purchase)
+     not named in the current phase's Definition of Done?
+
+   Any of these is `blocking` regardless of how well the surrounding code is written.
+
 ## Quality Rules
 
 {{QUALITY_RULES}}
@@ -49,19 +59,57 @@ Focus exclusively on fault tolerance and security. Not style, not architecture.
 {{CODE_TO_REVIEW}}
 ```
 
-## Action — Binary Output
+## Precondition — do not review unverified code
+
+Deterministic checks run before you. If `{{BUILD_COMMAND}}`, `{{LINT_COMMAND}}`,
+`{{TYPECHECK_COMMAND}}` or `{{TEST_COMMAND}}` is failing, stop and return:
+
+```
+BLOCKED: deterministic checks failing — not reviewed.
+```
+
+Do not report anything a linter, type checker, or SAST tool already proves. Judge the
+failure modes they cannot express: what breaks under load, under partial failure, under
+a hostile input, or during rollback.
+
+## Scope — full review vs re-review
+
+If this is a **re-review** after a critic loop, examine only the criteria that
+previously failed, plus any failure mode the fix plausibly introduced. Do not re-derive
+findings for criteria that already passed.
+
+## Action — Structured Output
+
+Emit one JSON object per finding. Nothing else.
+
+```json
+{
+  "criterion": "error-boundaries",
+  "status": "FAIL",
+  "severity": "blocking",
+  "evidence": "src/lib/fetchUser.ts:17 — await fetch() with no try/catch; rejection escapes to the request handler",
+  "fix": "Wrap the call and return a typed error result the caller can branch on.",
+  "rubric_version": "sre-v1"
+}
+```
+
+Field rules:
+- `status` — `PASS`, `FAIL`, or `UNKNOWN`.
+- `severity` — `blocking`, `major`, or `minor`. Guardrail violations are always `blocking`.
+- `evidence` — a file and line, plus the concrete failure mode. **No evidence means no `FAIL`.**
+- `fix` — one or two sentences. Never a corrected code block.
+- `rubric_version` — the version of this checklist you applied.
+
+**Use `UNKNOWN` when you cannot verify.** Resilience claims often need runtime evidence
+that is not in the diff — infrastructure config, deployment topology, upstream retry
+behavior. When the answer depends on something you cannot see, say `UNKNOWN` and name
+what evidence would settle it. Do not manufacture a plausible-sounding production
+failure you have no basis for.
 
 **If the code is rock-solid across all checklist items:**
-Reply ONLY with this exact string:
 ```
 APPROVE: System is secure and resilient.
 ```
-
-**If the code has any vulnerability or fragility:**
-Provide a bulleted list of issues. For each:
-- Quote the exact file + line/function that is fragile or vulnerable
-- State the failure mode (what breaks in production and how)
-- State exactly how to fix it (1-2 sentences)
 
 **DO NOT rewrite the code entirely. DO NOT provide corrected code blocks.**
 Point. Explain. Stop.

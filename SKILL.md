@@ -43,10 +43,12 @@ Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Op
 → loop per implementation phase:
    [Developer: current phase only]
    → self-review loop (verify → fix → re-verify)
+   → deterministic gate: build ‖ lint ‖ typecheck ‖ test   ← LLM reviewers not called until green
    → git: commit code
-   → [Reviewer SOLID] ‖ [Reviewer SRE]
-   → issues? fix → recommit → re-review
-   → both APPROVE → update PROGRESS.md / HANDOFF.md / Plane → next phase
+   → [Reviewer SOLID] ‖ [Reviewer SRE]   ← topology set by review depth (Low/Medium/High)
+   → findings? critic loop: fix findings only → re-run checks → re-review failing criteria
+   → UNKNOWN on a blocking criterion? → escalate to second reviewer, then owner
+   → APPROVE → record run cost in PROGRESS.md → update HANDOFF.md / Plane → next phase
 → [QA Agent] → validates PRD acceptance criteria + phase DoD trace
 → issues? → fix → re-validate
 → QA PASS
@@ -132,6 +134,8 @@ Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in prompts reso
 | `{{DOCS_URL}}` | Official docs URL | `https://nextjs.org/docs` |
 | `{{ROLLBACK_COMMAND}}` | How to undo last change | `git revert HEAD` |
 | `{{STRICT_MODE}}` | `true` blocks gates, `false` advisory | `true` |
+| `{{EVAL_COMMAND}}` | Eval suite for LLM behavior; empty when the product has no LLM | `npx promptfoo eval` |
+| `{{DEFAULT_REVIEW_DEPTH}}` | `low`, `medium`, or `high` — floor for this project | `medium` |
 | `{{PLANE_ENABLED}}` | `true` or `false` | `true` |
 | `{{PLANE_PROJECT}}` | Plane project or workspace shorthand | `FIT` |
 | `{{PLANE_MODULE}}` | Current stream / epic / module | `Onboarding` |
@@ -312,6 +316,7 @@ Checks:
 - resource handling
 - observability hooks
 - security and failure mode coverage
+- guardrail violations (see Agent guardrails)
 
 ### 12) QA Agent
 Checks:
@@ -320,6 +325,47 @@ Checks:
 - scope creep
 - quality score updates
 - remaining phase gaps
+
+### Verdict format — all reviewers and QA
+
+Free-text verdicts cannot be acted on mechanically and produce fix loops that never
+converge. Every reviewing role emits one structured finding per issue:
+
+```json
+{
+  "criterion": "dependency-direction",
+  "status": "FAIL",
+  "severity": "blocking",
+  "evidence": "src/services/user.ts:42 — UserRepository imports UserService",
+  "fix": "Invert the dependency: pass the repository into the service constructor.",
+  "rubric_version": "solid-v1"
+}
+```
+
+- `status` is `PASS`, `FAIL`, or `UNKNOWN`.
+- `severity` is `blocking`, `major`, or `minor`.
+- `evidence` must name a file and line, a command and its output, or an artifact
+  section. A finding with no checkable evidence is not `FAIL` — it is `UNKNOWN`.
+- `fix` is one or two sentences. Reviewers never write replacement code.
+
+**`UNKNOWN` is a first-class verdict.** A reviewer that cannot verify a criterion —
+missing context, untestable behavior, evidence outside the diff — must say so rather
+than guess in either direction. Forcing a binary answer manufactures both false
+approvals and false blocks. `UNKNOWN` on a blocking criterion triggers escalation,
+not a gate failure.
+
+### Critic loop — how a failed gate converges
+
+A failed gate does not mean re-running the phase. It means one targeted repair:
+
+1. Reviewer returns structured findings.
+2. Developer fixes **only the findings**, touching nothing else.
+3. Deterministic checks re-run.
+4. Reviewer re-examines **only the previously failing criteria**, not the whole diff.
+
+Re-reviewing an entire phase after a two-line fix costs full price for no new
+information. If the same criterion fails three rounds in a row, stop and escalate to
+the owner — the finding, the fix, or the requirement itself is wrong.
 
 ## Plane execution rule
 
@@ -415,6 +461,123 @@ Every stage must define how success is observed.
 Any required verification command must return exit code 0.
 Non-zero exit code = FAIL.
 Agent must not continue through a blocking gate.
+
+### Evidence hierarchy
+
+Not all verdicts carry equal weight. Trust evidence in this order, and never let a
+weaker source override a stronger one:
+
+1. **Environment / end-state checks** — does the thing actually work when run.
+2. **Executable tests and static analysis** — build, test, lint, typecheck exit codes.
+3. **Contract checks** — types, interfaces, schemas, API shapes.
+4. **Human verdict** — the owner's review of the diff.
+5. **LLM judge** — Reviewer and QA verdicts, for what remains subjective.
+
+The model that writes the code and the model that reviews it share blind spots.
+An LLM reviewer is the weakest oracle in this list, not the strongest — it is there
+to catch what levels 1–4 structurally cannot express, such as architectural intent
+or naming clarity.
+
+### Gate order — deterministic checks run first
+
+Within any gate, run cheap deterministic checks **before** invoking an LLM reviewer:
+
+```text
+{{BUILD_COMMAND}} → {{LINT_COMMAND}} → {{TYPECHECK_COMMAND}} → {{TEST_COMMAND}}
+   → any check FAILED? → return to Developer with the raw output. Do not call a reviewer.
+   → all PASSED? → invoke the LLM reviewer(s) for this gate's review depth
+```
+
+Rationale: a linter finds a syntax problem for free and with certainty. Paying an LLM
+to find the same problem less reliably is waste. LLM reviewers judge logic, architecture
+and failure modes — never syntax, formatting, or anything a tool already proves.
+
+### When the product itself contains an LLM
+
+If the product's behavior depends on a model — prompts, agents, RAG, classification,
+generation — build/test/lint cannot express whether it works. Tests prove the code runs;
+they say nothing about whether the output is any good.
+
+For such projects:
+
+- The Tech Lead defines `{{EVAL_COMMAND}}` and the phase that introduces it.
+- Eval criteria are written **before** the implementation phase that needs them, and
+  live in `SPEC_PLAN/EVAL_PLAN.md` alongside the acceptance criteria they extend.
+- QA runs `{{EVAL_COMMAND}}` as part of Step 3 verification.
+
+This pipeline does **not** implement eval metrics, judges, or datasets itself. Delegate
+to dedicated eval skills (rubric design, judge/human alignment, golden datasets,
+regression runs) and to established runners — promptfoo for CI-style assertions, Ragas
+for retrieval metrics, Inspect AI for agent trajectories. PEP calls them; it does not
+reimplement them.
+
+When `{{EVAL_COMMAND}}` is empty, skip this entirely — most projects have no LLM in
+the product and need nothing here.
+
+### Review depth by risk
+
+Not every change deserves the full review topology. Pick depth from the change, not habit.
+
+| Depth | Trigger | Gate |
+|---|---|---|
+| **Low** | docs, comments, copy, config values, dependency bumps | deterministic checks + one combined review |
+| **Medium** | ordinary feature or bugfix inside one phase scope | deterministic checks + one Reviewer + QA against acceptance criteria |
+| **High** | auth, payments, data migrations, deletion paths, external API contracts, secrets handling, anything in `CONSTITUTION.md` marked critical | Reviewer SOLID and Reviewer SRE independently + QA + human diff approval |
+
+When `{{STRICT_MODE}}=true`, High depth cannot be downgraded.
+The Tech Lead assigns a depth to each phase in `IMPLEMENTATION_PLAN.md`; the Developer
+may raise it, never lower it.
+
+### Escalation instead of repeated runs
+
+Do **not** run the same reviewer multiple times on the same artifact hoping for
+agreement. Repeated calls to one model with one prompt produce correlated results:
+they measure the judge's stability, not the code's quality, and unanimity requirements
+reject correct work at compounding rates.
+
+Escalate only on genuine uncertainty:
+
+1. One reviewer produces a structured verdict.
+2. Escalate to a **second, differently-prompted** reviewer only when the verdict is
+   `UNKNOWN`, or carries a blocking finding whose evidence field is weak or absent.
+3. The two disagree → the owner decides.
+4. Periodically (roughly every tenth verdict) re-run one gate blind and compare, to
+   keep a feel for how consistent the reviewers actually are.
+
+### Run economics — measure, do not block
+
+Every gate and phase costs real money and time. Record it; do not gate on it yet.
+
+Track per phase in `PROGRESS.md`: tokens in/out, wall-clock duration, approximate cost,
+and how many review round-trips the phase needed.
+
+Thresholds stay **report-only** until enough comparable runs exist to know the normal
+spread. A cost or latency budget invented before that data is either meaningless or a
+source of false failures. Revisit once a baseline exists.
+
+### Cached model calls when iterating on the pipeline itself
+
+When debugging or tuning the pipeline (editing role prompts, reordering gates, changing
+models), enable response caching for model calls so repeated runs over unchanged inputs
+are free. Paying full price to re-observe an unchanged step is the largest avoidable
+cost in pipeline development.
+
+Caching applies to **pipeline development only**. Real project runs must execute
+uncached — a cached verdict on changed code is not a verdict.
+
+### Agent guardrails
+
+Before executing any command, the Developer must refuse and escalate to the owner when
+the action would:
+
+- delete or overwrite outside the current phase's declared file scope,
+- run a destructive command against anything but a disposable local target,
+- write credentials, tokens, or `.env` contents into a tracked file, a log, or a commit,
+- force-push, rewrite published history, or push directly to the default branch,
+- perform an outward-facing action (deploy, publish, send, purchase) not named in the
+  current phase's Definition of Done.
+
+These are refusals, not warnings. Record each escalation in `HANDOFF.md`.
 
 ## Pre-execution checklist
 
