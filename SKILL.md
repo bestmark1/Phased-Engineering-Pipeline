@@ -720,6 +720,8 @@ merging or deploying.
 ## Pre-execution checklist
 
 Before any code changes:
+- [ ] `git status` is clean — leftovers from an earlier session get reviewed or stashed
+      first, never swept into this phase's commit
 - [ ] Read current phase in `IMPLEMENTATION_PLAN.md`
 - [ ] Confirm current phase scope in `phase-registry.md`
 - [ ] Check open Plane items if Plane is enabled
@@ -771,6 +773,9 @@ Rules:
   - QA fixes
 - Use small, phase-aligned commits.
 - Do not combine multiple implementation phases in one commit.
+- Stage files by name. `git add .` and `git add -A` are how `.env` files, credentials,
+  scratch scripts and build output reach a commit — review the staged diff first.
+- Start a phase from a clean working tree.
 
 ## Notes for Plane MCP
 

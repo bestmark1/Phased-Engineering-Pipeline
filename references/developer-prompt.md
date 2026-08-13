@@ -49,32 +49,48 @@ Additionally:
 
 ## Output Format
 
-Provide the **full file content** for every file listed above.
-Format each file as:
+**Write the files into the repository.** Do not paste full file contents into your
+reply — the repository is the deliverable, and a diff is reviewable while a wall of
+pasted code is not. Reprinting every file also costs the phase its context budget twice.
+
+Report instead:
 
 ```
-### `path/to/file`
-\`\`\`
-// full content here
-\`\`\`
+### Files written
+| Path | New / Modified | What it does |
+|------|----------------|--------------|
 ```
+
+Show a snippet only where it is the fastest way to explain a non-obvious decision.
 
 ## Self-Review Loop (mandatory before handing off)
 
 After writing all code, perform an explicit self-review pass:
 
-### Pass 1: Verify
+### Pass 1: Verify — by running, not by predicting
 - [ ] All interfaces/contracts from ARCHITECTURE.md are implemented exactly
 - [ ] All quality rules above are satisfied for every file
-- [ ] `{{BUILD_COMMAND}}` passes (or would pass — state any known blockers)
+- [ ] `{{BUILD_COMMAND}}` — run it, report the actual exit code
+- [ ] `{{LINT_COMMAND}}`, `{{TYPECHECK_COMMAND}}`, `{{TEST_COMMAND}}` — same
 - [ ] No logic from later phases leaks into this phase
 - [ ] Stubs for future phases throw appropriate "not implemented" errors
+
+"Would pass" is not a result. If a command cannot be run here, say which one and why —
+an unrun check is a gap, and reporting it as a prediction turns that gap invisible.
 
 ### Pass 2: Self-Fix
 If Pass 1 found ANY issue — fix it immediately. Do NOT hand off known problems.
 After fixing, re-run Pass 1 to confirm the fix didn't break something else.
 
-### Pass 3: Guardrails
+### Pass 3: Git hygiene
+- [ ] Working tree was clean before this phase started — uncommitted leftovers from an
+      earlier session get reviewed or stashed first, never silently swept into this commit
+- [ ] Stage files **by name**. Never `git add .` / `git add -A` — a blanket add is how
+      `.env` files, credentials, scratch scripts and build output reach a commit
+- [ ] `git status` and the staged diff reviewed before committing
+- [ ] Commit covers this phase only
+
+### Pass 4: Guardrails
 Before running any command, refuse and escalate to the owner if the action would:
 - [ ] delete or overwrite anything outside the files listed for this phase
 - [ ] run a destructive command against anything but a disposable local target
@@ -85,13 +101,13 @@ Before running any command, refuse and escalate to the owner if the action would
 These are refusals, not warnings. State what you refused and why in your report;
 never route around a guardrail because the task seems to call for it.
 
-### Pass 4: Tech Debt
+### Pass 5: Tech Debt
 If you intentionally skip something, use a stub, or defer a quality improvement:
 - Add an entry to `docs/tech-debt-tracker.md`:
   `| <date> | {{CURRENT_PHASE}} | <item> | <reason> | <priority> | Open |`
 - Do NOT hide debt — tracked debt is acceptable, hidden debt is not.
 
-### Pass 5: Surprises
+### Pass 6: Surprises
 If you hit anything non-obvious during this phase — strange library behavior,
 a workaround, a hidden constraint, a decision future sessions must not undo:
 - Add an entry to `docs/surprises.md`:
@@ -121,7 +137,7 @@ and another attempt will not resolve it.
 ```
 ### Self-Review Report
 - Implemented: [list what was built]
-- Build status: PASS / PASS with notes / BLOCKED (reason)
+- Verification: `{{BUILD_COMMAND}}` exit N · `{{LINT_COMMAND}}` exit N · `{{TYPECHECK_COMMAND}}` exit N · `{{TEST_COMMAND}}` exit N (or "not run: reason")
 - Self-review passes: [number of passes before clean]
 - Files changed: [list]
 - Guardrails triggered: [what was refused and why, or "none"]
