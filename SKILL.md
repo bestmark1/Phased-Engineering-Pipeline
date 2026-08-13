@@ -491,9 +491,16 @@ If Plane status and local markdown meaning diverge:
 
 Developer may execute only the active implementation phase.
 
+Phases are **vertical slices**: each one ends with something a user can do, cutting
+through whatever layers it needs. A phase whose outcome is only "the layer exists" is a
+planning defect — see `references/tech-lead-prompt.md`.
+
 Rules:
 - Never pull tasks from future phases.
-- Never change files outside the current phase scope unless:
+- Scope is about **intent, not a file whitelist**. Touching a file the plan did not list
+  is fine when it serves this slice — lockfiles, generated code, a helper discovered
+  mid-implementation. Building a capability the plan did not name is not.
+- Do not change files outside the current slice's purpose unless:
   1. required for a blocking bug fix inside the current phase, and
   2. recorded in `HANDOFF.md` and `PROGRESS.md`.
 - If a needed change belongs to a future phase, log:

@@ -92,7 +92,8 @@ After fixing, re-run Pass 1 to confirm the fix didn't break something else.
 
 ### Pass 4: Guardrails
 Before running any command, refuse and escalate to the owner if the action would:
-- [ ] delete or overwrite anything outside the files listed for this phase
+- [ ] delete or overwrite anything outside this phase's purpose (the file list is an
+      expectation, not a whitelist — building an unplanned capability is the violation)
 - [ ] run a destructive command against anything but a disposable local target
 - [ ] put credentials, tokens, or `.env` contents into a tracked file, a log, or a commit
 - [ ] force-push, rewrite published history, or push to the default branch
