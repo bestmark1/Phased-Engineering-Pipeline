@@ -245,6 +245,30 @@ docs/                         # full tree: references/docs-scaffold.md
   archive/
 ```
 
+## Role → prompt file
+
+Every role in the flow has a prompt file. A role with no prompt file is a gap in the
+skill, not a role the agent should improvise.
+
+| # | Role | Prompt file | When |
+|---|------|-------------|------|
+| 0a | Narrative Lead | `references/narrative-prompt.md` | always |
+| 0a2 | Market PM | `references/mrd-prompt.md` | Full mode only |
+| 0b | Product PM | `references/pm-prompt.md` | always |
+| 0c | Clarifier | `references/clarify-prompt.md` | always |
+| — | Domain Analyst | `references/analyst-prompt.md` | when domain research is needed |
+| 1 | Architect | `references/architect-prompt.md` | always |
+| 2 | Tech Lead | `references/tech-lead-prompt.md` | always |
+| 2a | Analyzer | `references/analyze-prompt.md` | always |
+| — | Plane Sync | `references/plane-sync-prompt.md` | `{{PLANE_ENABLED}}=true` |
+| 3 | Developer | `references/developer-prompt.md` | per phase |
+| 3r | Reviewer SOLID | `references/reviewer-solid-prompt.md` | per review depth |
+| 3r | Reviewer SRE | `references/reviewer-sre-prompt.md` | High depth, or Medium when combined |
+| 4 | QA | `references/qa-prompt.md` | always |
+| 5 | Retro | `references/retro-prompt.md` | after QA PASS, advisory |
+
+`references/docs-scaffold.md` is not a role — it is the canonical `docs/` tree definition.
+
 ## Role outputs
 
 ### 1) Narrative Lead
