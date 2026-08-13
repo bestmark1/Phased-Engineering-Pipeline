@@ -15,24 +15,25 @@ Instead of asking Claude to "build a system" and hoping for the best, this skill
   → [Architect] → ARCHITECTURE.md + CONSTITUTION.md + AGENTS.md + docs/ → ⛔ USER APPROVAL
     → [Tech Lead] → IMPLEMENTATION_PLAN.md (with Decision Log) → ⛔ USER APPROVAL
       → [Analyzer] → cross-artifact-analysis.md → ⛔ ANALYZE PASS
-      → loop per plan phase:
+      → loop per vertical slice:
           [Developer] → self-review loop → deterministic gate (build/lint/typecheck/test)
           → [Reviewer SOLID] ‖ [Reviewer SRE]  (topology by review depth)
-          → critic loop on findings → APPROVE → next phase
-      → [QA Agent] → validates PRD acceptance criteria → updates QUALITY_SCORE.md
-          → QA PASS → [Retro] → git: push → gh pr create → ⛔ USER REVIEWS DIFF
+          → critic loop on findings → APPROVE → next slice
+      → [QA Agent] → exercises the running product against every criterion
+          → QA PASS → [Release Gate] → RELEASE READY → [Retro]
+          → ⛔ OWNER PERMISSION → git: push → gh pr create → ⛔ USER REVIEWS DIFF
 ```
 
 **Phase 0a — Domain Analysis** — A Domain Analyst researches the problem space, stakeholders, competitors, and risks. Asks 5-8 clarifying questions. Saves distilled vendor docs to `docs/references/{tool}-llms.txt` for reuse.
 
-**Phase 0b — Product Requirements** — A Product Manager converts research into `PRD.md` with user stories (As a / I want / So that), acceptance criteria (Given / When / Then), and success metrics.
+**Phase 0b — Product Requirements** — A Product Manager converts research into `PRD.md` with user stories (As a / I want / So that), acceptance criteria (Given / When / Then), and success metrics. Every criterion is black-box and names how it will be verified; a **Quality Requirements** table covers security, privacy, performance, accessibility, and data recovery.
 
 **Phase 1 — Architecture** — A Senior Architect reads the official docs, asks 3-5 clarifying questions, then produces:
 - `ARCHITECTURE.md` with C4 diagrams (Mermaid), contracts/interfaces, dependency layer order, error handling strategy
 - `AGENTS.md` — project map capped at 60 lines, answering five questions: what the project is, where the docs are, how to run the environment, related repos, what is forbidden without permission
 - `docs/` knowledge base scaffold per project principles
 
-**Phase 2 — Implementation Plan** — A Tech Lead converts the approved architecture into `IMPLEMENTATION_PLAN.md` with exact files, contracts, a runnable Definition of Done, and a **Decision Log** (chose X over Y because…) per phase.
+**Phase 2 — Implementation Plan** — A Tech Lead converts the approved architecture into `IMPLEMENTATION_PLAN.md`. Phases are **vertical slices**, not layers: a walking skeleton first, then one user scenario per phase, hardening last. Each phase states what a user can do that they could not before, carries a runnable Definition of Done including a check against the running product, a review depth, and a **Decision Log** (chose X over Y because…).
 
 **Phase 3 — Coding loop** — For each plan phase: a Senior Developer implements only that phase, performs an explicit **self-review loop** (verify → fix → re-verify), logs deferred items to `docs/tech-debt-tracker.md`, auto-commits, then two reviewers run **in parallel**:
 - **Reviewer SOLID** — checks architecture, DI, type safety, naming, layer violations
@@ -40,9 +41,13 @@ Instead of asking Claude to "build a system" and hoping for the best, this skill
 
 Both must return `APPROVE` before the next phase starts.
 
-**Phase 4 — QA Validation** — A QA Engineer extracts every acceptance criterion from the PRD, traces through code, runs tests/build/lint, detects scope creep, updates `docs/QUALITY_SCORE.md`. Verdict is `QA PASS`, a list of structured findings, or `QA INCONCLUSIVE` when criteria cannot be verified from available evidence.
+**Phase 4 — QA Validation** — A QA Engineer **starts the product** and exercises every acceptance criterion through a real interface — browser, HTTP request, CLI — recording what it observed (`POST /api/session → 201`), not which function it read. Code tracing is for diagnosis only. Also runs build/test/lint, detects scope creep and orphan tests, updates `docs/QUALITY_SCORE.md`. Verdict is `QA PASS`, structured findings, or `QA INCONCLUSIVE`. A criterion that cannot be exercised is `UNKNOWN`, never `PASS`.
 
-**Finish** — Push feature branch, create PR via `gh pr create`, verify CI checks, user reviews diff before merge.
+**Release Gate** — Before any push or deploy: a clean checkout installs from the lockfile and starts, `.env.example` covers every variable the code reads, migrations run and roll back, a health check answers, and the primary scenario runs end to end. Catches the build that works only in the agent's session. The gate verifies and reports — it never ships.
+
+**Retro** — Session archaeology: where the agent stalled, what context was missing, what got asked twice. Applies minimal fixes to `AGENTS.md` and `docs/` so the next session does not hit the same walls.
+
+**Finish** — With the owner's explicit go-ahead: push feature branch, create PR via `gh pr create`, verify CI checks, owner reviews diff before merge.
 
 ---
 
@@ -89,9 +94,26 @@ that cost money, drift, and share blind spots with the model that wrote the code
 |---------|-------------|
 | `docs/surprises.md` | Only what an agent cannot derive from general knowledge: workarounds, hidden constraints, dangerous places. Never "what a database is" |
 | Short `AGENTS.md` | Capped at 60 lines, five questions, pointers instead of prose. Detail lives in the docs tree |
-| Tests are requirements | Every test names the acceptance criterion or architecture constraint it locks in. Orphan tests freeze accidental implementations |
+| Tests are evidence | A test proves a named requirement — an acceptance criterion, an architecture constraint, or a defect that must not return. Traceability, not scarcity: orphan tests are the defect, thorough coverage is not |
 | Black-box acceptance criteria | Criteria describe what the user observes, never internals — the implementation stays replaceable |
 | Session-archaeology retro | After QA PASS: where the agent stalled, what context was missing, then minimal fixes to `AGENTS.md` and `docs/` |
+
+---
+
+## New in v3.1 — Does it actually work
+
+Documentation and review were the strong parts; proving the product runs was not. v3.1 closes that gap.
+
+| Feature | Description |
+|---------|-------------|
+| QA exercises the running product | Criteria are verified by starting the product and observing it, not by tracing functions. Evidence is `POST /api/session → 201`, not a file path. No runnable environment means `UNKNOWN`, never `PASS` |
+| Release Gate | Clean checkout installs and starts, `.env.example` complete, migrations reversible, health check answers, smoke path runs. Catches the build that works only in the agent's session |
+| Vertical slices | Phases are user-visible slices, not layers. A walking skeleton first, one scenario per phase after. Nothing waits until the last phase to work |
+| Scope by intent | The plan's file list is an expectation, not a whitelist — lockfiles and generated files need no amendment; an unplanned capability does |
+| Artifact change protocol | When implementation proves an approved artifact wrong: update the earliest artifact invalidated, propagate downstream, stop for approval when the change is material |
+| Quality requirements | Security, privacy, performance, accessibility and data recovery get stated in the PRD with a verification method — instead of being discovered at release |
+| Real exit codes | "Build would pass" is no longer an acceptable result. Commands are run and their exit codes reported, or named as not run with a reason |
+| Git hygiene | Clean tree before a phase; stage files by name. `git add .` is how `.env` files and credentials reach commits |
 
 **On repeated runs.** Requiring the same reviewer to pass an artifact k times in a row is
 not a reliability gain — repeated calls to one model with one prompt are correlated, and
@@ -142,6 +164,7 @@ Fill these placeholders before spawning agents. The skill is **tech-stack agnost
 | `{{PROJECT_NAME}}` | Project name | Weather Tracker |
 | `{{TECH_STACK}}` | Runtime + language + frameworks | Flutter 3.x, Dart 3.x, Riverpod |
 | `{{BUILD_COMMAND}}` | Build verification | `flutter build apk --debug` |
+| `{{RUN_COMMAND}}` | Start the product the way a user reaches it | `flutter run -d chrome` |
 | `{{TEST_COMMAND}}` | Test runner | `flutter test` |
 | `{{LINT_COMMAND}}` | Static analysis | `flutter analyze` |
 | `{{QUALITY_RULES}}` | Language-specific quality rules | null safety, no dynamic, const constructors |
@@ -180,6 +203,7 @@ phased-engineering-pipeline/
     ├── reviewer-solid-prompt.md     # Reviewer: Principal Staff Engineer (+ layer violations)
     ├── reviewer-sre-prompt.md       # Reviewer: SRE & Security Auditor
     ├── qa-prompt.md                 # Phase 4: QA Engineer (+ QUALITY_SCORE.md)
+    ├── release-prompt.md            # Release Gate: clean checkout, config, rollback, smoke
     ├── retro-prompt.md              # Phase 5: Retro — session archaeology
     └── docs-scaffold.md             # Canonical docs/ knowledge base structure
 ```
@@ -230,6 +254,9 @@ docs/
 | Developer returns `BLOCKED` | Surface blocker to user, wait for decision |
 | Review loop stuck 3+ rounds | Escalate to user: retry / accept / simplify scope |
 | QA fails | Developer fixes specific criteria, QA re-validates |
+| QA cannot run the product | Report `QA INCONCLUSIVE` with what would make it runnable — never pass on code reading |
+| Release Gate blocked | Fix the missing artifact (uncommitted file, absent env var, irreversible migration) and re-run the gate |
+| Implementation proves an approved artifact wrong | Update the earliest artifact invalidated, propagate downstream, stop for approval if the change is material |
 | CI check fails | Read failure, fix if possible, escalate if infra issue |
 | Agent timeout | Re-spawn once, then escalate |
 
