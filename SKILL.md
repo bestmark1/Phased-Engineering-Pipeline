@@ -338,7 +338,8 @@ Produces:
 Each phase in `IMPLEMENTATION_PLAN.md` must include:
 - goal
 - scope
-- exact files touched
+- user-visible outcome of the slice
+- expected files touched (an expectation, not a whitelist)
 - dependencies
 - Definition of Done
 - verification commands
