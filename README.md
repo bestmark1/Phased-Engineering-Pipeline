@@ -1,24 +1,26 @@
 # phased-engineering-pipeline
 
-> Claude Code skill that orchestrates eight specialized agents through a full BMAD engineering pipeline: **Analyst → PM → Architect → Tech Lead → Developer** with parallel SOLID and SRE code reviewers, then **QA validation**. Includes auto git commits, feature branch workflow, CI/CD awareness, knowledge base (`docs/`), AGENTS.md project map, decision logs, and tech debt tracking.
+> Claude Code skill that orchestrates twelve specialized agents through a full BMAD engineering pipeline: **Narrative → (MRD) → PRD → Clarifier → Architect → Tech Lead → Analyzer → Developer** with SOLID and SRE code reviewers, then **QA validation** and a **session-archaeology retro**. Includes auto git commits, feature branch workflow, CI/CD awareness, `SPEC_PLAN/` artifact hub, knowledge base (`docs/`) with a surprises log, AGENTS.md project map, decision logs, tech debt tracking, and optional Plane MCP sync.
 
 ---
 
 ## What it does
 
-Instead of asking Claude to "build a system" and hoping for the best, this skill enforces a professional BMAD engineering workflow with six approval gates:
+Instead of asking Claude to "build a system" and hoping for the best, this skill enforces a professional BMAD engineering workflow with explicit approval gates:
 
 ```
-[Analyst] → [PM] → PRD.md → ⛔ USER APPROVAL
-  → git: create feature/{slug} branch, commit PRD
-  → [Architect] → ARCHITECTURE.md + AGENTS.md + docs/ → ⛔ USER APPROVAL → git: commit
-    → [Tech Lead] → IMPLEMENTATION_PLAN.md (with Decision Log) → ⛔ USER APPROVAL → git: commit
+[Narrative Lead] → [Market PM: Full mode] → [Product PM] → PRD.md → ⛔ USER APPROVAL
+  → [Clarifier] → ⛔ CLARIFY PASS
+  → git: create feature/{slug} branch, commit product artifacts
+  → [Architect] → ARCHITECTURE.md + CONSTITUTION.md + AGENTS.md + docs/ → ⛔ USER APPROVAL
+    → [Tech Lead] → IMPLEMENTATION_PLAN.md (with Decision Log) → ⛔ USER APPROVAL
+      → [Analyzer] → cross-artifact-analysis.md → ⛔ ANALYZE PASS
       → loop per plan phase:
-          [Developer] → self-review loop → git: commit code
-          → [Reviewer SOLID] ‖ [Reviewer SRE]
-          → both APPROVE → next phase
+          [Developer] → self-review loop → deterministic gate (build/lint/typecheck/test)
+          → [Reviewer SOLID] ‖ [Reviewer SRE]  (topology by review depth)
+          → critic loop on findings → APPROVE → next phase
       → [QA Agent] → validates PRD acceptance criteria → updates QUALITY_SCORE.md
-          → QA PASS → git: push → gh pr create → ⛔ USER REVIEWS DIFF
+          → QA PASS → [Retro] → git: push → gh pr create → ⛔ USER REVIEWS DIFF
 ```
 
 **Phase 0a — Domain Analysis** — A Domain Analyst researches the problem space, stakeholders, competitors, and risks. Asks 5-8 clarifying questions. Saves distilled vendor docs to `docs/references/{tool}-llms.txt` for reuse.
@@ -27,7 +29,7 @@ Instead of asking Claude to "build a system" and hoping for the best, this skill
 
 **Phase 1 — Architecture** — A Senior Architect reads the official docs, asks 3-5 clarifying questions, then produces:
 - `ARCHITECTURE.md` with C4 diagrams (Mermaid), contracts/interfaces, dependency layer order, error handling strategy
-- `AGENTS.md` — ~100 line project map (table of contents, not a manual)
+- `AGENTS.md` — project map capped at 60 lines, answering five questions: what the project is, where the docs are, how to run the environment, related repos, what is forbidden without permission
 - `docs/` knowledge base scaffold per project principles
 
 **Phase 2 — Implementation Plan** — A Tech Lead converts the approved architecture into `IMPLEMENTATION_PLAN.md` with exact files, contracts, a runnable Definition of Done, and a **Decision Log** (chose X over Y because…) per phase.
@@ -51,7 +53,7 @@ Inspired by OpenAI's [Harness Engineering](https://openai.com/index/harness-engi
 | Feature | Description |
 |---------|-------------|
 | `docs/` knowledge base | Scaffold created by Architect, populated throughout pipeline |
-| `AGENTS.md` | Project map (~100 lines): entry points, conventions, key contracts |
+| `AGENTS.md` | Project map (≤60 lines): five questions, pointers instead of prose |
 | Decision Log | Each plan phase documents choices made and why |
 | Tech Debt Tracker | `docs/tech-debt-tracker.md` — tracked debt is acceptable, hidden is not |
 | Self-Review Loop | Developer: verify → self-fix → re-verify before handing off |
@@ -80,6 +82,16 @@ that cost money, drift, and share blind spots with the model that wrote the code
 | Agent guardrails | Refuse out-of-scope deletion, secret leakage into commits or logs, history rewrites, and unrequested outward-facing actions |
 | Run economics | Tokens, duration, cost and review round-trips recorded per phase — report-only until a baseline exists |
 | Eval hooks | Optional `{{EVAL_COMMAND}}` and `SPEC_PLAN/EVAL_PLAN.md` for products containing an LLM. The pipeline calls eval tooling; it does not reimplement metrics or judges |
+
+### Context practices — what the project leaves behind for the next session
+
+| Feature | Description |
+|---------|-------------|
+| `docs/surprises.md` | Only what an agent cannot derive from general knowledge: workarounds, hidden constraints, dangerous places. Never "what a database is" |
+| Short `AGENTS.md` | Capped at 60 lines, five questions, pointers instead of prose. Detail lives in the docs tree |
+| Tests are requirements | Every test names the acceptance criterion or architecture constraint it locks in. Orphan tests freeze accidental implementations |
+| Black-box acceptance criteria | Criteria describe what the user observes, never internals — the implementation stays replaceable |
+| Session-archaeology retro | After QA PASS: where the agent stalled, what context was missing, then minimal fixes to `AGENTS.md` and `docs/` |
 
 **On repeated runs.** Requiring the same reviewer to pass an artifact k times in a row is
 not a reliability gain — repeated calls to one model with one prompt are correlated, and
@@ -136,6 +148,14 @@ Fill these placeholders before spawning agents. The skill is **tech-stack agnost
 | `{{INTERFACE_STYLE}}` | How contracts are defined | abstract class / mixin |
 | `{{DOCS_URL}}` | Official docs URL | https://docs.flutter.dev/ |
 | `{{STRICT_MODE}}` | Gate enforcement | `true` (default, all gates blocking) |
+| `{{PIPELINE_MODE}}` | `lite` or `full` | `lite` |
+| `{{TYPECHECK_COMMAND}}` | Type checker if separate | `dart analyze` |
+| `{{ROLLBACK_COMMAND}}` | How to undo the last change | `git revert HEAD` |
+| `{{DEFAULT_REVIEW_DEPTH}}` | `low` / `medium` / `high` floor | `medium` |
+| `{{EVAL_COMMAND}}` | Eval suite; empty when the product has no LLM | `npx promptfoo eval` |
+| `{{PLANE_ENABLED}}` | Sync execution state to Plane | `false` |
+
+`SKILL.md` holds the full placeholder table, including the Plane fields.
 
 **Pre-built stack profiles included:** Flutter/Dart, TypeScript/Node.js, Python/FastAPI, Go.
 
@@ -145,37 +165,47 @@ Fill these placeholders before spawning agents. The skill is **tech-stack agnost
 
 ```
 phased-engineering-pipeline/
-├── SKILL.md                         # Entry point (~400 lines)
+├── SKILL.md                         # Entry point: flow, gates, principles, role→prompt map
 └── references/
-    ├── analyst-prompt.md            # Phase 0a: Domain Analyst (+ llms.txt caching)
+    ├── narrative-prompt.md          # Phase 0a: Narrative Lead → Narrative.md
+    ├── mrd-prompt.md                # Phase 0a2: Market PM → MRD.md (Full mode only)
+    ├── analyst-prompt.md            # Domain Analyst (+ llms.txt caching)
     ├── pm-prompt.md                 # Phase 0b: Product Manager → PRD
+    ├── clarify-prompt.md            # Phase 0c: Spec Clarifier
     ├── architect-prompt.md          # Phase 1: Senior System Architect (+ AGENTS.md, docs/)
-    ├── tech-lead-prompt.md          # Phase 2: Tech Lead (+ Decision Log)
-    ├── developer-prompt.md          # Phase 3: Senior Developer (+ self-review loop, tech debt)
+    ├── tech-lead-prompt.md          # Phase 2: Tech Lead (+ Decision Log, review depth)
+    ├── analyze-prompt.md            # Phase 2a: Cross-artifact Analyzer
+    ├── plane-sync-prompt.md         # Plane Sync (only when PLANE_ENABLED=true)
+    ├── developer-prompt.md          # Phase 3: Senior Developer (+ self-review, guardrails)
     ├── reviewer-solid-prompt.md     # Reviewer: Principal Staff Engineer (+ layer violations)
     ├── reviewer-sre-prompt.md       # Reviewer: SRE & Security Auditor
     ├── qa-prompt.md                 # Phase 4: QA Engineer (+ QUALITY_SCORE.md)
-    └── docs-scaffold.md             # Template for docs/ knowledge base structure
+    ├── retro-prompt.md              # Phase 5: Retro — session archaeology
+    └── docs-scaffold.md             # Canonical docs/ knowledge base structure
 ```
 
 ---
 
 ## Knowledge Base (docs/)
 
-Architect creates this structure after Phase 1. Subsequent agents populate it:
+Architect creates this structure after Phase 1. Subsequent agents populate it.
+The canonical definition lives in `references/docs-scaffold.md`:
 
 ```
 docs/
-├── design-docs/
-│   ├── index.md              # Design decisions catalog
-│   └── core-beliefs.md       # Project principles
+├── README.md                 # Index of the knowledge base
+├── EXECUTION_RULES.md        # How work is executed in this project
+├── surprises.md              # Project-specific surprises only — never general knowledge
+├── tech-debt-tracker.md      # Updated by Developer/Reviewers when deferring
+├── QUALITY_SCORE.md          # Updated by QA after validation
+├── decisions/
+│   └── index.md              # Design decisions catalog
 ├── exec-plans/
 │   ├── active/               # Current IMPLEMENTATION_PLAN.md
 │   └── completed/            # Archived plans after merge
 ├── references/
 │   └── {tool}-llms.txt       # Distilled vendor docs (from Analyst)
-├── QUALITY_SCORE.md           # Updated by QA after validation
-└── tech-debt-tracker.md       # Updated by Developer/Reviewers when deferring
+└── archive/                  # Superseded detail moved out during restructures
 ```
 
 ---
