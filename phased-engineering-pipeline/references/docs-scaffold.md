@@ -5,23 +5,32 @@ Subsequent agents populate it throughout the pipeline.
 
 ## Structure
 
+This is the **single canonical definition** of the `docs/` tree. `SKILL.md` points here;
+do not maintain a second version of this structure anywhere else.
+
 ```
 docs/
-├── design-docs/
+├── README.md                 # Index of the knowledge base (created by Architect)
+├── EXECUTION_RULES.md        # How work is executed in this project (Architect)
+├── surprises.md              # Project-specific surprises only (Developer/Reviewers)
+├── tech-debt-tracker.md      # Known debt items (Developer/Reviewers)
+├── QUALITY_SCORE.md          # Domain/layer quality grades (QA)
+├── decisions/
 │   └── index.md              # Catalog of design decisions
 ├── exec-plans/
 │   ├── active/               # Current IMPLEMENTATION_PLAN.md (symlink or copy)
 │   └── completed/            # Archived plans after merge
 ├── references/
 │   └── {tool}-llms.txt       # Distilled vendor docs (created by Analyst)
-├── QUALITY_SCORE.md           # Domain/layer quality grades (updated by QA)
-├── surprises.md               # Project-specific surprises only (updated by Developer/Reviewers)
-└── tech-debt-tracker.md       # Known debt items (updated by Developer/Reviewers)
+└── archive/                  # Superseded detail moved out during restructures
 ```
+
+Create a directory when its first file is written, not upfront — an empty folder tree is
+noise an agent has to scan past.
 
 ## File Templates
 
-### docs/design-docs/index.md
+### docs/decisions/index.md
 
 ```markdown
 # Design Decisions Index
@@ -70,7 +79,7 @@ Updated by QA agent after each validation pass.
 
 ## Usage
 
-- **Architect** creates the scaffold and `CONSTITUTION.md` (project root)
+- **Architect** creates the scaffold and `SPEC_PLAN/CONSTITUTION.md`
 - **Analyst** saves distilled docs to `docs/references/{tool}-llms.txt`
 - **Developer** appends to `docs/tech-debt-tracker.md` when deferring
 - **Developer** appends to `docs/surprises.md` when hitting non-obvious behavior, workarounds, or hidden constraints

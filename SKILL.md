@@ -165,13 +165,53 @@ Inside `SPEC_PLAN/`:
 - `cross-artifact-analysis.md`
 - `plane-sync.md` (when Plane is enabled)
 
-Inside `docs/`:
+Inside `docs/` — the tree is defined once, in `references/docs-scaffold.md`:
 - `README.md`
 - `EXECUTION_RULES.md`
 - `surprises.md`
 - `tech-debt-tracker.md`
 - `QUALITY_SCORE.md`
-- optional subfolders: `product/`, `architecture/`, `delivery/`, `decisions/`, `archive/`
+- subfolders created on first use: `decisions/`, `exec-plans/`, `references/`, `archive/`
+
+## PROGRESS.md template
+
+The Architect creates this file; every later role updates its own row. Status values are
+`⬜ Not started`, `🔄 In Progress`, `✅ Done`, `⛔ Blocked`.
+
+```markdown
+# Progress — {{PROJECT_NAME}}
+
+Pipeline mode: {{PIPELINE_MODE}} · Strict mode: {{STRICT_MODE}}
+
+| Phase | Role | Artifact | Status | Updated |
+|-------|------|----------|--------|---------|
+| 0a | Narrative Lead | SPEC_PLAN/Narrative.md | ⬜ | |
+| 0a2 | Market PM | SPEC_PLAN/MRD.md | ⬜ | Full mode only |
+| 0b | Product PM | SPEC_PLAN/PRD.md | ⬜ | |
+| 0c | Clarifier | SPEC_PLAN/clarification-report.md | ⬜ | |
+| 1 | Architect | SPEC_PLAN/ARCHITECTURE.md | ⬜ | |
+| 2 | Tech Lead | SPEC_PLAN/IMPLEMENTATION_PLAN.md | ⬜ | |
+| 2a | Analyzer | SPEC_PLAN/cross-artifact-analysis.md | ⬜ | |
+| 3.1 | Developer | <phase 1 scope> | ⬜ | |
+| 3.N | Developer | <phase N scope> | ⬜ | |
+| 4 | QA | QA report | ⬜ | |
+| 5 | Retro | AGENTS.md / docs updates | ⬜ | |
+
+## Run cost per phase
+
+Report-only until a baseline exists — never a gate.
+
+| Phase | Tokens in/out | Duration | Approx. cost | Review round-trips |
+|-------|---------------|----------|--------------|--------------------|
+
+## Blockers
+
+| Date | Phase | Blocker | Owner decision needed |
+|------|-------|---------|-----------------------|
+```
+
+The Architect pre-fills rows `3.1`–`3.N` as placeholders; the Tech Lead replaces them with
+the real phases once `IMPLEMENTATION_PLAN.md` exists.
 
 ## Required repository structure
 
@@ -193,18 +233,41 @@ SPEC_PLAN/
   cross-artifact-analysis.md
   plane-sync.md               # when Plane enabled
 
-docs/
+docs/                         # full tree: references/docs-scaffold.md
   README.md
   EXECUTION_RULES.md
   surprises.md
-  product/
-  architecture/
-  delivery/
-  decisions/
   tech-debt-tracker.md
   QUALITY_SCORE.md
+  decisions/
+  exec-plans/
+  references/
   archive/
 ```
+
+## Role → prompt file
+
+Every role in the flow has a prompt file. A role with no prompt file is a gap in the
+skill, not a role the agent should improvise.
+
+| # | Role | Prompt file | When |
+|---|------|-------------|------|
+| 0a | Narrative Lead | `references/narrative-prompt.md` | always |
+| 0a2 | Market PM | `references/mrd-prompt.md` | Full mode only |
+| 0b | Product PM | `references/pm-prompt.md` | always |
+| 0c | Clarifier | `references/clarify-prompt.md` | always |
+| — | Domain Analyst | `references/analyst-prompt.md` | when domain research is needed |
+| 1 | Architect | `references/architect-prompt.md` | always |
+| 2 | Tech Lead | `references/tech-lead-prompt.md` | always |
+| 2a | Analyzer | `references/analyze-prompt.md` | always |
+| — | Plane Sync | `references/plane-sync-prompt.md` | `{{PLANE_ENABLED}}=true` |
+| 3 | Developer | `references/developer-prompt.md` | per phase |
+| 3r | Reviewer SOLID | `references/reviewer-solid-prompt.md` | per review depth |
+| 3r | Reviewer SRE | `references/reviewer-sre-prompt.md` | High depth, or Medium when combined |
+| 4 | QA | `references/qa-prompt.md` | always |
+| 5 | Retro | `references/retro-prompt.md` | after QA PASS, advisory |
+
+`references/docs-scaffold.md` is not a role — it is the canonical `docs/` tree definition.
 
 ## Role outputs
 
@@ -555,7 +618,7 @@ Not every change deserves the full review topology. Pick depth from the change, 
 |---|---|---|
 | **Low** | docs, comments, copy, config values, dependency bumps | deterministic checks + one combined review |
 | **Medium** | ordinary feature or bugfix inside one phase scope | deterministic checks + one Reviewer + QA against acceptance criteria |
-| **High** | auth, payments, data migrations, deletion paths, external API contracts, secrets handling, anything in `CONSTITUTION.md` marked critical | Reviewer SOLID and Reviewer SRE independently + QA + human diff approval |
+| **High** | auth, payments, data migrations, deletion paths, external API contracts, secrets handling, anything in `SPEC_PLAN/CONSTITUTION.md` marked critical | Reviewer SOLID and Reviewer SRE independently + QA + human diff approval |
 
 When `{{STRICT_MODE}}=true`, High depth cannot be downgraded.
 The Tech Lead assigns a depth to each phase in `IMPLEMENTATION_PLAN.md`; the Developer
