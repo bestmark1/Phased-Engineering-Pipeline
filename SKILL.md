@@ -137,6 +137,7 @@ Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in prompts reso
 | `{{PIPELINE_MODE}}` | `lite` or `full` | `full` |
 | `{{TECH_STACK}}` | Runtime + language + frameworks | Node.js, TypeScript strict, Next.js |
 | `{{BUILD_COMMAND}}` | Build verification | `npm run build` |
+| `{{RUN_COMMAND}}` | Start the product the way a user reaches it | `npm run dev` |
 | `{{TEST_COMMAND}}` | Test runner | `npm test` |
 | `{{LINT_COMMAND}}` | Linter / static analysis | `npm run lint` |
 | `{{TYPECHECK_COMMAND}}` | Type checker if separate | `tsc --noEmit` |
