@@ -82,12 +82,20 @@ Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Op
 5. **Navigation must remain maintainable**
    - Agents may propose restructuring long docs into a parent summary plus child docs.
 
-6. **Tests are requirements**
-   - Every test locks in a PRD acceptance criterion or an architecture constraint,
-     and must name it.
-   - A test without a requirement freezes an accidental implementation:
-     future sessions will maintain the test instead of fixing the approach.
-   - Agents may propose tests but must state what requirement each one fixes.
+6. **Tests are evidence of requirements**
+   - A test exists to prove that a requirement holds: a PRD acceptance criterion, an
+     architecture constraint, or a defect that must not come back.
+   - Every test names what it proves. A test that names nothing is an **orphan**: it
+     freezes an accidental implementation, and the next session maintains the test
+     instead of reconsidering the approach.
+   - This is a traceability rule, not a scarcity rule. Internal logic may be covered as
+     thoroughly as its requirement demands — a complex algorithm serving one acceptance
+     criterion may need many tests, and that is correct.
+   - A fixed defect is a valid target: the requirement it proves is "this failure does
+     not return."
+   - The requirement comes first, the test second. An agent that wants a test for
+     something with no requirement has found a missing requirement, not a missing test —
+     raise it instead of encoding it.
 
 7. **Document surprises, not general knowledge**
    - `docs/` must capture only what an agent cannot derive from general knowledge:
@@ -519,7 +527,7 @@ Every stage must define how success is observed.
 
 | Level | Tools | Applies to |
 |---|---|---|
-| Basic | exit codes, lint, typecheck, unit tests | every coding phase |
+| Basic | exit codes, lint, typecheck, unit tests for the phase's own requirements | every coding phase |
 | Medium | integration tests, contract tests, smoke tests | QA |
 | High | production logs, metrics, manual checklists | post-deploy, outside this skill |
 

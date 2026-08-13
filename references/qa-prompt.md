@@ -56,9 +56,13 @@ Check: does the code do anything NOT specified in the PRD?
 Flag any functionality that exists without a corresponding user story.
 
 ### Step 5: Detect Orphan Tests
-Check every test: does it trace to a PRD acceptance criterion or a documented
-architecture constraint? Flag tests that only freeze the current implementation —
-they are requirements nobody approved.
+Check every test: does it name what it proves — a PRD acceptance criterion, an
+architecture constraint, or a defect that must not return? Flag only tests that trace
+to nothing; they freeze an accidental implementation as if it were approved.
+
+Do not flag a test merely for covering internal logic or for being one of many on the
+same criterion. Thorough coverage of a real requirement is correct; the defect is a
+test with no requirement behind it.
 
 ## Output Format
 

@@ -100,13 +100,16 @@ One-paragraph description of what this project is and who it serves.
 - Process for adding new dependencies
 
 ## Test Policy
-- A test is a requirement, not decoration. Every new test must state which
-  PRD acceptance criterion or architecture constraint it locks in.
-- Tests without a stated requirement are noise: they freeze an accidental
-  implementation and future sessions will maintain the test instead of
-  reconsidering the code.
-- An agent may propose a test, but must explain what product or architecture
-  requirement it fixes before adding it.
+- A test is evidence that a requirement holds — a PRD acceptance criterion, an
+  architecture constraint, or a defect that must not return. Every test names
+  what it proves.
+- Orphan tests (proving nothing named) are banned: they freeze an accidental
+  implementation, and future sessions maintain the test instead of reconsidering
+  the code.
+- This is traceability, not scarcity. Internal logic may be covered as thoroughly
+  as its requirement demands.
+- A test wanted for behavior no requirement covers signals a missing requirement.
+  Raise it with the owner instead of encoding it in a test.
 
 ## Review Standards
 - What SOLID reviewer checks for
