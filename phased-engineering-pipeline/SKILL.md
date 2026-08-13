@@ -338,7 +338,8 @@ Produces:
 Each phase in `IMPLEMENTATION_PLAN.md` must include:
 - goal
 - scope
-- exact files touched
+- user-visible outcome of the slice
+- expected files touched (an expectation, not a whitelist)
 - dependencies
 - Definition of Done
 - verification commands
@@ -491,9 +492,16 @@ If Plane status and local markdown meaning diverge:
 
 Developer may execute only the active implementation phase.
 
+Phases are **vertical slices**: each one ends with something a user can do, cutting
+through whatever layers it needs. A phase whose outcome is only "the layer exists" is a
+planning defect — see `references/tech-lead-prompt.md`.
+
 Rules:
 - Never pull tasks from future phases.
-- Never change files outside the current phase scope unless:
+- Scope is about **intent, not a file whitelist**. Touching a file the plan did not list
+  is fine when it serves this slice — lockfiles, generated code, a helper discovered
+  mid-implementation. Building a capability the plan did not name is not.
+- Do not change files outside the current slice's purpose unless:
   1. required for a blocking bug fix inside the current phase, and
   2. recorded in `HANDOFF.md` and `PROGRESS.md`.
 - If a needed change belongs to a future phase, log:
@@ -502,6 +510,52 @@ Rules:
   - current phase Definition of Done
   - PRD acceptance criteria touched by that phase
   - architecture constraints relevant to that phase
+
+## Changing an approved artifact
+
+Implementation discovers things planning could not know: an API behaves differently than
+documented, a requirement turns out to be impossible as written, two acceptance criteria
+contradict each other only once code exists.
+
+Without a route for this, an agent has two bad options — quietly build something other
+than what was approved, or bury the discovery in `tech-debt-tracker.md` and implement the
+approved-but-wrong thing. Both produce a product that does not match its own spec.
+
+**Update the earliest artifact the discovery invalidates, then everything downstream.**
+
+| What the discovery changes | Earliest artifact to update |
+|---|---|
+| What the product does for the user | `SPEC_PLAN/PRD.md` |
+| A contract, data shape, or dependency direction | `SPEC_PLAN/ARCHITECTURE.md` |
+| Only how a phase is built | `SPEC_PLAN/IMPLEMENTATION_PLAN.md` |
+| A project rule or convention | `SPEC_PLAN/CONSTITUTION.md` |
+
+Then propagate: a PRD change flows into architecture, plan, and phase Definition of Done.
+Leaving the PRD stale while the code moves on is how a spec quietly becomes fiction.
+
+### When re-approval is required
+
+Ask the owner, and stop, when the change is **material**:
+
+- observable behavior a user would notice,
+- a contract other code or an external consumer depends on,
+- anything touching data retention, deletion, or migration,
+- security, authentication, or permissions,
+- cost, or a new external dependency,
+- scope: work the approved artifacts did not ask for.
+
+Proceed and simply record the update when the change is **immaterial** — naming,
+internal structure, a clarification that changes no behavior, a correction that makes the
+artifact say what everyone already assumed.
+
+When in doubt, treat it as material. The cost of one question is minutes; the cost of an
+unapproved behavior change discovered at release is the phase.
+
+### Record it
+
+Every artifact change during implementation gets a line in `HANDOFF.md`: what was
+discovered, which artifact changed, and whether the owner approved it. A silent edit to
+an approved document is indistinguishable from scope creep on review.
 
 ## Documentation restructure policy
 

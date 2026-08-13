@@ -26,6 +26,12 @@ Validate every acceptance criterion from the PRD against the actual implementati
 
 ### Step 1: Extract Acceptance Criteria
 List every Given/When/Then criterion from the PRD. Number them AC-1, AC-2, etc.
+Each criterion carries a *Verified by* line — that is the check you run in Step 2.
+
+Include the PRD's **Quality Requirements** table (security, privacy, performance,
+accessibility, data recovery) as numbered criteria too: QR-1, QR-2, … They ship or fail
+the release exactly like user stories do, and skipping them is how they get discovered
+by a user instead of by you.
 
 ### Step 2: Exercise the running product
 

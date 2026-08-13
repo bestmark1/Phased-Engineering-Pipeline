@@ -34,13 +34,24 @@ Create a step-by-step **Implementation Plan** based on the approved `ARCHITECTUR
 Break the build into logical, sequential phases. For each phase specify:
 
 1. **Phase name** and purpose (1 sentence)
-2. **Exact files to create** (full relative paths from project root)
-3. **Interfaces/classes to implement** in that phase
-4. **Definition of Done** — a concrete, runnable verification:
+2. **User-visible outcome** — what someone can do after this phase that they could not
+   do before. If you cannot state one, the phase is a layer, not a slice: merge it into
+   the slice that needs it.
+3. **Expected files** (full relative paths from project root) — the files you expect to
+   be touched, not a contract. Lockfiles, generated code, and files discovered during
+   implementation are allowed without a plan amendment; a *new capability* that was not
+   planned is not. Phase isolation is about scope of intent, not a file whitelist.
+4. **Interfaces/classes to implement** in that phase
+5. **Definition of Done** — concrete, runnable verification, including at least one check
+   against the running product:
    - Example: "Run `{{BUILD_COMMAND}}` — zero errors"
    - Example: "Run `{{TEST_COMMAND}}` — all tests green"
-   - Example: "GET /health returns 200 with expected JSON shape"
-5. **Review depth** — `low`, `medium`, or `high`, never below `{{DEFAULT_REVIEW_DEPTH}}`:
+   - Example: "Start `{{RUN_COMMAND}}`, POST /api/session → 201 with an id"
+   - Example: "Open /join/<expired-id> → the expired-session message renders"
+
+   A Definition of Done that only lists green commands proves the code compiles, not that
+   the slice works. QA and the Release Gate will look for observed evidence — plan for it.
+6. **Review depth** — `low`, `medium`, or `high`, never below `{{DEFAULT_REVIEW_DEPTH}}`:
    - `low` — docs, comments, copy, config values, dependency bumps
    - `medium` — ordinary feature or bugfix work
    - `high` — auth, payments, data migrations, deletion paths, external API contracts,
@@ -76,13 +87,40 @@ authors both the behavior and the standard it is judged against proves nothing.
 If no phase involves an LLM, leave `{{EVAL_COMMAND}}` empty and skip this section —
 most projects need nothing here.
 
-## Recommended Phase Pattern (adapt to the actual architecture)
+## Phase pattern — vertical slices, not horizontal layers
 
-- **Phase 1**: Project scaffold — config, logger, core contracts, empty stubs
-- **Phase 2**: Infrastructure layer — external connections, clients, retry logic
-- **Phase 3**: Domain layer — business logic, data transformation, core algorithms
-- **Phase 4**: Application layer — API server, CLI, UI, or event handlers
-- **Phase 5**: Wiring — dependency injection entrypoint, integration smoke test
+**Every implementation phase must end with something a user can do.**
+
+The tempting shape is by layer: infrastructure, then domain, then application, then
+wiring. Avoid it. Layered phases have three costs that land squarely on a solo owner:
+
+- Nothing works until the last phase, so every integration mistake surfaces at the end,
+  all at once, when the plan says you are nearly finished.
+- Nothing can be verified against the running product until the last phase — QA and the
+  Release Gate have nothing to exercise, and their evidence rules degrade to code reading.
+- If the project stops early, you have three layers of scaffolding and zero working
+  product.
+
+Slice by user-visible capability instead. Each phase cuts through whatever layers it
+needs — schema, service, endpoint, screen — to make one scenario work end to end:
+
+- **Phase 1**: Walking skeleton — the thinnest path that runs. One real request through
+  every layer it touches, plus whatever config and logging that path needs. It may return
+  a hardcoded answer; it must actually run.
+- **Phase 2..N**: One user scenario per phase, ordered by value and risk. Each takes a
+  PRD user story from "not possible" to "works and is verified".
+- **Final phase**: Hardening — the cross-cutting work that genuinely cannot be sliced:
+  error paths, rate limits, observability, performance passes.
+
+Shared infrastructure gets built by the first slice that needs it, and extended by the
+next. Do not create a phase whose Definition of Done is only "the client class exists".
+
+Choose the slice order by: what proves the riskiest assumption first, then what the
+owner most needs working. A slice that only rearranges internals is not a slice.
+
+**When layering is genuinely right:** a shared contract that three slices all depend on,
+where guessing it wrong forces three rewrites, may be its own small phase. State that
+justification in the plan. It is the exception, not the pattern.
 
 ## Output Format
 
@@ -93,7 +131,9 @@ most projects need nothing here.
 
 **Purpose:** one sentence
 
-**Files to create:**
+**User-visible outcome:** what someone can do after this phase that they could not before
+
+**Expected files** (not a whitelist — see rule 3):
 - path/to/file
 - path/to/other
 
@@ -103,6 +143,7 @@ most projects need nothing here.
 
 **Definition of Done:**
 - Run `<command>` → expected output
+- Against the running product: `<action>` → `<observable result>`
 
 **Review depth:** low / medium / high — one line of justification
 
