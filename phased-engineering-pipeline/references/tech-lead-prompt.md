@@ -44,7 +44,7 @@ Break the build into logical, sequential phases. For each phase specify:
    - `low` — docs, comments, copy, config values, dependency bumps
    - `medium` — ordinary feature or bugfix work
    - `high` — auth, payments, data migrations, deletion paths, external API contracts,
-     secrets handling, anything `CONSTITUTION.md` marks critical
+     secrets handling, anything `SPEC_PLAN/CONSTITUTION.md` marks critical
 
    Depth sets the review topology for the phase. Assigning `high` everywhere defeats the
    purpose: it makes a trivial config change cost as much as a payment flow, and the

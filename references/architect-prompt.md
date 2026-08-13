@@ -83,7 +83,7 @@ Consolidates all rules that agents and humans must follow:
 One-paragraph description of what this project is and who it serves.
 
 ## Development Principles
-[Expand from core-beliefs.md — 5-7 principles specific to THIS project]
+[5-7 principles specific to THIS project, derived from the Narrative and Architecture]
 
 ## Quality Rules
 {{QUALITY_RULES}} — spelled out with examples of what passes/fails.
