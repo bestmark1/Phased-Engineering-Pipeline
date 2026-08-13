@@ -510,6 +510,52 @@ Rules:
   - PRD acceptance criteria touched by that phase
   - architecture constraints relevant to that phase
 
+## Changing an approved artifact
+
+Implementation discovers things planning could not know: an API behaves differently than
+documented, a requirement turns out to be impossible as written, two acceptance criteria
+contradict each other only once code exists.
+
+Without a route for this, an agent has two bad options — quietly build something other
+than what was approved, or bury the discovery in `tech-debt-tracker.md` and implement the
+approved-but-wrong thing. Both produce a product that does not match its own spec.
+
+**Update the earliest artifact the discovery invalidates, then everything downstream.**
+
+| What the discovery changes | Earliest artifact to update |
+|---|---|
+| What the product does for the user | `SPEC_PLAN/PRD.md` |
+| A contract, data shape, or dependency direction | `SPEC_PLAN/ARCHITECTURE.md` |
+| Only how a phase is built | `SPEC_PLAN/IMPLEMENTATION_PLAN.md` |
+| A project rule or convention | `SPEC_PLAN/CONSTITUTION.md` |
+
+Then propagate: a PRD change flows into architecture, plan, and phase Definition of Done.
+Leaving the PRD stale while the code moves on is how a spec quietly becomes fiction.
+
+### When re-approval is required
+
+Ask the owner, and stop, when the change is **material**:
+
+- observable behavior a user would notice,
+- a contract other code or an external consumer depends on,
+- anything touching data retention, deletion, or migration,
+- security, authentication, or permissions,
+- cost, or a new external dependency,
+- scope: work the approved artifacts did not ask for.
+
+Proceed and simply record the update when the change is **immaterial** — naming,
+internal structure, a clarification that changes no behavior, a correction that makes the
+artifact say what everyone already assumed.
+
+When in doubt, treat it as material. The cost of one question is minutes; the cost of an
+unapproved behavior change discovered at release is the phase.
+
+### Record it
+
+Every artifact change during implementation gets a line in `HANDOFF.md`: what was
+discovered, which artifact changed, and whether the owner approved it. A silent edit to
+an approved document is indistinguishable from scope creep on review.
+
 ## Documentation restructure policy
 
 Agents must preserve navigability.

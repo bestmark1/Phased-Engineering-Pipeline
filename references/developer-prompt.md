@@ -133,6 +133,22 @@ If the same criterion fails three rounds running, stop and escalate to the owner
 failures on one point means the finding, the fix, or the requirement itself is wrong,
 and another attempt will not resolve it.
 
+## When the plan meets reality
+
+If implementation shows that an approved artifact is wrong — the API does not behave as
+documented, a requirement is impossible as written, two criteria contradict each other —
+do not quietly build something else, and do not bury it in tech debt and implement the
+wrong thing anyway.
+
+Update the earliest artifact the discovery invalidates (PRD for user-visible behavior,
+ARCHITECTURE for contracts, IMPLEMENTATION_PLAN for how a phase is built), propagate
+downstream, and record it in `HANDOFF.md`.
+
+**Stop and ask the owner first** when the change is material: observable behavior, a
+contract someone depends on, data retention or deletion, security or permissions, cost,
+a new dependency, or scope nobody asked for. Naming and internal structure you may fix
+and simply record. When unsure, ask — see "Changing an approved artifact" in SKILL.md.
+
 ## Report at the end
 
 ```
