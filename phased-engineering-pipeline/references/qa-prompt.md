@@ -27,14 +27,31 @@ Validate every acceptance criterion from the PRD against the actual implementati
 ### Step 1: Extract Acceptance Criteria
 List every Given/When/Then criterion from the PRD. Number them AC-1, AC-2, etc.
 
-### Step 2: Trace Through Code
-For each criterion, trace through the code and determine:
-- Is it implemented? (find the specific file + function)
-- Is it tested? (find the specific test)
-- Does the implementation match the expected behavior?
+### Step 2: Exercise the running product
 
-Validate the observable behavior (black box), not the internals: the criterion
-passes if the user-visible outcome matches, regardless of how it is implemented.
+**A criterion is verified by observing the product, not by reading the code.**
+Acceptance criteria are written as black-box statements; checking them by tracing
+functions is a white-box check wearing a black-box label, and it passes exactly the
+bugs that matter — the ones where every function looks right and the product still
+does not work.
+
+For each criterion:
+
+1. Start the product the way a user reaches it: `{{RUN_COMMAND}}` — dev server, CLI, API
+   process, or built app.
+2. Perform the **When** through a real interface: browser, HTTP request, CLI invocation.
+3. Observe the **Then** and capture concrete evidence: HTTP status and response body,
+   rendered text, exit code and stdout, screenshot, log line.
+4. Record the evidence in the coverage table. "Traced to `UserService.create`" is not
+   evidence; `POST /api/session → 201, body {"id":"..."}` is.
+
+Code tracing stays useful for **diagnosis** — once a criterion fails, find why. It is
+never the proof that a criterion passes.
+
+**If the product cannot be run** — no environment, missing credentials, unavailable
+external dependency — the criterion is `UNKNOWN`, never `PASS`. State exactly what
+would make it runnable. A criterion marked `PASS` from code reading alone is a false
+approval, and this pipeline treats false approvals as worse than honest gaps.
 
 ### Step 3: Run Verification Commands
 ```bash
@@ -56,9 +73,13 @@ Check: does the code do anything NOT specified in the PRD?
 Flag any functionality that exists without a corresponding user story.
 
 ### Step 5: Detect Orphan Tests
-Check every test: does it trace to a PRD acceptance criterion or a documented
-architecture constraint? Flag tests that only freeze the current implementation —
-they are requirements nobody approved.
+Check every test: does it name what it proves — a PRD acceptance criterion, an
+architecture constraint, or a defect that must not return? Flag only tests that trace
+to nothing; they freeze an accidental implementation as if it were approved.
+
+Do not flag a test merely for covering internal logic or for being one of many on the
+same criterion. Thorough coverage of a real requirement is correct; the defect is a
+test with no requirement behind it.
 
 ## Output Format
 
@@ -67,11 +88,14 @@ they are requirements nobody approved.
 
 ## Acceptance Criteria Coverage
 
-| # | User Story | Criterion | Status | Evidence |
-|---|-----------|-----------|--------|----------|
-| AC-1 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | file:function |
-| AC-2 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | file:function |
+| # | User Story | Criterion | Status | Observed evidence |
+|---|-----------|-----------|--------|-------------------|
+| AC-1 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | `POST /api/x → 201 {"id":"7f2"}` |
+| AC-2 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | rendered "Session expired" on /join/abc |
 | ... | ... | ... | ... | ... |
+
+Evidence is what the product did when run. A file path or function name in this column
+means the criterion was not actually verified — mark it `UNKNOWN`.
 
 `UNKNOWN` means the criterion could not be verified from available evidence — the
 behavior is not observable in the code, requires a runtime environment you do not have,
@@ -131,9 +155,14 @@ One row per architectural layer or domain area. This file is cumulative — upda
 ## Action — Verdict
 
 **If ALL acceptance criteria pass AND all commands succeed:**
+
+`QA PASS` requires that the product was actually started and exercised. If it was never
+run, no combination of green commands and clean code justifies a pass — report
+`QA INCONCLUSIVE` instead.
+
 Reply with:
 ```
-QA PASS: All acceptance criteria verified.
+QA PASS: All acceptance criteria verified against the running product.
 ```
 
 **If ANY criterion fails OR any command fails:**
