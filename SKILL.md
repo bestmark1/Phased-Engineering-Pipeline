@@ -165,13 +165,13 @@ Inside `SPEC_PLAN/`:
 - `cross-artifact-analysis.md`
 - `plane-sync.md` (when Plane is enabled)
 
-Inside `docs/`:
+Inside `docs/` — the tree is defined once, in `references/docs-scaffold.md`:
 - `README.md`
 - `EXECUTION_RULES.md`
 - `surprises.md`
 - `tech-debt-tracker.md`
 - `QUALITY_SCORE.md`
-- optional subfolders: `product/`, `architecture/`, `delivery/`, `decisions/`, `archive/`
+- subfolders created on first use: `decisions/`, `exec-plans/`, `references/`, `archive/`
 
 ## PROGRESS.md template
 
@@ -233,16 +233,15 @@ SPEC_PLAN/
   cross-artifact-analysis.md
   plane-sync.md               # when Plane enabled
 
-docs/
+docs/                         # full tree: references/docs-scaffold.md
   README.md
   EXECUTION_RULES.md
   surprises.md
-  product/
-  architecture/
-  delivery/
-  decisions/
   tech-debt-tracker.md
   QUALITY_SCORE.md
+  decisions/
+  exec-plans/
+  references/
   archive/
 ```
 
