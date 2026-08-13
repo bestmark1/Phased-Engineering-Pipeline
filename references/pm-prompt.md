@@ -43,18 +43,37 @@ One paragraph: what problem, for whom, why it matters.
 
 **Acceptance Criteria:**
 - **Given** [context], **When** [action], **Then** [expected result]
+  *Verified by:* [how someone observes this — request and expected response, screen and
+  expected text, CLI invocation and expected exit code]
 - **Given** [context], **When** [action], **Then** [expected result]
+  *Verified by:* [...]
 
 ### US-2: [Short title]
 ...
 
-## 5. Technical Constraints
+## 5. Quality Requirements
+
+Requirements that are not a user story but still decide whether this ships. Include a
+row only where it genuinely applies — an empty table beats invented thresholds.
+
+| Area | Requirement | Verified by |
+|------|-------------|-------------|
+| Security | e.g. session tokens are not readable by client scripts | how it is checked |
+| Privacy | what personal data is stored, and for how long | |
+| Performance | e.g. first response under 2s on a mid-range phone | |
+| Accessibility | e.g. the primary flow is completable by keyboard alone | |
+| Data recovery | what happens to user data on failure; what is restorable | |
+
+These are the requirements that get discovered at release when nobody wrote them down.
+State the ones that matter for THIS product and leave the rest out.
+
+## 6. Technical Constraints
 From domain research: platform, runtime, dependencies, compliance.
 
-## 6. Success Metrics
+## 7. Success Metrics
 How to measure if the product works (quantitative where possible).
 
-## 7. Open Questions
+## 8. Open Questions
 Anything unresolved that may affect architecture or implementation.
 ```
 
@@ -67,8 +86,12 @@ Anything unresolved that may affect architecture or implementation.
    or an external system observes — never implementation details (table names,
    function names, internal IDs, framework specifics). The implementation must be
    fully replaceable without rewriting a single criterion.
-5. Goals must be measurable
-6. Non-goals must be explicit — prevents scope creep
+5. **Every criterion names how it is verified.** QA will exercise the running product and
+   record what it observed, so each criterion must say what "observed" means for it. A
+   criterion nobody can describe a check for is not testable yet — rewrite it or move it
+   to Open Questions.
+6. Goals must be measurable
+7. Non-goals must be explicit — prevents scope creep
 
 ## Progress Tracking
 
