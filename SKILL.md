@@ -55,7 +55,10 @@ Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Op
 → [QA Agent] → validates PRD acceptance criteria + phase DoD trace
 → issues? → fix → re-validate
 → QA PASS
+→ [Release Gate] → clean checkout starts, config complete, rollback works, smoke path
+→ ⛔ RELEASE READY
 → [Retro] → session archaeology → minimal improvements to AGENTS.md / docs
+→ ⛔ OWNER PERMISSION for any outward-facing action
 → git: push → gh pr create
 → ⛔ USER REVIEWS DIFF
 ```
@@ -82,12 +85,20 @@ Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Op
 5. **Navigation must remain maintainable**
    - Agents may propose restructuring long docs into a parent summary plus child docs.
 
-6. **Tests are requirements**
-   - Every test locks in a PRD acceptance criterion or an architecture constraint,
-     and must name it.
-   - A test without a requirement freezes an accidental implementation:
-     future sessions will maintain the test instead of fixing the approach.
-   - Agents may propose tests but must state what requirement each one fixes.
+6. **Tests are evidence of requirements**
+   - A test exists to prove that a requirement holds: a PRD acceptance criterion, an
+     architecture constraint, or a defect that must not come back.
+   - Every test names what it proves. A test that names nothing is an **orphan**: it
+     freezes an accidental implementation, and the next session maintains the test
+     instead of reconsidering the approach.
+   - This is a traceability rule, not a scarcity rule. Internal logic may be covered as
+     thoroughly as its requirement demands — a complex algorithm serving one acceptance
+     criterion may need many tests, and that is correct.
+   - A fixed defect is a valid target: the requirement it proves is "this failure does
+     not return."
+   - The requirement comes first, the test second. An agent that wants a test for
+     something with no requirement has found a missing requirement, not a missing test —
+     raise it instead of encoding it.
 
 7. **Document surprises, not general knowledge**
    - `docs/` must capture only what an agent cannot derive from general knowledge:
@@ -129,6 +140,7 @@ Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in prompts reso
 | `{{PIPELINE_MODE}}` | `lite` or `full` | `full` |
 | `{{TECH_STACK}}` | Runtime + language + frameworks | Node.js, TypeScript strict, Next.js |
 | `{{BUILD_COMMAND}}` | Build verification | `npm run build` |
+| `{{RUN_COMMAND}}` | Start the product the way a user reaches it | `npm run dev` |
 | `{{TEST_COMMAND}}` | Test runner | `npm test` |
 | `{{LINT_COMMAND}}` | Linter / static analysis | `npm run lint` |
 | `{{TYPECHECK_COMMAND}}` | Type checker if separate | `tsc --noEmit` |
@@ -195,6 +207,7 @@ Pipeline mode: {{PIPELINE_MODE}} · Strict mode: {{STRICT_MODE}}
 | 3.1 | Developer | <phase 1 scope> | ⬜ | |
 | 3.N | Developer | <phase N scope> | ⬜ | |
 | 4 | QA | QA report | ⬜ | |
+| 4r | Release Gate | Release check report | ⬜ | |
 | 5 | Retro | AGENTS.md / docs updates | ⬜ | |
 
 ## Run cost per phase
@@ -265,6 +278,7 @@ skill, not a role the agent should improvise.
 | 3r | Reviewer SOLID | `references/reviewer-solid-prompt.md` | per review depth |
 | 3r | Reviewer SRE | `references/reviewer-sre-prompt.md` | High depth, or Medium when combined |
 | 4 | QA | `references/qa-prompt.md` | always |
+| 4r | Release Gate | `references/release-prompt.md` | after QA PASS, before push/deploy |
 | 5 | Retro | `references/retro-prompt.md` | after QA PASS, advisory |
 
 `references/docs-scaffold.md` is not a role — it is the canonical `docs/` tree definition.
@@ -519,7 +533,7 @@ Every stage must define how success is observed.
 
 | Level | Tools | Applies to |
 |---|---|---|
-| Basic | exit codes, lint, typecheck, unit tests | every coding phase |
+| Basic | exit codes, lint, typecheck, unit tests for the phase's own requirements | every coding phase |
 | Medium | integration tests, contract tests, smoke tests | QA |
 | High | production logs, metrics, manual checklists | post-deploy, outside this skill |
 
@@ -661,6 +675,28 @@ cost in pipeline development.
 Caching applies to **pipeline development only**. Real project runs must execute
 uncached — a cached verdict on changed code is not a verdict.
 
+### Release gate — does it work outside this session
+
+`QA PASS` proves the product satisfies its criteria **here**. It does not prove the
+product exists anywhere else. The classic failure is a build that works only in the
+agent's session: an uncommitted file, a variable set by hand in one shell, a service
+started manually, a migration applied straight to a database.
+
+Before pushing or deploying anything, run `references/release-prompt.md`:
+
+1. **Clean checkout starts** — fresh directory, install from the lockfile, `{{RUN_COMMAND}}`.
+2. **Configuration complete** — `.env.example` covers every variable the code reads; no
+   real secret anywhere in the repo.
+3. **Data changes reversible** — migration runs on empty and on realistic data, and the
+   documented rollback restores the previous state.
+4. **Health and logging** — the product answers a health check and errors survive in a log.
+5. **Smoke path** — the most valuable PRD scenario, end to end, on the clean checkout.
+
+Anything that had to be done by hand is a missing artifact: commit it or record it in
+`docs/surprises.md`. Verdict is `RELEASE READY`, `RELEASE BLOCKED`, or `RELEASE UNKNOWN`.
+
+The gate verifies and reports; it never ships. Push, PR, and deploy stay with the owner.
+
 ### Agent guardrails
 
 Before executing any command, the Developer must refuse and escalate to the owner when
@@ -675,9 +711,17 @@ the action would:
 
 These are refusals, not warnings. Record each escalation in `HANDOFF.md`.
 
+**Pushing and opening a PR are outward-facing actions.** The flow ends with
+`git push → gh pr create`, and that step needs the owner's explicit go-ahead in the
+session where it happens — being drawn in the diagram is not standing permission.
+Permission covers that one action, not the rest of the session, and never extends to
+merging or deploying.
+
 ## Pre-execution checklist
 
 Before any code changes:
+- [ ] `git status` is clean — leftovers from an earlier session get reviewed or stashed
+      first, never swept into this phase's commit
 - [ ] Read current phase in `IMPLEMENTATION_PLAN.md`
 - [ ] Confirm current phase scope in `phase-registry.md`
 - [ ] Check open Plane items if Plane is enabled
@@ -729,6 +773,9 @@ Rules:
   - QA fixes
 - Use small, phase-aligned commits.
 - Do not combine multiple implementation phases in one commit.
+- Stage files by name. `git add .` and `git add -A` are how `.env` files, credentials,
+  scratch scripts and build output reach a commit — review the staged diff first.
+- Start a phase from a clean working tree.
 
 ## Notes for Plane MCP
 
