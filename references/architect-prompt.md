@@ -67,12 +67,14 @@ Generate a short project map file `AGENTS.md` at the project root. This is a **t
 2. **Where are the docs and how to get an outline** — pointers to `PROJECT_INDEX.md`, `SPEC_PLAN/PRD.md`, `SPEC_PLAN/ARCHITECTURE.md`, `docs/` (including `docs/surprises.md`), plus the command or path to scan the docs tree.
 3. **How to run the environment** — the one command (or minimal set) for dev, build, and test. If setup needs more than one command, point to the script that wraps it.
 4. **Related projects / repos** — sibling repos, deploy targets, external dashboards. Omit the section entirely if there are none.
-5. **What is forbidden without explicit permission** — protected files, destructive commands, scope rules (e.g. "no new dependencies without CONSTITUTION.md process").
+5. **What is forbidden without explicit permission** — protected files, destructive commands, scope rules (e.g. "no new dependencies without the `SPEC_PLAN/CONSTITUTION.md` process").
 
 Rules: pointers instead of prose; if a topic needs explanation, link to a doc in `docs/` instead of inlining it. Detailed context lives in the docs tree, never in AGENTS.md.
 
-### CONSTITUTION.md
-Generate `CONSTITUTION.md` at the project root — the project governance document. Consolidates all rules that agents and humans must follow:
+### SPEC_PLAN/CONSTITUTION.md
+Generate `SPEC_PLAN/CONSTITUTION.md` — the project governance document. It lives in
+`SPEC_PLAN/` alongside the other planning artifacts; `AGENTS.md` at the root points to it.
+Consolidates all rules that agents and humans must follow:
 
 ```markdown
 # Constitution — {{PROJECT_NAME}}
@@ -117,7 +119,8 @@ One-paragraph description of what this project is and who it serves.
 - Process for scope changes
 ```
 
-This replaces `docs/design-docs/core-beliefs.md` — the constitution IS the beliefs, plus actionable rules.
+The constitution IS the project's beliefs, plus actionable rules — do not create a
+separate beliefs document.
 
 ### docs/ Scaffold
 Create the project knowledge base structure per `references/docs-scaffold.md`.

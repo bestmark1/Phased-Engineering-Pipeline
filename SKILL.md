@@ -555,7 +555,7 @@ Not every change deserves the full review topology. Pick depth from the change, 
 |---|---|---|
 | **Low** | docs, comments, copy, config values, dependency bumps | deterministic checks + one combined review |
 | **Medium** | ordinary feature or bugfix inside one phase scope | deterministic checks + one Reviewer + QA against acceptance criteria |
-| **High** | auth, payments, data migrations, deletion paths, external API contracts, secrets handling, anything in `CONSTITUTION.md` marked critical | Reviewer SOLID and Reviewer SRE independently + QA + human diff approval |
+| **High** | auth, payments, data migrations, deletion paths, external API contracts, secrets handling, anything in `SPEC_PLAN/CONSTITUTION.md` marked critical | Reviewer SOLID and Reviewer SRE independently + QA + human diff approval |
 
 When `{{STRICT_MODE}}=true`, High depth cannot be downgraded.
 The Tech Lead assigns a depth to each phase in `IMPLEMENTATION_PLAN.md`; the Developer

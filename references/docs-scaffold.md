@@ -70,7 +70,7 @@ Updated by QA agent after each validation pass.
 
 ## Usage
 
-- **Architect** creates the scaffold and `CONSTITUTION.md` (project root)
+- **Architect** creates the scaffold and `SPEC_PLAN/CONSTITUTION.md`
 - **Analyst** saves distilled docs to `docs/references/{tool}-llms.txt`
 - **Developer** appends to `docs/tech-debt-tracker.md` when deferring
 - **Developer** appends to `docs/surprises.md` when hitting non-obvious behavior, workarounds, or hidden constraints
