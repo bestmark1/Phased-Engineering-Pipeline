@@ -1,6 +1,6 @@
 # phased-engineering-pipeline
 
-> Claude Code skill that orchestrates twelve specialized agents through a full BMAD engineering pipeline: **Narrative → (MRD) → PRD → Clarifier → Architect → Tech Lead → Analyzer → Developer** with SOLID and SRE code reviewers, then **QA validation** and a **session-archaeology retro**. Includes auto git commits, feature branch workflow, CI/CD awareness, `SPEC_PLAN/` artifact hub, knowledge base (`docs/`) with a surprises log, AGENTS.md project map, decision logs, tech debt tracking, and optional Plane MCP sync.
+> Claude Code skill that orchestrates eleven specialized agents through a full BMAD engineering pipeline: **Narrative → (MRD) → PRD → Clarifier → Architect → Tech Lead → Analyzer → Developer** with SOLID and SRE code reviewers, then **QA validation** and a **session-archaeology retro**. Includes auto git commits, feature branch workflow, CI/CD awareness, `SPEC_PLAN/` artifact hub, knowledge base (`docs/`) with a surprises log, AGENTS.md project map, decision logs, and tech debt tracking.
 
 ---
 
@@ -86,6 +86,7 @@ that cost money, drift, and share blind spots with the model that wrote the code
 | Escalation over repetition | Re-running one reviewer measures judge stability, not code quality. Escalate on uncertainty instead |
 | Agent guardrails | Refuse out-of-scope deletion, secret leakage into commits or logs, history rewrites, and unrequested outward-facing actions |
 | Run economics | Tokens, duration, cost and review round-trips recorded per phase — report-only until a baseline exists |
+| SKILL.md stays lean | Entry point holds the flow, gates and principles; role detail loads from `references/` only when that role runs |
 | Eval hooks | Optional `{{EVAL_COMMAND}}` and `SPEC_PLAN/EVAL_PLAN.md` for products containing an LLM. The pipeline calls eval tooling; it does not reimplement metrics or judges |
 
 ### Context practices — what the project leaves behind for the next session
@@ -176,9 +177,8 @@ Fill these placeholders before spawning agents. The skill is **tech-stack agnost
 | `{{ROLLBACK_COMMAND}}` | How to undo the last change | `git revert HEAD` |
 | `{{DEFAULT_REVIEW_DEPTH}}` | `low` / `medium` / `high` floor | `medium` |
 | `{{EVAL_COMMAND}}` | Eval suite; empty when the product has no LLM | `npx promptfoo eval` |
-| `{{PLANE_ENABLED}}` | Sync execution state to Plane | `false` |
 
-`SKILL.md` holds the full placeholder table, including the Plane fields.
+`SKILL.md` holds the full placeholder table.
 
 **Pre-built stack profiles included:** Flutter/Dart, TypeScript/Node.js, Python/FastAPI, Go.
 
@@ -198,14 +198,16 @@ phased-engineering-pipeline/
     ├── architect-prompt.md          # Phase 1: Senior System Architect (+ AGENTS.md, docs/)
     ├── tech-lead-prompt.md          # Phase 2: Tech Lead (+ Decision Log, review depth)
     ├── analyze-prompt.md            # Phase 2a: Cross-artifact Analyzer
-    ├── plane-sync-prompt.md         # Plane Sync (only when PLANE_ENABLED=true)
     ├── developer-prompt.md          # Phase 3: Senior Developer (+ self-review, guardrails)
     ├── reviewer-solid-prompt.md     # Reviewer: Principal Staff Engineer (+ layer violations)
     ├── reviewer-sre-prompt.md       # Reviewer: SRE & Security Auditor
     ├── qa-prompt.md                 # Phase 4: QA Engineer (+ QUALITY_SCORE.md)
     ├── release-prompt.md            # Release Gate: clean checkout, config, rollback, smoke
     ├── retro-prompt.md              # Phase 5: Retro — session archaeology
-    └── docs-scaffold.md             # Canonical docs/ knowledge base structure
+    ├── progress-template.md         # PROGRESS.md template
+    ├── eval-hooks.md                # Eval planning + cold start (only when EVAL_COMMAND is set)
+    ├── run-economics.md             # Cost tracking + caching while tuning the pipeline
+    └── docs-scaffold.md             # Canonical docs/ tree + restructure policy
 ```
 
 ---
