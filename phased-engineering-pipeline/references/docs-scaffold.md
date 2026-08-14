@@ -87,3 +87,26 @@ Updated by QA agent after each validation pass.
 - **Reviewers** append to `docs/surprises.md` when a finding reveals a project-specific trap
 - **QA** updates `docs/QUALITY_SCORE.md` after validation
 - **Tech Lead** moves completed plans to `docs/exec-plans/completed/` after merge
+
+---
+
+## Documentation restructure policy
+
+Agents must preserve navigability.
+
+Trigger a restructure proposal when:
+- a file becomes too long to scan comfortably,
+- a file mixes product + architecture + delivery concerns,
+- the root index no longer reflects the actual docs tree,
+- multiple documents duplicate the same source of truth.
+
+Preferred actions:
+1. Split by concern.
+2. Keep the parent file as summary + links.
+3. Move old detail into `docs/archive/`.
+4. Update `PROJECT_INDEX.md`.
+5. Record the restructure in `HANDOFF.md` and `PROGRESS.md`.
+
+Agents may propose restructure proactively.
+Agents must not silently change canonical meaning during restructure.
+

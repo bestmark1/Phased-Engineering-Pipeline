@@ -7,8 +7,9 @@ description: |
   Includes: SPEC_PLAN/ artifact hub, PROJECT_INDEX.md navigation hub, AGENTS.md project map
   (short five-question formula), CONSTITUTION.md governance, docs/ knowledge base with
   docs/surprises.md, decision logs, tech debt tracking, tests-as-evidence policy,
-  black-box acceptance criteria, self-review loop, session-archaeology retro, STRICT_MODE,
-  and llms.txt reference caching.
+  black-box acceptance criteria verified against the running product, vertical-slice
+  phases, release gate, artifact-change protocol, self-review loop, session-archaeology
+  retro, STRICT_MODE, and llms.txt reference caching.
   Gate discipline: deterministic checks before LLM review, review depth by risk,
   structured verdicts with UNKNOWN, critic loop on failure, agent guardrails,
   report-only run economics, and optional eval hooks for LLM-bearing products.
@@ -24,7 +25,8 @@ does_not_handle:
 
 # Phased Engineering Pipeline v3
 
-Eleven specialized agents. Multiple gates. Feature branches. Phase isolation.
+Eleven specialized roles, each with its own prompt in `references/`. Multiple gates.
+Feature branches. Vertical slices. Verification against the running product.
 
 ```text
 [Narrative Lead] → SPEC_PLAN/Narrative.md
@@ -85,19 +87,14 @@ Eleven specialized agents. Multiple gates. Feature branches. Phase isolation.
    - Agents may propose restructuring long docs into a parent summary plus child docs.
 
 6. **Tests are evidence of requirements**
-   - A test exists to prove that a requirement holds: a PRD acceptance criterion, an
-     architecture constraint, or a defect that must not come back.
-   - Every test names what it proves. A test that names nothing is an **orphan**: it
-     freezes an accidental implementation, and the next session maintains the test
-     instead of reconsidering the approach.
-   - This is a traceability rule, not a scarcity rule. Internal logic may be covered as
-     thoroughly as its requirement demands — a complex algorithm serving one acceptance
-     criterion may need many tests, and that is correct.
-   - A fixed defect is a valid target: the requirement it proves is "this failure does
-     not return."
-   - The requirement comes first, the test second. An agent that wants a test for
-     something with no requirement has found a missing requirement, not a missing test —
-     raise it instead of encoding it.
+   - A test proves a named requirement: a PRD acceptance criterion, an architecture
+     constraint, or a defect that must not return. Every test names what it proves.
+   - A test that names nothing is an **orphan** — it freezes an accidental implementation,
+     and the next session maintains the test instead of reconsidering the approach.
+   - Traceability, not scarcity: internal logic may be covered as thoroughly as its
+     requirement demands.
+   - Wanting a test for something no requirement covers means a **missing requirement** —
+     raise it, do not encode it.
 
 7. **Document surprises, not general knowledge**
    - `docs/` must capture only what an agent cannot derive from general knowledge:
@@ -153,45 +150,15 @@ Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in prompts reso
 
 ## Artifact manifest
 
-Required outputs by the end of the pipeline:
-
-- `PROJECT_INDEX.md`
-- `AGENTS.md`
-- `PROGRESS.md`
-- `HANDOFF.md`
-
-Inside `SPEC_PLAN/`:
-- `Narrative.md`
-- `MRD.md` (Full mode only)
-- `PRD.md`
-- `clarification-report.md`
-- `ARCHITECTURE.md`
-- `CONSTITUTION.md`
-- `IMPLEMENTATION_PLAN.md`
-- `phase-registry.md`
-- `cross-artifact-analysis.md`
-
-Inside `docs/` — the tree is defined once, in `references/docs-scaffold.md`:
-- `README.md`
-- `EXECUTION_RULES.md`
-- `surprises.md`
-- `tech-debt-tracker.md`
-- `QUALITY_SCORE.md`
-- subfolders created on first use: `decisions/`, `exec-plans/`, `references/`, `archive/`
-
-## PROGRESS.md
-
-Execution state for the whole run: one row per phase, plus run cost and blockers.
-The Architect creates it from `references/progress-template.md`; every later role
-updates its own row. Status values: `⬜ Not started`, `🔄 In Progress`, `✅ Done`, `⛔ Blocked`.
-
-## Required repository structure
+Everything the pipeline must produce, and where it lives. `PROGRESS.md` is created by the
+Architect from `references/progress-template.md` and carries execution state for the whole
+run — one row per phase, plus run cost and blockers.
 
 ```text
-PROJECT_INDEX.md
-AGENTS.md
-PROGRESS.md
-HANDOFF.md
+PROJECT_INDEX.md              # navigation hub
+AGENTS.md                     # project map, ≤60 lines
+PROGRESS.md                   # execution state: ⬜ / 🔄 / ✅ / ⛔
+HANDOFF.md                    # what the next session needs to know
 
 SPEC_PLAN/
   Narrative.md
@@ -210,10 +177,7 @@ docs/                         # full tree: references/docs-scaffold.md
   surprises.md
   tech-debt-tracker.md
   QUALITY_SCORE.md
-  decisions/
-  exec-plans/
-  references/
-  archive/
+  decisions/  exec-plans/  references/  archive/     # created on first use
 ```
 
 ## Role → prompt file
@@ -221,7 +185,7 @@ docs/                         # full tree: references/docs-scaffold.md
 Every role in the flow has a prompt file. A role with no prompt file is a gap in the
 skill, not a role the agent should improvise.
 
-| # | Role | Prompt file | When |
+| Phase | Role | Prompt file | When |
 |---|------|-------------|------|
 | 0a | Narrative Lead | `references/narrative-prompt.md` | always |
 | 0a2 | Market PM | `references/mrd-prompt.md` | Full mode only |
@@ -245,21 +209,21 @@ skill, not a role the agent should improvise.
 Each role's full instructions live in its prompt file (see the table above). This is the
 artifact summary — what must exist when the role is done.
 
-| # | Role | Produces |
+| Phase | Role | Produces |
 |---|------|----------|
-| 1 | Narrative Lead | `SPEC_PLAN/Narrative.md` — story, why now, user world, constraints, non-goals, risks |
-| 2 | Market PM | `SPEC_PLAN/MRD.md` — ICP, JTBD, alternatives, positioning, market constraints (Full mode) |
-| 3 | Product PM | `SPEC_PLAN/PRD.md` — user stories, black-box acceptance criteria with verification method, quality requirements, success metrics, non-goals |
-| 4 | Clarifier | `SPEC_PLAN/clarification-report.md` — open questions, assumptions taken, risk from missing answers |
-| 5 | Architect | `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/CONSTITUTION.md`, `PROJECT_INDEX.md`, `AGENTS.md`, `docs/` scaffold |
-| 6 | Tech Lead | `SPEC_PLAN/IMPLEMENTATION_PLAN.md`, `SPEC_PLAN/phase-registry.md` |
-| 7 | Analyzer | `SPEC_PLAN/cross-artifact-analysis.md` — contradictions, missing dependencies, ordering risks, criteria with no implementation path |
-| 8 | Developer | Code for the current slice only, plus updates to `PROGRESS.md`, `HANDOFF.md`, `docs/tech-debt-tracker.md`, `docs/surprises.md` |
-| 9 | Reviewer SOLID | Structured findings on layering, dependency direction, naming, type safety, contract fidelity, DI discipline |
-| 10 | Reviewer SRE | Structured findings on resilience, rollback safety, error boundaries, resource handling, observability, security, guardrail violations |
-| 11 | QA | Validation report: criteria exercised against the running product, exit codes, scope creep, orphan tests, `docs/QUALITY_SCORE.md` |
-| — | Release Gate | Release check report: clean checkout, configuration, rollback, health, smoke path |
-| — | Retro | Minimal fixes to `AGENTS.md` and `docs/`, recorded in `HANDOFF.md` |
+| 0a | Narrative Lead | `SPEC_PLAN/Narrative.md` — story, why now, user world, constraints, non-goals, risks |
+| 0a2 | Market PM | `SPEC_PLAN/MRD.md` — ICP, JTBD, alternatives, positioning, market constraints (Full mode) |
+| 0b | Product PM | `SPEC_PLAN/PRD.md` — user stories, black-box acceptance criteria with verification method, quality requirements, success metrics, non-goals |
+| 0c | Clarifier | `SPEC_PLAN/clarification-report.md` — open questions, assumptions taken, risk from missing answers |
+| 1 | Architect | `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/CONSTITUTION.md`, `PROJECT_INDEX.md`, `AGENTS.md`, `docs/` scaffold |
+| 2 | Tech Lead | `SPEC_PLAN/IMPLEMENTATION_PLAN.md`, `SPEC_PLAN/phase-registry.md` |
+| 2a | Analyzer | `SPEC_PLAN/cross-artifact-analysis.md` — contradictions, missing dependencies, ordering risks, criteria with no implementation path |
+| 3 | Developer | Code for the current slice only, plus updates to `PROGRESS.md`, `HANDOFF.md`, `docs/tech-debt-tracker.md`, `docs/surprises.md` |
+| 3r | Reviewer SOLID | Structured findings on layering, dependency direction, naming, type safety, contract fidelity, DI discipline |
+| 3r | Reviewer SRE | Structured findings on resilience, rollback safety, error boundaries, resource handling, observability, security, guardrail violations |
+| 4 | QA | Validation report: criteria exercised against the running product, exit codes, scope creep, orphan tests, `docs/QUALITY_SCORE.md` |
+| 4r | Release Gate | Release check report: clean checkout, configuration, rollback, health, smoke path |
+| 5 | Retro | Minimal fixes to `AGENTS.md` and `docs/`, recorded in `HANDOFF.md` |
 
 **Every phase in `IMPLEMENTATION_PLAN.md`** must carry: goal, scope, user-visible outcome,
 expected files, dependencies, Definition of Done (including a check against the running
@@ -324,15 +288,13 @@ Rules:
 
 ## Changing an approved artifact
 
-Implementation discovers things planning could not know: an API behaves differently than
-documented, a requirement turns out to be impossible as written, two acceptance criteria
-contradict each other only once code exists.
+Implementation discovers what planning could not know: an API behaves differently than
+documented, a requirement is impossible as written, two criteria contradict each other
+only once code exists. Without a route for this, an agent either quietly builds something
+other than what was approved, or buries the discovery in `tech-debt-tracker.md` and
+implements the known-wrong thing. Both produce a product that contradicts its own spec.
 
-Without a route for this, an agent has two bad options — quietly build something other
-than what was approved, or bury the discovery in `tech-debt-tracker.md` and implement the
-approved-but-wrong thing. Both produce a product that does not match its own spec.
-
-**Update the earliest artifact the discovery invalidates, then everything downstream.**
+**Update the earliest artifact the discovery invalidates, then propagate downstream.**
 
 | What the discovery changes | Earliest artifact to update |
 |---|---|
@@ -341,32 +303,18 @@ approved-but-wrong thing. Both produce a product that does not match its own spe
 | Only how a phase is built | `SPEC_PLAN/IMPLEMENTATION_PLAN.md` |
 | A project rule or convention | `SPEC_PLAN/CONSTITUTION.md` |
 
-Then propagate: a PRD change flows into architecture, plan, and phase Definition of Done.
 Leaving the PRD stale while the code moves on is how a spec quietly becomes fiction.
 
-### When re-approval is required
+**Stop and ask the owner** when the change is material: observable behavior, a contract
+someone depends on, data retention or deletion, security or permissions, cost, a new
+external dependency, or scope nobody asked for. Proceed and record when it is immaterial —
+naming, internal structure, a clarification that changes no behavior. When in doubt, treat
+it as material: one question costs minutes, an unapproved behavior change found at release
+costs the phase.
 
-Ask the owner, and stop, when the change is **material**:
-
-- observable behavior a user would notice,
-- a contract other code or an external consumer depends on,
-- anything touching data retention, deletion, or migration,
-- security, authentication, or permissions,
-- cost, or a new external dependency,
-- scope: work the approved artifacts did not ask for.
-
-Proceed and simply record the update when the change is **immaterial** — naming,
-internal structure, a clarification that changes no behavior, a correction that makes the
-artifact say what everyone already assumed.
-
-When in doubt, treat it as material. The cost of one question is minutes; the cost of an
-unapproved behavior change discovered at release is the phase.
-
-### Record it
-
-Every artifact change during implementation gets a line in `HANDOFF.md`: what was
-discovered, which artifact changed, and whether the owner approved it. A silent edit to
-an approved document is indistinguishable from scope creep on review.
+Every artifact change gets a line in `HANDOFF.md` — what was discovered, which artifact
+changed, whether the owner approved it. A silent edit to an approved document is
+indistinguishable from scope creep on review.
 
 ## Documentation restructure policy
 
@@ -478,25 +426,18 @@ Details, plus response caching while iterating on the pipeline itself:
 
 ### Release gate — does it work outside this session
 
-`QA PASS` proves the product satisfies its criteria **here**. It does not prove the
-product exists anywhere else. The classic failure is a build that works only in the
-agent's session: an uncommitted file, a variable set by hand in one shell, a service
-started manually, a migration applied straight to a database.
+`QA PASS` proves the product satisfies its criteria **here**. It does not prove the product
+exists anywhere else. The classic failure is a build that works only in the agent's
+session: an uncommitted file, a variable set by hand in one shell, a service started
+manually, a migration applied straight to a database.
 
-Before pushing or deploying anything, run `references/release-prompt.md`:
+Before pushing or deploying, run `references/release-prompt.md`: clean checkout starts
+from the lockfile, `.env.example` covers every variable the code reads, migrations run and
+roll back, a health check answers, and the primary scenario runs end to end. Anything done
+by hand is a missing artifact — commit it or record it in `docs/surprises.md`.
 
-1. **Clean checkout starts** — fresh directory, install from the lockfile, `{{RUN_COMMAND}}`.
-2. **Configuration complete** — `.env.example` covers every variable the code reads; no
-   real secret anywhere in the repo.
-3. **Data changes reversible** — migration runs on empty and on realistic data, and the
-   documented rollback restores the previous state.
-4. **Health and logging** — the product answers a health check and errors survive in a log.
-5. **Smoke path** — the most valuable PRD scenario, end to end, on the clean checkout.
-
-Anything that had to be done by hand is a missing artifact: commit it or record it in
-`docs/surprises.md`. Verdict is `RELEASE READY`, `RELEASE BLOCKED`, or `RELEASE UNKNOWN`.
-
-The gate verifies and reports; it never ships. Push, PR, and deploy stay with the owner.
+Verdict: `RELEASE READY`, `RELEASE BLOCKED`, or `RELEASE UNKNOWN`. The gate verifies and
+reports; it never ships.
 
 ### Agent guardrails
 
