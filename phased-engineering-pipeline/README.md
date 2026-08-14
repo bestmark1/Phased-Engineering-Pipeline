@@ -86,6 +86,7 @@ that cost money, drift, and share blind spots with the model that wrote the code
 | Escalation over repetition | Re-running one reviewer measures judge stability, not code quality. Escalate on uncertainty instead |
 | Agent guardrails | Refuse out-of-scope deletion, secret leakage into commits or logs, history rewrites, and unrequested outward-facing actions |
 | Run economics | Tokens, duration, cost and review round-trips recorded per phase — report-only until a baseline exists |
+| SKILL.md stays lean | Entry point holds the flow, gates and principles; role detail loads from `references/` only when that role runs |
 | Eval hooks | Optional `{{EVAL_COMMAND}}` and `SPEC_PLAN/EVAL_PLAN.md` for products containing an LLM. The pipeline calls eval tooling; it does not reimplement metrics or judges |
 
 ### Context practices — what the project leaves behind for the next session
@@ -203,7 +204,10 @@ phased-engineering-pipeline/
     ├── qa-prompt.md                 # Phase 4: QA Engineer (+ QUALITY_SCORE.md)
     ├── release-prompt.md            # Release Gate: clean checkout, config, rollback, smoke
     ├── retro-prompt.md              # Phase 5: Retro — session archaeology
-    └── docs-scaffold.md             # Canonical docs/ knowledge base structure
+    ├── progress-template.md         # PROGRESS.md template
+    ├── eval-hooks.md                # Eval planning + cold start (only when EVAL_COMMAND is set)
+    ├── run-economics.md             # Cost tracking + caching while tuning the pipeline
+    └── docs-scaffold.md             # Canonical docs/ tree + restructure policy
 ```
 
 ---
