@@ -1,6 +1,6 @@
 # phased-engineering-pipeline
 
-> Claude Code skill that orchestrates twelve specialized agents through a full BMAD engineering pipeline: **Narrative → (MRD) → PRD → Clarifier → Architect → Tech Lead → Analyzer → Developer** with SOLID and SRE code reviewers, then **QA validation** and a **session-archaeology retro**. Includes auto git commits, feature branch workflow, CI/CD awareness, `SPEC_PLAN/` artifact hub, knowledge base (`docs/`) with a surprises log, AGENTS.md project map, decision logs, tech debt tracking, and optional Plane MCP sync.
+> Claude Code skill that orchestrates eleven specialized agents through a full BMAD engineering pipeline: **Narrative → (MRD) → PRD → Clarifier → Architect → Tech Lead → Analyzer → Developer** with SOLID and SRE code reviewers, then **QA validation** and a **session-archaeology retro**. Includes auto git commits, feature branch workflow, CI/CD awareness, `SPEC_PLAN/` artifact hub, knowledge base (`docs/`) with a surprises log, AGENTS.md project map, decision logs, and tech debt tracking.
 
 ---
 
@@ -176,9 +176,8 @@ Fill these placeholders before spawning agents. The skill is **tech-stack agnost
 | `{{ROLLBACK_COMMAND}}` | How to undo the last change | `git revert HEAD` |
 | `{{DEFAULT_REVIEW_DEPTH}}` | `low` / `medium` / `high` floor | `medium` |
 | `{{EVAL_COMMAND}}` | Eval suite; empty when the product has no LLM | `npx promptfoo eval` |
-| `{{PLANE_ENABLED}}` | Sync execution state to Plane | `false` |
 
-`SKILL.md` holds the full placeholder table, including the Plane fields.
+`SKILL.md` holds the full placeholder table.
 
 **Pre-built stack profiles included:** Flutter/Dart, TypeScript/Node.js, Python/FastAPI, Go.
 
@@ -198,7 +197,6 @@ phased-engineering-pipeline/
     ├── architect-prompt.md          # Phase 1: Senior System Architect (+ AGENTS.md, docs/)
     ├── tech-lead-prompt.md          # Phase 2: Tech Lead (+ Decision Log, review depth)
     ├── analyze-prompt.md            # Phase 2a: Cross-artifact Analyzer
-    ├── plane-sync-prompt.md         # Plane Sync (only when PLANE_ENABLED=true)
     ├── developer-prompt.md          # Phase 3: Senior Developer (+ self-review, guardrails)
     ├── reviewer-solid-prompt.md     # Reviewer: Principal Staff Engineer (+ layer violations)
     ├── reviewer-sre-prompt.md       # Reviewer: SRE & Security Auditor

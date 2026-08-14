@@ -3,12 +3,12 @@ name: phased-engineering-pipeline
 description: |
   Full-system phased engineering with product framing and disciplined execution:
   Narrative, MRD, PRD, clarification, architecture, constitution, phase planning,
-  cross-artifact analysis, execution-by-phase, QA validation, and optional Plane MCP sync.
+  cross-artifact analysis, execution-by-phase, QA validation, release gate, and retro.
   Includes: SPEC_PLAN/ artifact hub, PROJECT_INDEX.md navigation hub, AGENTS.md project map
   (short five-question formula), CONSTITUTION.md governance, docs/ knowledge base with
-  docs/surprises.md, decision logs, tech debt tracking, tests-as-requirements policy,
+  docs/surprises.md, decision logs, tech debt tracking, tests-as-evidence policy,
   black-box acceptance criteria, self-review loop, session-archaeology retro, STRICT_MODE,
-  llms.txt reference caching, and execution-state tracking in Plane.
+  and llms.txt reference caching.
   Gate discipline: deterministic checks before LLM review, review depth by risk,
   structured verdicts with UNKNOWN, critic loop on failure, agent guardrails,
   report-only run economics, and optional eval hooks for LLM-bearing products.
@@ -24,7 +24,7 @@ does_not_handle:
 
 # Phased Engineering Pipeline v3
 
-Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Optional Plane MCP sync.
+Eleven specialized agents. Multiple gates. Feature branches. Phase isolation.
 
 ```text
 [Narrative Lead] → SPEC_PLAN/Narrative.md
@@ -42,7 +42,6 @@ Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Op
 → git: commit execution plan
 → [Analyzer] → SPEC_PLAN/cross-artifact-analysis.md
 → ⛔ ANALYZE PASS
-→ [Plane Sync] → optional Plane project/module/cycle/work items + SPEC_PLAN/plane-sync.md
 → loop per implementation phase:
    [Developer: current phase only]
    → self-review loop (verify → fix → re-verify)
@@ -51,7 +50,7 @@ Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Op
    → [Reviewer SOLID] ‖ [Reviewer SRE]   ← topology set by review depth (Low/Medium/High)
    → findings? critic loop: fix findings only → re-run checks → re-review failing criteria
    → UNKNOWN on a blocking criterion? → escalate to second reviewer, then owner
-   → APPROVE → record run cost in PROGRESS.md → update HANDOFF.md / Plane → next phase
+   → APPROVE → record run cost in PROGRESS.md → update HANDOFF.md → next phase
 → [QA Agent] → validates PRD acceptance criteria + phase DoD trace
 → issues? → fix → re-validate
 → QA PASS
@@ -65,11 +64,11 @@ Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Op
 
 ## Core principles
 
-1. **Meaning vs execution**
-   - Markdown artifacts in repo are the source of truth for meaning:
-     strategy, requirements, architecture, rules, decisions, and long-lived context.
-   - Plane is the source of truth for execution state:
-     open work, active work, blockers, and completion status.
+1. **The repository is the source of truth**
+   - Markdown artifacts in repo carry meaning: strategy, requirements, architecture,
+     rules, decisions, and long-lived context.
+   - `PROGRESS.md` carries execution state: what is open, active, blocked, done.
+   - Knowledge that lives only in a chat session does not survive it.
 
 2. **Phase isolation**
    - Developer may execute only the active implementation phase.
@@ -80,7 +79,7 @@ Twelve specialized agents. Multiple gates. Feature branches. Phase isolation. Op
    - Every phase must define commands, checks, and observable completion criteria.
 
 4. **Tracked debt is acceptable; hidden debt is not**
-   - Deferred work goes to `docs/tech-debt-tracker.md` or the linked Plane item.
+   - Deferred work goes to `docs/tech-debt-tracker.md`.
 
 5. **Navigation must remain maintainable**
    - Agents may propose restructuring long docs into a parent summary plus child docs.
@@ -151,10 +150,6 @@ Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in prompts reso
 | `{{STRICT_MODE}}` | `true` blocks gates, `false` advisory | `true` |
 | `{{EVAL_COMMAND}}` | Eval suite for LLM behavior; empty when the product has no LLM | `npx promptfoo eval` |
 | `{{DEFAULT_REVIEW_DEPTH}}` | `low`, `medium`, or `high` — floor for this project | `medium` |
-| `{{PLANE_ENABLED}}` | `true` or `false` | `true` |
-| `{{PLANE_PROJECT}}` | Plane project or workspace shorthand | `FIT` |
-| `{{PLANE_MODULE}}` | Current stream / epic / module | `Onboarding` |
-| `{{PLANE_CYCLE}}` | Current cycle / sprint / milestone | `May-1` |
 
 ## Artifact manifest
 
@@ -175,7 +170,6 @@ Inside `SPEC_PLAN/`:
 - `IMPLEMENTATION_PLAN.md`
 - `phase-registry.md`
 - `cross-artifact-analysis.md`
-- `plane-sync.md` (when Plane is enabled)
 
 Inside `docs/` — the tree is defined once, in `references/docs-scaffold.md`:
 - `README.md`
@@ -244,7 +238,6 @@ SPEC_PLAN/
   IMPLEMENTATION_PLAN.md
   phase-registry.md
   cross-artifact-analysis.md
-  plane-sync.md               # when Plane enabled
 
 docs/                         # full tree: references/docs-scaffold.md
   README.md
@@ -273,7 +266,6 @@ skill, not a role the agent should improvise.
 | 1 | Architect | `references/architect-prompt.md` | always |
 | 2 | Tech Lead | `references/tech-lead-prompt.md` | always |
 | 2a | Analyzer | `references/analyze-prompt.md` | always |
-| — | Plane Sync | `references/plane-sync-prompt.md` | `{{PLANE_ENABLED}}=true` |
 | 3 | Developer | `references/developer-prompt.md` | per phase |
 | 3r | Reviewer SOLID | `references/reviewer-solid-prompt.md` | per review depth |
 | 3r | Reviewer SRE | `references/reviewer-sre-prompt.md` | High depth, or Medium when combined |
@@ -354,19 +346,12 @@ Produces `SPEC_PLAN/cross-artifact-analysis.md`:
 - acceptance criteria with no implementation path
 - architecture decisions with no validation path
 
-### 8) Plane Sync (optional but mandatory when Plane is enabled)
-Produces/updates:
-- Plane work items
-- `SPEC_PLAN/plane-sync.md`
-
 ### 9) Developer
 Implements **only** the current phase.
 
 Before writing code:
 - read current phase in `IMPLEMENTATION_PLAN.md`
 - confirm scope in `phase-registry.md`
-- check or create Plane item if enabled
-- move Plane item to `In Progress` if starting execution
 
 During work:
 - stay inside phase scope
@@ -378,7 +363,6 @@ During work:
 After work:
 - update `PROGRESS.md`
 - update `HANDOFF.md`
-- move Plane item to `Done` only after required validation is complete
 
 ### 10) Reviewer SOLID
 Checks:
@@ -447,46 +431,6 @@ A failed gate does not mean re-running the phase. It means one targeted repair:
 Re-reviewing an entire phase after a two-line fix costs full price for no new
 information. If the same criterion fails three rounds in a row, stop and escalate to
 the owner — the finding, the fix, or the requirement itself is wrong.
-
-## Plane execution rule
-
-If Plane MCP is available and `{{PLANE_ENABLED}}=true`, Plane is mandatory for execution tracking.
-
-### Responsibility split
-- Local markdown artifacts are the source of truth for:
-  - strategy
-  - product framing
-  - requirements
-  - architecture
-  - implementation planning
-  - project rules and context
-- Plane is the source of truth for:
-  - execution state
-  - open work
-  - in-progress work
-  - completion status
-  - blockers
-  - operational priority
-
-### Mandatory execution behavior
-Before starting implementation work, the agent must:
-1. Check the relevant open items in Plane.
-2. Identify the item for the current implementation phase.
-3. If the work is not yet represented in Plane, create the item first.
-4. Move the item to `In Progress` when execution begins.
-5. Move the item to `Done` only after implementation and required validation/review are complete.
-6. Then select the next highest-priority item from the current module, milestone, or active phase grouping.
-
-### Restrictions
-- Do not execute untracked implementation work when Plane is enabled.
-- Do not treat markdown files as the live execution board.
-- Do not infer completion from code changes alone; update Plane explicitly.
-- Do not pull work from future phases unless the implementation plan explicitly allows it.
-
-### Conflict rule
-If Plane status and local markdown meaning diverge:
-- local markdown artifacts win for scope, meaning, and intent
-- Plane wins for current execution status
 
 ## Phase isolation rule
 
@@ -778,9 +722,6 @@ Before any code changes:
       first, never swept into this phase's commit
 - [ ] Read current phase in `IMPLEMENTATION_PLAN.md`
 - [ ] Confirm current phase scope in `phase-registry.md`
-- [ ] Check open Plane items if Plane is enabled
-- [ ] Confirm the work item exists in Plane
-- [ ] Move item to `In Progress` if starting execution
 - [ ] Confirm work is inside active phase scope
 
 ## Post-execution checklist
@@ -791,7 +732,6 @@ Before ending the session or claiming completion:
 - [ ] Update `HANDOFF.md`
 - [ ] Update `docs/tech-debt-tracker.md` if anything is deferred
 - [ ] Update `docs/surprises.md` if anything non-obvious was discovered
-- [ ] Move the Plane item to `Done` if complete
 - [ ] Note the next highest-priority open item
 
 ## Retro: session archaeology
@@ -831,6 +771,4 @@ Rules:
   scratch scripts and build output reach a commit — review the staged diff first.
 - Start a phase from a clean working tree.
 
-## Notes for Plane MCP
 
-Plane MCP Server supports multiple transport methods, including HTTP with OAuth, HTTP with PAT token, and Local Stdio for self-hosted instances. Plane documents setup paths for Claude.ai, Claude Desktop, Cursor, VS Code, and other editors, and states that the MCP server enables agents to interact with Plane project-management capabilities.
