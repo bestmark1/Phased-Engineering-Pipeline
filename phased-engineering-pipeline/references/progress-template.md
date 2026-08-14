@@ -12,17 +12,14 @@ Pipeline mode: {{PIPELINE_MODE}} · Strict mode: {{STRICT_MODE}}
 
 | Phase | Role | Artifact | Status | Updated |
 |-------|------|----------|--------|---------|
-| 0a | Narrative Lead | SPEC_PLAN/Narrative.md | ⬜ | |
-| 0a2 | Market PM | SPEC_PLAN/MRD.md | ⬜ | Full mode only |
-| 0b | Product PM | SPEC_PLAN/PRD.md | ⬜ | |
-| 0c | Clarifier | SPEC_PLAN/clarification-report.md | ⬜ | |
+| 0 | Product | Narrative.md + MRD.md (Full) + PRD.md | ⬜ | |
+| 0c | Consistency (product) | SPEC_PLAN/clarification-report.md | ⬜ | |
 | 1 | Architect | SPEC_PLAN/ARCHITECTURE.md | ⬜ | |
 | 2 | Tech Lead | SPEC_PLAN/IMPLEMENTATION_PLAN.md | ⬜ | |
-| 2a | Analyzer | SPEC_PLAN/cross-artifact-analysis.md | ⬜ | |
+| 2a | Consistency (full) | SPEC_PLAN/cross-artifact-analysis.md | ⬜ | |
 | 3.1 | Developer | <phase 1 scope> | ⬜ | |
 | 3.N | Developer | <phase N scope> | ⬜ | |
-| 4 | QA | QA report | ⬜ | |
-| 4r | Release Gate | Release check report | ⬜ | |
+| 4 | QA & Release | QA + release report | ⬜ | |
 | 5 | Retro | AGENTS.md / docs updates | ⬜ | |
 
 ## Run cost per phase

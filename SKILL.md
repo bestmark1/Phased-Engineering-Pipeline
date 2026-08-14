@@ -25,16 +25,18 @@ does_not_handle:
 
 # Phased Engineering Pipeline v3
 
-Eleven specialized roles, each with its own prompt in `references/`. Multiple gates.
-Feature branches. Vertical slices. Verification against the running product.
+Seven specialized roles, each with its own prompt in `references/`. Multiple gates.
+Feature branches. Vertical slices. Verification against a clean checkout.
+
+A role exists only where it must **not** be the author of what it judges. Roles that all
+author — framing, market, requirements — are one pass; a role that judges the same thing
+at two moments is one prompt invoked twice.
 
 ```text
-[Narrative Lead] → SPEC_PLAN/Narrative.md
-→ [Market PM] → SPEC_PLAN/MRD.md            (Full mode only)
-→ [Product PM] → SPEC_PLAN/PRD.md
+[Product] → SPEC_PLAN/Narrative.md + MRD.md (Full mode) + PRD.md
 → ⛔ USER APPROVAL
-→ [Clarifier] → SPEC_PLAN/clarification-report.md
-→ ⛔ CLARIFY PASS
+→ [Consistency: product] → SPEC_PLAN/clarification-report.md
+→ ⛔ CONSISTENCY PASS
 → git: create feature/{slug} branch, mkdir SPEC_PLAN/, commit approved product artifacts
 → [Architect] → SPEC_PLAN/ARCHITECTURE.md + SPEC_PLAN/CONSTITUTION.md + PROJECT_INDEX.md + AGENTS.md + docs/
 → ⛔ USER APPROVAL
@@ -42,8 +44,8 @@ Feature branches. Vertical slices. Verification against the running product.
 → [Tech Lead] → SPEC_PLAN/IMPLEMENTATION_PLAN.md + SPEC_PLAN/phase-registry.md
 → ⛔ USER APPROVAL
 → git: commit execution plan
-→ [Analyzer] → SPEC_PLAN/cross-artifact-analysis.md
-→ ⛔ ANALYZE PASS
+→ [Consistency: full] → SPEC_PLAN/cross-artifact-analysis.md
+→ ⛔ CONSISTENCY PASS
 → loop per implementation phase:
    [Developer: current phase only]
    → self-review loop (verify → fix → re-verify)
@@ -53,11 +55,9 @@ Feature branches. Vertical slices. Verification against the running product.
    → findings? critic loop: fix findings only → re-run checks → re-review failing criteria
    → UNKNOWN on a blocking criterion? → escalate to second reviewer, then owner
    → APPROVE → record run cost in PROGRESS.md → update HANDOFF.md → next phase
-→ [QA Agent] → validates PRD acceptance criteria + phase DoD trace
+→ [QA & Release] → clean checkout starts → every criterion exercised inside it
 → issues? → fix → re-validate
-→ QA PASS
-→ [Release Gate] → clean checkout starts, config complete, rollback works, smoke path
-→ ⛔ RELEASE READY
+→ ⛔ QA PASS + RELEASE READY
 → [Retro] → session archaeology → minimal improvements to AGENTS.md / docs
 → ⛔ OWNER PERMISSION for any outward-facing action
 → git: push → gh pr create
@@ -114,7 +114,7 @@ Use:
 - cases where market framing is already known
 
 Flow:
-`Narrative → PRD → Clarifier → Architecture → Plan → Build`
+`Product (Narrative + PRD) → Consistency → Architecture → Plan → Build`
 
 ### Full mode
 Use:
@@ -124,7 +124,7 @@ Use:
 - strategic work where market framing matters
 
 Flow:
-`Narrative → MRD → PRD → Clarifier → Architecture → Plan → Build`
+`Product (Narrative + MRD + PRD) → Consistency → Architecture → Plan → Build`
 
 ## Configuration
 
@@ -187,19 +187,16 @@ skill, not a role the agent should improvise.
 
 | Phase | Role | Prompt file | When |
 |---|------|-------------|------|
-| 0a | Narrative Lead | `references/narrative-prompt.md` | always |
-| 0a2 | Market PM | `references/mrd-prompt.md` | Full mode only |
-| 0b | Product PM | `references/pm-prompt.md` | always |
-| 0c | Clarifier | `references/clarify-prompt.md` | always |
+| 0 | Product | `references/product-prompt.md` | always — writes Narrative, MRD (Full), PRD |
 | — | Domain Analyst | `references/analyst-prompt.md` | when domain research is needed |
+| 0c | Consistency (`product`) | `references/consistency-prompt.md` | after product approval |
 | 1 | Architect | `references/architect-prompt.md` | always |
 | 2 | Tech Lead | `references/tech-lead-prompt.md` | always |
-| 2a | Analyzer | `references/analyze-prompt.md` | always |
-| 3 | Developer | `references/developer-prompt.md` | per phase |
+| 2a | Consistency (`full`) | `references/consistency-prompt.md` | after the plan |
+| 3 | Developer | `references/developer-prompt.md` | per slice |
 | 3r | Reviewer SOLID | `references/reviewer-solid-prompt.md` | per review depth |
 | 3r | Reviewer SRE | `references/reviewer-sre-prompt.md` | High depth, or Medium when combined |
-| 4 | QA | `references/qa-prompt.md` | always |
-| 4r | Release Gate | `references/release-prompt.md` | after QA PASS, before push/deploy |
+| 4 | QA & Release | `references/qa-prompt.md` | always — criteria exercised in a clean checkout |
 | 5 | Retro | `references/retro-prompt.md` | after QA PASS, advisory |
 
 `references/docs-scaffold.md` is not a role — it is the canonical `docs/` tree definition.
@@ -211,18 +208,15 @@ artifact summary — what must exist when the role is done.
 
 | Phase | Role | Produces |
 |---|------|----------|
-| 0a | Narrative Lead | `SPEC_PLAN/Narrative.md` — story, why now, user world, constraints, non-goals, risks |
-| 0a2 | Market PM | `SPEC_PLAN/MRD.md` — ICP, JTBD, alternatives, positioning, market constraints (Full mode) |
-| 0b | Product PM | `SPEC_PLAN/PRD.md` — user stories, black-box acceptance criteria with verification method, quality requirements, success metrics, non-goals |
-| 0c | Clarifier | `SPEC_PLAN/clarification-report.md` — open questions, assumptions taken, risk from missing answers |
+| 0 | Product | `SPEC_PLAN/Narrative.md` (story, why now, constraints, non-goals, risks), `SPEC_PLAN/MRD.md` (Full mode: ICP, JTBD, alternatives, positioning), `SPEC_PLAN/PRD.md` (user stories, black-box criteria with verification method, quality requirements, success metrics) |
+| 0c | Consistency (`product`) | `SPEC_PLAN/clarification-report.md` — ambiguity, contradictions, gaps, assumptions taken |
 | 1 | Architect | `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/CONSTITUTION.md`, `PROJECT_INDEX.md`, `AGENTS.md`, `docs/` scaffold |
 | 2 | Tech Lead | `SPEC_PLAN/IMPLEMENTATION_PLAN.md`, `SPEC_PLAN/phase-registry.md` |
-| 2a | Analyzer | `SPEC_PLAN/cross-artifact-analysis.md` — contradictions, missing dependencies, ordering risks, criteria with no implementation path |
+| 2a | Consistency (`full`) | `SPEC_PLAN/cross-artifact-analysis.md` — cross-artifact contradictions, coverage gaps, ordering risks, slice integrity |
 | 3 | Developer | Code for the current slice only, plus updates to `PROGRESS.md`, `HANDOFF.md`, `docs/tech-debt-tracker.md`, `docs/surprises.md` |
 | 3r | Reviewer SOLID | Structured findings on layering, dependency direction, naming, type safety, contract fidelity, DI discipline |
 | 3r | Reviewer SRE | Structured findings on resilience, rollback safety, error boundaries, resource handling, observability, security, guardrail violations |
-| 4 | QA | Validation report: criteria exercised against the running product, exit codes, scope creep, orphan tests, `docs/QUALITY_SCORE.md` |
-| 4r | Release Gate | Release check report: clean checkout, configuration, rollback, health, smoke path |
+| 4 | QA & Release | Report: clean-checkout readiness, criteria exercised with observed evidence, exit codes, scope creep, orphan tests, `docs/QUALITY_SCORE.md` |
 | 5 | Retro | Minimal fixes to `AGENTS.md` and `docs/`, recorded in `HANDOFF.md` |
 
 **Every phase in `IMPLEMENTATION_PLAN.md`** must carry: goal, scope, user-visible outcome,
@@ -424,20 +418,23 @@ data is either meaningless or a source of false failures.
 Details, plus response caching while iterating on the pipeline itself:
 `references/run-economics.md`.
 
-### Release gate — does it work outside this session
+### Release readiness — does it work outside this session
 
-`QA PASS` proves the product satisfies its criteria **here**. It does not prove the product
-exists anywhere else. The classic failure is a build that works only in the agent's
-session: an uncommitted file, a variable set by hand in one shell, a service started
-manually, a migration applied straight to a database.
+Criteria that pass in the working directory the code was written in prove the product
+works **there**. The classic failure is a build that exists only in the agent's session:
+an uncommitted file, a variable set by hand in one shell, a service started manually, a
+migration applied straight to a database.
 
-Before pushing or deploying, run `references/release-prompt.md`: clean checkout starts
-from the lockfile, `.env.example` covers every variable the code reads, migrations run and
-roll back, a health check answers, and the primary scenario runs end to end. Anything done
-by hand is a missing artifact — commit it or record it in `docs/surprises.md`.
+So QA does not verify in that directory. It first builds a **clean checkout** — fresh
+clone, install from the lockfile, `{{RUN_COMMAND}}` — confirms `.env.example` covers every
+variable the code reads, that migrations run and roll back, and that a health check
+answers. Then it exercises every acceptance criterion inside that checkout. One setup,
+two proofs: the product is reproducible, and it does what was promised.
 
-Verdict: `RELEASE READY`, `RELEASE BLOCKED`, or `RELEASE UNKNOWN`. The gate verifies and
-reports; it never ships.
+Anything done by hand is a missing artifact — commit it or record it in
+`docs/surprises.md`. If the clean checkout will not start, the verdict is
+`RELEASE BLOCKED` and criteria are not evaluated at all. QA verifies and reports;
+it never ships.
 
 ### Agent guardrails
 

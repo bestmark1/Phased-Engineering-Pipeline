@@ -1,6 +1,6 @@
 # phased-engineering-pipeline
 
-> Claude Code skill that orchestrates eleven specialized agents through a full BMAD engineering pipeline: **Narrative → (MRD) → PRD → Clarifier → Architect → Tech Lead → Analyzer → Developer** with SOLID and SRE code reviewers, then **QA validation** and a **session-archaeology retro**. Includes auto git commits, feature branch workflow, CI/CD awareness, `SPEC_PLAN/` artifact hub, knowledge base (`docs/`) with a surprises log, AGENTS.md project map, decision logs, and tech debt tracking.
+> Claude Code skill that orchestrates seven specialized roles through a full BMAD engineering pipeline: **Product → Consistency → Architect → Tech Lead → Developer** with SOLID and SRE code reviewers, then **QA & release verification in a clean checkout** and a **session-archaeology retro**. A role exists only where it must not be the author of what it judges. Includes auto git commits, feature branch workflow, CI/CD awareness, `SPEC_PLAN/` artifact hub, knowledge base (`docs/`) with a surprises log, AGENTS.md project map, decision logs, and tech debt tracking.
 
 ---
 
@@ -9,24 +9,26 @@
 Instead of asking Claude to "build a system" and hoping for the best, this skill enforces a professional BMAD engineering workflow with explicit approval gates:
 
 ```
-[Narrative Lead] → [Market PM: Full mode] → [Product PM] → PRD.md → ⛔ USER APPROVAL
-  → [Clarifier] → ⛔ CLARIFY PASS
+[Product] → Narrative.md + MRD.md (Full mode) + PRD.md → ⛔ USER APPROVAL
+  → [Consistency: product] → ⛔ CONSISTENCY PASS
   → git: create feature/{slug} branch, commit product artifacts
   → [Architect] → ARCHITECTURE.md + CONSTITUTION.md + AGENTS.md + docs/ → ⛔ USER APPROVAL
     → [Tech Lead] → IMPLEMENTATION_PLAN.md (with Decision Log) → ⛔ USER APPROVAL
-      → [Analyzer] → cross-artifact-analysis.md → ⛔ ANALYZE PASS
+      → [Consistency: full] → cross-artifact-analysis.md → ⛔ CONSISTENCY PASS
       → loop per vertical slice:
           [Developer] → self-review loop → deterministic gate (build/lint/typecheck/test)
           → [Reviewer SOLID] ‖ [Reviewer SRE]  (topology by review depth)
           → critic loop on findings → APPROVE → next slice
-      → [QA Agent] → exercises the running product against every criterion
-          → QA PASS → [Release Gate] → RELEASE READY → [Retro]
+      → [QA & Release] → clean checkout starts → criteria exercised inside it
+          → QA PASS + RELEASE READY → [Retro]
           → ⛔ OWNER PERMISSION → git: push → gh pr create → ⛔ USER REVIEWS DIFF
 ```
 
-**Phase 0a — Domain Analysis** — A Domain Analyst researches the problem space, stakeholders, competitors, and risks. Asks 5-8 clarifying questions. Saves distilled vendor docs to `docs/references/{tool}-llms.txt` for reuse.
+**Domain Analysis (optional)** — A Domain Analyst researches the problem space, stakeholders, competitors, and risks. Asks 5-8 clarifying questions. Saves distilled vendor docs to `docs/references/{tool}-llms.txt` for reuse.
 
-**Phase 0b — Product Requirements** — A Product Manager converts research into `PRD.md` with user stories (As a / I want / So that), acceptance criteria (Given / When / Then), and success metrics. Every criterion is black-box and names how it will be verified; a **Quality Requirements** table covers security, privacy, performance, accessibility, and data recovery.
+**Phase 0 — Product** — One pass writes `Narrative.md` (story, why now, constraints, non-goals, risks), `MRD.md` in Full mode (ICP, jobs to be done, alternatives, positioning), and `PRD.md` with user stories, acceptance criteria (Given / When / Then), and success metrics. Every criterion is black-box and names how it will be verified; a **Quality Requirements** table covers security, privacy, performance, accessibility, and data recovery. One owner approval covers all three.
+
+**Consistency check** — The same role runs twice: after product approval it scans the PRD for ambiguity, contradictions and untestable criteria; after the plan it checks PRD, architecture and plan against each other for coverage gaps, terminology drift, ordering risks and phases with no user-visible outcome. It never fixes anything — it points, explains, and asks.
 
 **Phase 1 — Architecture** — A Senior Architect reads the official docs, asks 3-5 clarifying questions, then produces:
 - `ARCHITECTURE.md` with C4 diagrams (Mermaid), contracts/interfaces, dependency layer order, error handling strategy
@@ -41,9 +43,7 @@ Instead of asking Claude to "build a system" and hoping for the best, this skill
 
 Both must return `APPROVE` before the next phase starts.
 
-**Phase 4 — QA Validation** — A QA Engineer **starts the product** and exercises every acceptance criterion through a real interface — browser, HTTP request, CLI — recording what it observed (`POST /api/session → 201`), not which function it read. Code tracing is for diagnosis only. Also runs build/test/lint, detects scope creep and orphan tests, updates `docs/QUALITY_SCORE.md`. Verdict is `QA PASS`, structured findings, or `QA INCONCLUSIVE`. A criterion that cannot be exercised is `UNKNOWN`, never `PASS`.
-
-**Release Gate** — Before any push or deploy: a clean checkout installs from the lockfile and starts, `.env.example` covers every variable the code reads, migrations run and roll back, a health check answers, and the primary scenario runs end to end. Catches the build that works only in the agent's session. The gate verifies and reports — it never ships.
+**Phase 4 — QA & Release Verification** — One independent role, one setup, two proofs. It first builds a **clean checkout** — fresh clone, install from the lockfile, `{{RUN_COMMAND}}` — and confirms `.env.example` covers every variable the code reads, migrations run and roll back, and a health check answers. Then it exercises every acceptance criterion **inside that checkout** through a real interface, recording what it observed (`POST /api/session → 201`), not which function it read. Code tracing is for diagnosis only. Verdict is `QA PASS + RELEASE READY`, `RELEASE BLOCKED`, or structured findings. A criterion that cannot be exercised is `UNKNOWN`, never `PASS`.
 
 **Retro** — Session archaeology: where the agent stalled, what context was missing, what got asked twice. Applies minimal fixes to `AGENTS.md` and `docs/` so the next session does not hit the same walls.
 
@@ -108,7 +108,7 @@ Documentation and review were the strong parts; proving the product runs was not
 | Feature | Description |
 |---------|-------------|
 | QA exercises the running product | Criteria are verified by starting the product and observing it, not by tracing functions. Evidence is `POST /api/session → 201`, not a file path. No runnable environment means `UNKNOWN`, never `PASS` |
-| Release Gate | Clean checkout installs and starts, `.env.example` complete, migrations reversible, health check answers, smoke path runs. Catches the build that works only in the agent's session |
+| Release verification | QA's clean checkout installs and starts, `.env.example` complete, migrations reversible, health check answers — and every criterion is then exercised inside that checkout. Catches the build that works only in the agent's session |
 | Vertical slices | Phases are user-visible slices, not layers. A walking skeleton first, one scenario per phase after. Nothing waits until the last phase to work |
 | Scope by intent | The plan's file list is an expectation, not a whitelist — lockfiles and generated files need no amendment; an unplanned capability does |
 | Artifact change protocol | When implementation proves an approved artifact wrong: update the earliest artifact invalidated, propagate downstream, stop for approval when the change is material |
@@ -190,19 +190,15 @@ Fill these placeholders before spawning agents. The skill is **tech-stack agnost
 phased-engineering-pipeline/
 ├── SKILL.md                         # Entry point: flow, gates, principles, role→prompt map
 └── references/
-    ├── narrative-prompt.md          # Phase 0a: Narrative Lead → Narrative.md
-    ├── mrd-prompt.md                # Phase 0a2: Market PM → MRD.md (Full mode only)
+    ├── product-prompt.md           # Phase 0: Narrative + MRD (Full) + PRD in one pass
     ├── analyst-prompt.md            # Domain Analyst (+ llms.txt caching)
-    ├── pm-prompt.md                 # Phase 0b: Product Manager → PRD
-    ├── clarify-prompt.md            # Phase 0c: Spec Clarifier
+    ├── consistency-prompt.md        # Consistency check — invoked twice (product / full)
     ├── architect-prompt.md          # Phase 1: Senior System Architect (+ AGENTS.md, docs/)
     ├── tech-lead-prompt.md          # Phase 2: Tech Lead (+ Decision Log, review depth)
-    ├── analyze-prompt.md            # Phase 2a: Cross-artifact Analyzer
     ├── developer-prompt.md          # Phase 3: Senior Developer (+ self-review, guardrails)
     ├── reviewer-solid-prompt.md     # Reviewer: Principal Staff Engineer (+ layer violations)
     ├── reviewer-sre-prompt.md       # Reviewer: SRE & Security Auditor
-    ├── qa-prompt.md                 # Phase 4: QA Engineer (+ QUALITY_SCORE.md)
-    ├── release-prompt.md            # Release Gate: clean checkout, config, rollback, smoke
+    ├── qa-prompt.md                 # Phase 4: QA & Release verification in a clean checkout
     ├── retro-prompt.md              # Phase 5: Retro — session archaeology
     ├── progress-template.md         # PROGRESS.md template
     ├── eval-hooks.md                # Eval planning + cold start (only when EVAL_COMMAND is set)
@@ -257,7 +253,7 @@ docs/
 | Review loop stuck 3+ rounds | Escalate to user: retry / accept / simplify scope |
 | QA fails | Developer fixes specific criteria, QA re-validates |
 | QA cannot run the product | Report `QA INCONCLUSIVE` with what would make it runnable — never pass on code reading |
-| Release Gate blocked | Fix the missing artifact (uncommitted file, absent env var, irreversible migration) and re-run the gate |
+| Clean checkout will not start | `RELEASE BLOCKED` — fix the missing artifact (uncommitted file, absent env var, irreversible migration) and re-run. Criteria are not evaluated until it starts |
 | Implementation proves an approved artifact wrong | Update the earliest artifact invalidated, propagate downstream, stop for approval if the change is material |
 | CI check fails | Read failure, fix if possible, escalate if infra issue |
 | Agent timeout | Re-spawn once, then escalate |
