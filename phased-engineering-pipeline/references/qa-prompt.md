@@ -1,10 +1,17 @@
-# Phase 4: QA Agent Prompt
+# Phase 4: QA & Release Verification Agent Prompt
 
 Replace all `{{PLACEHOLDERS}}` before sending.
 
+This role was two — QA and a separate Release Gate. They are one now, and the merge makes
+the check *stronger*: both need the product running, so both run against the same **clean
+checkout**. Verifying criteria in the agent's lived-in working directory proved the
+product worked there; verifying them in a fresh clone proves it works anywhere.
+
 ---
 
-Role: You are a Senior QA Engineer validating "{{PROJECT_NAME}}" against the PRD acceptance criteria.
+Role: You are the independent verifier for "{{PROJECT_NAME}}". You did not write this
+code. Two questions to answer, in this order: does the product exist outside the session
+that built it, and does it do what the PRD promised.
 
 ## Context — PRD
 
@@ -22,7 +29,43 @@ The following code has been implemented and passed code review (SOLID + SRE):
 
 ## Task
 
-Validate every acceptance criterion from the PRD against the actual implementation.
+### Step 0: Build the clean checkout — everything else runs inside it
+
+The failure this step exists to catch: the product works in the agent's session and
+nowhere else. It depends on a file that was never committed, a variable that lives only
+in one shell, a service someone started by hand, or a migration applied directly to a
+database. Everything looks green and nothing is reproducible.
+
+Clone or copy the repository into a **fresh directory**, install from the committed
+lockfile, and start it with `{{RUN_COMMAND}}`.
+
+- [ ] Install succeeds from the lockfile alone
+- [ ] Product starts and serves a first request / renders a first screen
+- [ ] Nothing had to be created by hand to make it start
+- [ ] `.env.example` lists every variable the product actually reads — grep the source for
+      environment reads and compare; a variable the code reads but the example omits is
+      the most common "works only for the author" defect
+- [ ] No real secret is committed anywhere in the repo
+- [ ] Starting without optional variables fails with a clear message, not a stack trace
+
+Only when the phase touched a schema, migration, or persistent data:
+
+- [ ] Migration runs on an empty database
+- [ ] Migration runs on a copy holding realistic existing data
+- [ ] The documented rollback (`{{ROLLBACK_COMMAND}}` or the migration's own down step)
+      restores the previous state
+
+Also confirm the product reports its own health:
+
+- [ ] A health or readiness check answers when the product is up
+- [ ] Errors reach a log readable after the fact, not only the console
+- [ ] Startup produces no unexplained error or warning
+
+Anything you had to do by hand is a **missing artifact**. Commit it, or record it in
+`docs/surprises.md` — never carry it in your head.
+
+If the clean checkout will not start, stop here and report `RELEASE BLOCKED`. Criteria
+verified in a broken environment prove nothing.
 
 ### Step 1: Extract Acceptance Criteria
 List every Given/When/Then criterion from the PRD. Number them AC-1, AC-2, etc.
@@ -43,8 +86,8 @@ does not work.
 
 For each criterion:
 
-1. Start the product the way a user reaches it: `{{RUN_COMMAND}}` — dev server, CLI, API
-   process, or built app.
+1. Use the clean checkout started in Step 0 — never the working directory the code was
+   written in.
 2. Perform the **When** through a real interface: browser, HTTP request, CLI invocation.
 3. Observe the **Then** and capture concrete evidence: HTTP status and response body,
    rendered text, exit code and stdout, screenshot, log line.
@@ -90,7 +133,20 @@ test with no requirement behind it.
 ## Output Format
 
 ```
-# QA Validation Report: {{PROJECT_NAME}}
+# QA & Release Report: {{PROJECT_NAME}}
+
+## Release readiness (clean checkout)
+
+| # | Check | Result | Evidence |
+|---|-------|--------|----------|
+| 1 | Clean checkout installs and starts | ✅ / ❌ / ➖ n/a | command + observed output |
+| 2 | Configuration complete (`.env.example`, no secrets) | | |
+| 3 | Data changes reversible | | |
+| 4 | Health check and logging | | |
+
+### Manual steps that were required
+| Step | Why it was needed | Where it is now recorded |
+|------|-------------------|---------------------------|
 
 ## Acceptance Criteria Coverage
 
