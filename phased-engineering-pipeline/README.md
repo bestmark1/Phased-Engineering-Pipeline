@@ -37,11 +37,14 @@ Instead of asking Claude to "build a system" and hoping for the best, this skill
 
 **Phase 2 — Implementation Plan** — A Tech Lead converts the approved architecture into `IMPLEMENTATION_PLAN.md`. Phases are **vertical slices**, not layers: a walking skeleton first, then one user scenario per phase, hardening last. Each phase states what a user can do that they could not before, carries a runnable Definition of Done including a check against the running product, a review depth, and a **Decision Log** (chose X over Y because…).
 
-**Phase 3 — Coding loop** — For each plan phase: a Senior Developer implements only that phase, performs an explicit **self-review loop** (verify → fix → re-verify), logs deferred items to `docs/tech-debt-tracker.md`, auto-commits, then two reviewers run **in parallel**:
-- **Reviewer SOLID** — checks architecture, DI, type safety, naming, layer violations
-- **Reviewer SRE** — checks resilience, error boundaries, security, resource leaks
+**Phase 3 — Coding loop** — For each slice: a Senior Developer implements only that slice, runs the verification commands and reports actual exit codes, performs an explicit **self-review loop** (verify → fix → re-verify), logs deferred items to `docs/tech-debt-tracker.md` and non-obvious findings to `docs/surprises.md`, then commits. Deterministic checks (build / lint / typecheck / test) must be green **before** any reviewer is called — a linter proves for free what an LLM guesses at.
 
-Both must return `APPROVE` before the next phase starts.
+Review topology follows the slice's **review depth**, not habit:
+- **Low** (docs, config, dependency bumps) — deterministic checks plus one combined review
+- **Medium** (ordinary feature work) — one reviewer plus QA against acceptance criteria
+- **High** (auth, payments, migrations, deletion paths, secrets) — **Reviewer SOLID** (layering, dependency direction, type safety, contracts) and **Reviewer SRE** (resilience, error boundaries, security, resource handling) independently, plus human diff approval
+
+Findings come back as structured verdicts; the Developer fixes only those findings, and the reviewer re-examines only the criteria that failed.
 
 **Phase 4 — QA & Release Verification** — One independent role, one setup, two proofs. It first builds a **clean checkout** — fresh clone, install from the lockfile, `{{RUN_COMMAND}}` — and confirms `.env.example` covers every variable the code reads, migrations run and roll back, and a health check answers. Then it exercises every acceptance criterion **inside that checkout** through a real interface, recording what it observed (`POST /api/session → 201`), not which function it read. Code tracing is for diagnosis only. Verdict is `QA PASS + RELEASE READY`, `RELEASE BLOCKED`, or structured findings. A criterion that cannot be exercised is `UNKNOWN`, never `PASS`.
 
@@ -116,6 +119,23 @@ Documentation and review were the strong parts; proving the product runs was not
 | Real exit codes | "Build would pass" is no longer an acceptable result. Commands are run and their exit codes reported, or named as not run with a reason |
 | Git hygiene | Clean tree before a phase; stage files by name. `git add .` is how `.env` files and credentials reach commits |
 
+---
+
+## New in v3.2 — Fewer roles, leaner entry point
+
+A role earns a separate invocation only where it must **not** be the author of what it
+judges. Roles that all author were merged; independence was preserved everywhere it does
+real work.
+
+| Change | Rationale |
+|---------|-------------|
+| Product = Narrative + MRD + PRD | All three author, none judge. One pass writes the requirements with the framing still in context, and one owner approval covers all three artifacts |
+| Consistency = Clarifier + Analyzer | Same job — contradictions, gaps, ambiguity — at two moments. One prompt, invoked with scope `product` after approval and `full` after the plan. Both gates unchanged |
+| QA & Release in one clean checkout | Both need the product running. Verifying criteria in the directory that built them proves it works *there*; a fresh clone proves it works anywhere. One setup, two proofs |
+| Architect and Tech Lead kept separate | Merging would save one context load but remove the gate where the owner can redirect the design before planning effort is spent |
+| Plane MCP removed | An unused optional integration still cost a role, a prompt, an artifact, four placeholders and two rules — read on every activation. Execution state lives in `PROGRESS.md` |
+| `SKILL.md` 836 → 504 lines | Detail moved into `references/`, loaded when its role runs. Nothing deleted |
+
 **On repeated runs.** Requiring the same reviewer to pass an artifact k times in a row is
 not a reliability gain — repeated calls to one model with one prompt are correlated, and
 unanimity rejects correct work at compounding rates (a judge that approves good work 90%
@@ -127,9 +147,12 @@ uncertainty instead, at roughly 1.1–1.3× cost rather than 3×.
 ## Installation
 
 ```bash
-# Option A — from .skill file
-unzip phased-engineering-pipeline.skill -d ~/.claude/skills/
+# Option A — from the .skill bundle (a gzipped tar, despite the extension)
+mkdir -p ~/.claude/skills/phased-engineering-pipeline
+tar -xzf phased-engineering-pipeline.skill -C ~/.claude/skills/phased-engineering-pipeline
+```
 
+```bash
 # Option B — manual
 git clone https://github.com/bestmark1/Phased-Engineering-Pipeline.git
 cp -r Phased-Engineering-Pipeline/phased-engineering-pipeline ~/.claude/skills/
@@ -178,9 +201,9 @@ Fill these placeholders before spawning agents. The skill is **tech-stack agnost
 | `{{DEFAULT_REVIEW_DEPTH}}` | `low` / `medium` / `high` floor | `medium` |
 | `{{EVAL_COMMAND}}` | Eval suite; empty when the product has no LLM | `npx promptfoo eval` |
 
-`SKILL.md` holds the full placeholder table.
-
-**Pre-built stack profiles included:** Flutter/Dart, TypeScript/Node.js, Python/FastAPI, Go.
+`SKILL.md` holds the full placeholder table. The skill ships no stack presets — the
+Architect fills these from the project's actual stack, and the examples above are only
+illustrative.
 
 ---
 
