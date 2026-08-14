@@ -179,46 +179,11 @@ Inside `docs/` — the tree is defined once, in `references/docs-scaffold.md`:
 - `QUALITY_SCORE.md`
 - subfolders created on first use: `decisions/`, `exec-plans/`, `references/`, `archive/`
 
-## PROGRESS.md template
+## PROGRESS.md
 
-The Architect creates this file; every later role updates its own row. Status values are
-`⬜ Not started`, `🔄 In Progress`, `✅ Done`, `⛔ Blocked`.
-
-```markdown
-# Progress — {{PROJECT_NAME}}
-
-Pipeline mode: {{PIPELINE_MODE}} · Strict mode: {{STRICT_MODE}}
-
-| Phase | Role | Artifact | Status | Updated |
-|-------|------|----------|--------|---------|
-| 0a | Narrative Lead | SPEC_PLAN/Narrative.md | ⬜ | |
-| 0a2 | Market PM | SPEC_PLAN/MRD.md | ⬜ | Full mode only |
-| 0b | Product PM | SPEC_PLAN/PRD.md | ⬜ | |
-| 0c | Clarifier | SPEC_PLAN/clarification-report.md | ⬜ | |
-| 1 | Architect | SPEC_PLAN/ARCHITECTURE.md | ⬜ | |
-| 2 | Tech Lead | SPEC_PLAN/IMPLEMENTATION_PLAN.md | ⬜ | |
-| 2a | Analyzer | SPEC_PLAN/cross-artifact-analysis.md | ⬜ | |
-| 3.1 | Developer | <phase 1 scope> | ⬜ | |
-| 3.N | Developer | <phase N scope> | ⬜ | |
-| 4 | QA | QA report | ⬜ | |
-| 4r | Release Gate | Release check report | ⬜ | |
-| 5 | Retro | AGENTS.md / docs updates | ⬜ | |
-
-## Run cost per phase
-
-Report-only until a baseline exists — never a gate.
-
-| Phase | Tokens in/out | Duration | Approx. cost | Review round-trips |
-|-------|---------------|----------|--------------|--------------------|
-
-## Blockers
-
-| Date | Phase | Blocker | Owner decision needed |
-|------|-------|---------|-----------------------|
-```
-
-The Architect pre-fills rows `3.1`–`3.N` as placeholders; the Tech Lead replaces them with
-the real phases once `IMPLEMENTATION_PLAN.md` exists.
+Execution state for the whole run: one row per phase, plus run cost and blockers.
+The Architect creates it from `references/progress-template.md`; every later role
+updates its own row. Status values: `⬜ Not started`, `🔄 In Progress`, `✅ Done`, `⛔ Blocked`.
 
 ## Required repository structure
 
@@ -277,160 +242,62 @@ skill, not a role the agent should improvise.
 
 ## Role outputs
 
-### 1) Narrative Lead
-Produces `SPEC_PLAN/Narrative.md`:
-- product story
-- why now
-- user world / operating context
-- top constraints
-- non-goals
-- obvious risks and assumptions
+Each role's full instructions live in its prompt file (see the table above). This is the
+artifact summary — what must exist when the role is done.
 
-### 2) Market PM (Full mode)
-Produces `SPEC_PLAN/MRD.md`:
-- target user / ICP
-- JTBD
-- alternatives and competitive context
-- positioning hypothesis
-- success frame and market constraints
+| # | Role | Produces |
+|---|------|----------|
+| 1 | Narrative Lead | `SPEC_PLAN/Narrative.md` — story, why now, user world, constraints, non-goals, risks |
+| 2 | Market PM | `SPEC_PLAN/MRD.md` — ICP, JTBD, alternatives, positioning, market constraints (Full mode) |
+| 3 | Product PM | `SPEC_PLAN/PRD.md` — user stories, black-box acceptance criteria with verification method, quality requirements, success metrics, non-goals |
+| 4 | Clarifier | `SPEC_PLAN/clarification-report.md` — open questions, assumptions taken, risk from missing answers |
+| 5 | Architect | `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/CONSTITUTION.md`, `PROJECT_INDEX.md`, `AGENTS.md`, `docs/` scaffold |
+| 6 | Tech Lead | `SPEC_PLAN/IMPLEMENTATION_PLAN.md`, `SPEC_PLAN/phase-registry.md` |
+| 7 | Analyzer | `SPEC_PLAN/cross-artifact-analysis.md` — contradictions, missing dependencies, ordering risks, criteria with no implementation path |
+| 8 | Developer | Code for the current slice only, plus updates to `PROGRESS.md`, `HANDOFF.md`, `docs/tech-debt-tracker.md`, `docs/surprises.md` |
+| 9 | Reviewer SOLID | Structured findings on layering, dependency direction, naming, type safety, contract fidelity, DI discipline |
+| 10 | Reviewer SRE | Structured findings on resilience, rollback safety, error boundaries, resource handling, observability, security, guardrail violations |
+| 11 | QA | Validation report: criteria exercised against the running product, exit codes, scope creep, orphan tests, `docs/QUALITY_SCORE.md` |
+| — | Release Gate | Release check report: clean checkout, configuration, rollback, health, smoke path |
+| — | Retro | Minimal fixes to `AGENTS.md` and `docs/`, recorded in `HANDOFF.md` |
 
-### 3) Product PM
-Produces `SPEC_PLAN/PRD.md`:
-- user stories
-- acceptance criteria
-- success metrics
-- out-of-scope items
+**Every phase in `IMPLEMENTATION_PLAN.md`** must carry: goal, scope, user-visible outcome,
+expected files, dependencies, Definition of Done (including a check against the running
+product), verification commands, review depth, rollback notes, and the deferred-work format.
 
-### 4) Clarifier
-Produces `SPEC_PLAN/clarification-report.md`:
-- unanswered questions
-- default assumptions chosen
-- risk created by missing answers
-- what can still proceed safely
-
-### 5) Architect
-Produces:
-- `SPEC_PLAN/ARCHITECTURE.md`
-- `SPEC_PLAN/CONSTITUTION.md`
-- `PROJECT_INDEX.md`
-- `AGENTS.md`
-- `docs/README.md`
-- initial `docs/EXECUTION_RULES.md`
-
-`AGENTS.md` is ≤60 lines and answers exactly five questions:
-what the project is; where docs are and how to get an outline;
-how to run the environment with one command; related repos;
-what is forbidden without permission. Pointers, not prose.
-
-### 6) Tech Lead
-Produces:
-- `SPEC_PLAN/IMPLEMENTATION_PLAN.md`
-- `SPEC_PLAN/phase-registry.md`
-
-Each phase in `IMPLEMENTATION_PLAN.md` must include:
-- goal
-- scope
-- user-visible outcome of the slice
-- expected files touched (an expectation, not a whitelist)
-- dependencies
-- Definition of Done
-- verification commands
-- rollback notes
-- deferred work format
-
-### 7) Analyzer
-Produces `SPEC_PLAN/cross-artifact-analysis.md`:
-- contradictions across Narrative/MRD/PRD/Architecture/Plan
-- missing dependencies
-- phase ordering risks
-- acceptance criteria with no implementation path
-- architecture decisions with no validation path
-
-### 9) Developer
-Implements **only** the current phase.
-
-Before writing code:
-- read current phase in `IMPLEMENTATION_PLAN.md`
-- confirm scope in `phase-registry.md`
-
-During work:
-- stay inside phase scope
-- log blockers
-- record deferred work
-- record surprises in `docs/surprises.md` (non-obvious behavior, workarounds, hidden constraints)
-- run verification commands
-
-After work:
-- update `PROGRESS.md`
-- update `HANDOFF.md`
-
-### 10) Reviewer SOLID
-Checks:
-- layering
-- dependency direction
-- naming and API clarity
-- type safety
-- contract fidelity
-- interface segregation / DI discipline
-
-### 11) Reviewer SRE
-Checks:
-- resilience
-- rollback safety
-- error boundaries
-- resource handling
-- observability hooks
-- security and failure mode coverage
-- guardrail violations (see Agent guardrails)
-
-### 12) QA Agent
-Checks:
-- PRD acceptance criteria traceability
-- test / build / lint / typecheck exit codes
-- scope creep
-- quality score updates
-- remaining phase gaps
+**`AGENTS.md`** is ≤60 lines and answers exactly five questions: what the project is;
+where docs are and how to get an outline; how to run the environment with one command;
+related repos; what is forbidden without permission. Pointers, not prose.
 
 ### Verdict format — all reviewers and QA
 
 Free-text verdicts cannot be acted on mechanically and produce fix loops that never
-converge. Every reviewing role emits one structured finding per issue:
-
-```json
-{
-  "criterion": "dependency-direction",
-  "status": "FAIL",
-  "severity": "blocking",
-  "evidence": "src/services/user.ts:42 — UserRepository imports UserService",
-  "fix": "Invert the dependency: pass the repository into the service constructor.",
-  "rubric_version": "solid-v1"
-}
-```
+converge. Every reviewing role emits one structured finding per issue, with fields
+`criterion`, `status`, `severity`, `evidence`, `fix`, `rubric_version`. The full field
+spec lives in each reviewer's own prompt.
 
 - `status` is `PASS`, `FAIL`, or `UNKNOWN`.
-- `severity` is `blocking`, `major`, or `minor`.
-- `evidence` must name a file and line, a command and its output, or an artifact
-  section. A finding with no checkable evidence is not `FAIL` — it is `UNKNOWN`.
-- `fix` is one or two sentences. Reviewers never write replacement code.
+- `evidence` must name a file and line, a command and its output, or an artifact section.
+  A finding with no checkable evidence is not `FAIL` — it is `UNKNOWN`.
+- Reviewers never write replacement code.
 
-**`UNKNOWN` is a first-class verdict.** A reviewer that cannot verify a criterion —
-missing context, untestable behavior, evidence outside the diff — must say so rather
-than guess in either direction. Forcing a binary answer manufactures both false
-approvals and false blocks. `UNKNOWN` on a blocking criterion triggers escalation,
-not a gate failure.
+**`UNKNOWN` is a first-class verdict.** A reviewer that cannot verify a criterion must say
+so rather than guess in either direction; forcing a binary answer manufactures both false
+approvals and false blocks. `UNKNOWN` on a blocking criterion triggers escalation, not a
+gate failure.
 
 ### Critic loop — how a failed gate converges
 
-A failed gate does not mean re-running the phase. It means one targeted repair:
+A failed gate means one targeted repair, not a re-run of the phase:
 
 1. Reviewer returns structured findings.
 2. Developer fixes **only the findings**, touching nothing else.
 3. Deterministic checks re-run.
-4. Reviewer re-examines **only the previously failing criteria**, not the whole diff.
+4. Reviewer re-examines **only the previously failing criteria**.
 
-Re-reviewing an entire phase after a two-line fix costs full price for no new
-information. If the same criterion fails three rounds in a row, stop and escalate to
-the owner — the finding, the fix, or the requirement itself is wrong.
+Re-reviewing a whole phase after a two-line fix costs full price for no new information.
+Three failures on one criterion means the finding, the fix, or the requirement is wrong —
+stop and escalate to the owner.
 
 ## Phase isolation rule
 
@@ -503,23 +370,10 @@ an approved document is indistinguishable from scope creep on review.
 
 ## Documentation restructure policy
 
-Agents must preserve navigability.
-
-Trigger a restructure proposal when:
-- a file becomes too long to scan comfortably,
-- a file mixes product + architecture + delivery concerns,
-- the root index no longer reflects the actual docs tree,
-- multiple documents duplicate the same source of truth.
-
-Preferred actions:
-1. Split by concern.
-2. Keep the parent file as summary + links.
-3. Move old detail into `docs/archive/`.
-4. Update `PROJECT_INDEX.md`.
-5. Record the restructure in `HANDOFF.md` and `PROGRESS.md`.
-
-Agents may propose restructure proactively.
-Agents must not silently change canonical meaning during restructure.
+Agents must preserve navigability: split a file that mixes concerns or grows too long to
+scan, keep the parent as summary plus links, move old detail to `docs/archive/`, and
+update `PROJECT_INDEX.md`. Agents may propose a restructure proactively, and must never
+change canonical meaning while moving text. Full policy: `references/docs-scaffold.md`.
 
 ## Verification protocol
 
@@ -576,51 +430,11 @@ If the product's behavior depends on a model — prompts, agents, RAG, classific
 generation — build/test/lint cannot express whether it works. Tests prove the code runs;
 they say nothing about whether the output is any good.
 
-For such projects:
+When `{{EVAL_COMMAND}}` is set, read `references/eval-hooks.md`: it covers eval planning,
+the cold-start bootstrap for a project with no traces yet, and which established runners
+to delegate to. This pipeline calls eval tooling; it does not reimplement metrics or judges.
 
-- The Tech Lead defines `{{EVAL_COMMAND}}` and the phase that introduces it.
-- Eval criteria are written **before** the implementation phase that needs them, and
-  live in `SPEC_PLAN/EVAL_PLAN.md` alongside the acceptance criteria they extend.
-- QA runs `{{EVAL_COMMAND}}` as part of Step 3 verification.
-
-This pipeline does **not** implement eval metrics, judges, or datasets itself. Delegate
-to dedicated eval skills (rubric design, judge/human alignment, golden datasets,
-regression runs) and to established runners — promptfoo for CI-style assertions, Ragas
-for retrieval metrics, Inspect AI for agent trajectories. PEP calls them; it does not
-reimplement them.
-
-When `{{EVAL_COMMAND}}` is empty, skip this entirely — most projects have no LLM in
-the product and need nothing here.
-
-#### Cold start: a new project has no outputs to evaluate
-
-Most eval tooling assumes production traces already exist. A project being built from
-scratch has none — there is no code yet, so there is nothing to log. Do not let this
-become a reason to defer evaluation until "later", which in practice means never.
-
-Bootstrap in three steps, matched to what actually exists at each point:
-
-**1. Spec-derived cases — available immediately, before any code.**
-Every acceptance criterion about model behavior in the PRD is already an eval case.
-"Given a Thai greeting, the translation preserves the politeness register" is a test
-waiting for an input and an expected property. Write 10–20 such cases into
-`SPEC_PLAN/EVAL_PLAN.md` during planning, each with a concrete input and what must be
-true of the output. These are hand-written by the owner, not generated — a model
-inventing its own success criteria grades its own homework.
-
-**2. First real outputs — after the phase that produces them.**
-The moment the LLM path runs end to end, capture its outputs. A few dozen real
-responses are enough to see failure patterns the spec never anticipated. This is where
-issue-discovery and judge-creation tooling becomes applicable; before this point it has
-no input.
-
-**3. Golden dataset and regression — once patterns are known.**
-Promote reviewed cases into a golden set and wire `{{EVAL_COMMAND}}` into QA. From here
-the normal loop applies: every escaped defect becomes a new case.
-
-Until step 2, `{{EVAL_COMMAND}}` may legitimately run only the spec-derived cases, and
-that is enough. An eval suite that covers ten hand-written cases well beats a perfect
-methodology that starts after launch.
+When `{{EVAL_COMMAND}}` is empty, skip this entirely.
 
 ### Review depth by risk
 
@@ -654,24 +468,13 @@ Escalate only on genuine uncertainty:
 
 ### Run economics — measure, do not block
 
-Every gate and phase costs real money and time. Record it; do not gate on it yet.
+Every gate and phase costs real money and time. Record tokens, duration, approximate cost
+and review round-trips per phase in `PROGRESS.md`. Thresholds stay **report-only** until
+enough comparable runs exist to know the normal spread — a budget invented before that
+data is either meaningless or a source of false failures.
 
-Track per phase in `PROGRESS.md`: tokens in/out, wall-clock duration, approximate cost,
-and how many review round-trips the phase needed.
-
-Thresholds stay **report-only** until enough comparable runs exist to know the normal
-spread. A cost or latency budget invented before that data is either meaningless or a
-source of false failures. Revisit once a baseline exists.
-
-### Cached model calls when iterating on the pipeline itself
-
-When debugging or tuning the pipeline (editing role prompts, reordering gates, changing
-models), enable response caching for model calls so repeated runs over unchanged inputs
-are free. Paying full price to re-observe an unchanged step is the largest avoidable
-cost in pipeline development.
-
-Caching applies to **pipeline development only**. Real project runs must execute
-uncached — a cached verdict on changed code is not a verdict.
+Details, plus response caching while iterating on the pipeline itself:
+`references/run-economics.md`.
 
 ### Release gate — does it work outside this session
 
@@ -736,25 +539,14 @@ Before ending the session or claiming completion:
 
 ## Retro: session archaeology
 
-After QA PASS and before opening the PR, run a short retro over the pipeline session itself.
-The pipeline must improve the project's working environment for the *next* session.
+After QA PASS and before opening the PR, audit the session itself: where the agent
+stalled, what context was missing, what got asked more than once. Apply the smallest
+structural fixes — a pointer in `AGENTS.md`, an entry in `docs/surprises.md`, a corrected
+doc — so the next session does not hit the same walls.
 
-Answer three questions by walking back through this session's history:
-1. **Where did the agent stall?** — repeated attempts, wrong assumptions, dead ends.
-2. **What context was missing?** — a doc, a script, a command, an AGENTS.md pointer
-   that would have prevented the stall.
-3. **What questions came up more than once?** — recurring questions signal a missing doc.
-
-Then apply the smallest possible fixes:
-- add a pointer or command to `AGENTS.md` (respect the 60-line cap),
-- add an entry to `docs/surprises.md`,
-- add or fix a doc in `docs/`,
-- record anything larger in `docs/tech-debt-tracker.md`.
-
-Rules:
-- This step is advisory, not a blocking gate: no findings → say so in one line and move on.
-- Fixes must be minimal and structural (pointers, docs, scripts) — never new process for its own sake.
-- Record what was changed in `HANDOFF.md`.
+Advisory, never a blocking gate: no findings is a legitimate result, stated in one line.
+Fixes are pointers and docs, never new process. Full instructions:
+`references/retro-prompt.md`.
 
 ## Recommended git discipline
 
