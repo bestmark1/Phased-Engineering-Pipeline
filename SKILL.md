@@ -51,6 +51,7 @@ at two moments is one prompt invoked twice.
    → self-review loop (verify → fix → re-verify)
    → deterministic gate: build ‖ lint ‖ typecheck ‖ test   ← LLM reviewers not called until green
    → git: commit code
+   → subtraction pass: load `references/piecemeal-growth.md` → KEEP/REMOVE/QUESTION findings
    → [Reviewer SOLID] ‖ [Reviewer SRE]   ← topology set by review depth (Low/Medium/High)
    → findings? critic loop: fix findings only → re-run checks → re-review failing criteria
    → UNKNOWN on a blocking criterion? → escalate to second reviewer, then owner
@@ -101,6 +102,18 @@ at two moments is one prompt invoked twice.
      strange decisions, workarounds, non-obvious constraints, dangerous places.
    - Never document what a framework or database is.
    - Test for every doc entry: "what breaks the next session if it doesn't know this?"
+
+8. **Grow the design from present forces**
+   - Implement the active phase's clauses and Definition of Done in full.
+   - Do not add capability, abstraction, configuration, fallback, or recovery machinery
+     without grounding in a current requirement, an approved boundary, an observed
+     failure, or a named risk.
+   - Silence in the spec does not license skipping behavior the stated scenario needs.
+     Under-implementing is not simplicity — it is a defect wearing simplicity's clothes.
+   - Durable data, external inputs and calls, security boundaries, and risks with high
+     cost keep proportionate rigor before the first incident.
+   - The aggressive form of this stance is a loadable mode, not a standing rule:
+     `references/piecemeal-growth.md`.
 
 ## Pipeline modes
 
@@ -200,6 +213,8 @@ skill, not a role the agent should improvise.
 | 5 | Retro | `references/retro-prompt.md` | after QA PASS, advisory |
 
 `references/docs-scaffold.md` is not a role — it is the canonical `docs/` tree definition.
+`references/piecemeal-growth.md` is not a role either — it is a review mode loaded for the
+subtraction pass and unloaded afterwards.
 
 ## Role outputs
 
@@ -365,6 +380,23 @@ Within any gate, run cheap deterministic checks **before** invoking an LLM revie
 Rationale: a linter finds a syntax problem for free and with certainty. Paying an LLM
 to find the same problem less reliably is waste. LLM reviewers judge logic, architecture
 and failure modes — never syntax, formatting, or anything a tool already proves.
+
+### Subtraction pass
+
+Once a phase is green and committed, run one pass whose only question is what can be
+removed. Load `references/piecemeal-growth.md`, point it at that phase's diff, and take
+back three verdicts: KEEP, REMOVE, QUESTION, each carrying its evidence.
+
+- It reports; it never deletes. An accepted REMOVE is an ordinary change inside the same
+  phase scope and re-runs the deterministic checks before review.
+- It runs after the deterministic gate and before the LLM reviewers, so reviewers judge
+  code that has already shed its speculative parts.
+- No findings is a legitimate result, stated in one line. Advisory, never a blocking gate.
+- Skip it at Low review depth — docs, copy, and dependency bumps have nothing to subtract.
+
+Rationale: agents add configuration, fallbacks, and abstractions for futures nobody
+ordered, and each one is paid for by whoever maintains the code next. Nothing else in the
+pipeline is looking for that; every other gate asks whether something is missing.
 
 ### When the product itself contains an LLM
 
