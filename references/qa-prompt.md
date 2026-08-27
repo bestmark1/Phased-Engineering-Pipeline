@@ -130,6 +130,11 @@ Do not flag a test merely for covering internal logic or for being one of many o
 same criterion. Thorough coverage of a real requirement is correct; the defect is a
 test with no requirement behind it.
 
+**Brownfield mode:** flag only tests this pipeline's phases wrote or modified. Tests that
+predate the pipeline belong in `docs/tech-debt-tracker.md` as baseline debt, counted once
+and reported as a single line — never enumerated as orphans and never blocking. A legacy
+test becomes flaggable the moment a phase edits it or leans on it as evidence.
+
 ## Output Format
 
 ```

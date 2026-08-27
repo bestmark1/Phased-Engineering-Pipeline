@@ -33,6 +33,10 @@ author — framing, market, requirements — are one pass; a role that judges th
 at two moments is one prompt invoked twice.
 
 ```text
+brownfield mode only:
+[Archaeology: read-only] → SPEC_PLAN/archaeology-report.md
+→ ⛔ READ-ONLY COMPLETE — nothing edited yet
+
 [Product] → SPEC_PLAN/Narrative.md + MRD.md (Full mode) + PRD.md
 → ⛔ USER APPROVAL
 → [Consistency: product] → SPEC_PLAN/clarification-report.md
@@ -96,6 +100,8 @@ at two moments is one prompt invoked twice.
      requirement demands.
    - Wanting a test for something no requirement covers means a **missing requirement** —
      raise it, do not encode it.
+   - In `brownfield` mode this binds new and modified tests only; pre-existing tests are
+     baseline debt until a phase touches them.
 
 7. **Document surprises, not general knowledge**
    - `docs/` must capture only what an agent cannot derive from general knowledge:
@@ -139,6 +145,35 @@ Use:
 Flow:
 `Product (Narrative + MRD + PRD) → Consistency → Architecture → Plan → Build`
 
+### Brownfield mode
+Use:
+- an existing codebase this pipeline did not produce
+- inherited or handed-over work
+- any project whose behavior nobody present can fully explain
+
+Flow:
+`Archaeology (read-only) → Product (Lite) → Consistency → Architecture → Plan → Build`
+
+The system already exists, so the first job is finding out what it actually does. The
+Archaeologist reads and reports; it edits nothing. Its report is the input every later
+role reads instead of guessing, and the harness it names is built by the first
+implementation phase — adding a test is itself a change and belongs after the read-only
+gate, not inside it.
+
+Run archaeology **once per initiative**, not once per phase. Refresh it only after the
+repository changes substantially underneath the plan.
+
+Two adjustments apply for as long as the project stays in this mode:
+
+- **Legacy tests are grandfathered.** Principle 6 binds new and modified tests. Tests that
+  predate the pipeline are recorded once in `docs/tech-debt-tracker.md` as baseline debt
+  and never block a phase. A legacy test must be classified — traced to a requirement or
+  deleted with reason — at the moment a phase modifies it or relies on it. Without this,
+  the first QA run declares hundreds of orphans and buries the actual work.
+- **The Constitution starts descriptive.** `SPEC_PLAN/CONSTITUTION.md` records the rules
+  the code already obeys before it records the rules the owner wants. A constraint the
+  existing system violates everywhere is a finding, not a law.
+
 ## Configuration
 
 Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in prompts resolves from this table.
@@ -146,7 +181,8 @@ Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in prompts reso
 | Placeholder | Description | Example |
 |---|---|---|
 | `{{PROJECT_NAME}}` | Project name | Weather Tracker |
-| `{{PIPELINE_MODE}}` | `lite` or `full` | `full` |
+| `{{PIPELINE_MODE}}` | `lite`, `full`, or `brownfield` | `full` |
+| `{{CHANGE_TARGET}}` | Brownfield only — the behavior the initiative will alter | tenant onboarding flow |
 | `{{TECH_STACK}}` | Runtime + language + frameworks | Node.js, TypeScript strict, Next.js |
 | `{{BUILD_COMMAND}}` | Build verification | `npm run build` |
 | `{{RUN_COMMAND}}` | Start the product the way a user reaches it | `npm run dev` |
@@ -174,6 +210,7 @@ PROGRESS.md                   # execution state: ⬜ / 🔄 / ✅ / ⛔
 HANDOFF.md                    # what the next session needs to know
 
 SPEC_PLAN/
+  archaeology-report.md       # brownfield mode only
   Narrative.md
   MRD.md                      # Full mode only
   PRD.md
@@ -200,6 +237,7 @@ skill, not a role the agent should improvise.
 
 | Phase | Role | Prompt file | When |
 |---|------|-------------|------|
+| 0a | Archaeology | `references/archaeology-prompt.md` | brownfield only — read-only, once per initiative |
 | 0 | Product | `references/product-prompt.md` | always — writes Narrative, MRD (Full), PRD |
 | — | Domain Analyst | `references/analyst-prompt.md` | when domain research is needed |
 | 0c | Consistency (`product`) | `references/consistency-prompt.md` | after product approval |
