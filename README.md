@@ -1,6 +1,6 @@
 # phased-engineering-pipeline
 
-> Claude Code skill that orchestrates seven specialized roles through a full BMAD engineering pipeline: **Product → Consistency → Architect → Tech Lead → Developer** with SOLID and SRE code reviewers, then **QA & release verification in a clean checkout** and a **session-archaeology retro**. A role exists only where it must not be the author of what it judges. Includes auto git commits, feature branch workflow, CI/CD awareness, `SPEC_PLAN/` artifact hub, knowledge base (`docs/`) with a surprises log, AGENTS.md project map, decision logs, and tech debt tracking.
+> Claude Code skill that orchestrates seven specialized roles — eight when entering an existing codebase — through a full BMAD engineering pipeline: **Product → Consistency → Architect → Tech Lead → Developer** with SOLID and SRE code reviewers, then **QA & release verification in a clean checkout** and a **session-archaeology retro**. A role exists only where it must not be the author of what it judges. Includes auto git commits, feature branch workflow, CI/CD awareness, `SPEC_PLAN/` artifact hub, knowledge base (`docs/`) with a surprises log, AGENTS.md project map, decision logs, and tech debt tracking.
 
 ---
 
@@ -121,6 +121,18 @@ Documentation and review were the strong parts; proving the product runs was not
 
 ---
 
+## New in v3.3 — Existing code, stable IDs, and a pass that removes
+
+Three additions, each answering something the pipeline could not do before.
+
+| Change | Rationale |
+|---------|-------------|
+| `brownfield` mode + read-only Archaeology role | The flow began at Product, so entering a codebase it did not write had no path: the first act would have been editing a system nobody had mapped. Archaeology describes what the code actually does, citing `file:line`, and changes nothing. Legacy tests are grandfathered so the first QA run reports real findings instead of hundreds of orphans |
+| Subtraction pass + `piecemeal-growth.md` mode | Every gate asked whether something was missing; none asked what could be removed. Agents add configuration, fallbacks and abstractions for futures nobody ordered. The mode is loaded on demand and reports KEEP/REMOVE/QUESTION with evidence — held in standing context it would bias the Developer against finishing new work, so principle 8 carries a deliberately weaker standing form |
+| Stable criterion IDs (`AC-001`, `QR-001`) | QA used to number criteria at validation time, after the PRD, the traceability matrix and the tests had each referred to them differently. IDs are now assigned once where criteria are written and reused verbatim downstream. Flat, not hierarchical: `2.4.1` is an address and a position at once, so restructuring forces a choice between breaking references and keeping a misleading number |
+
+---
+
 ## New in v3.2 — Fewer roles, leaner entry point
 
 A role earns a separate invocation only where it must **not** be the author of what it
@@ -195,7 +207,8 @@ Fill these placeholders before spawning agents. The skill is **tech-stack agnost
 | `{{INTERFACE_STYLE}}` | How contracts are defined | abstract class / mixin |
 | `{{DOCS_URL}}` | Official docs URL | https://docs.flutter.dev/ |
 | `{{STRICT_MODE}}` | Gate enforcement | `true` (default, all gates blocking) |
-| `{{PIPELINE_MODE}}` | `lite` or `full` | `lite` |
+| `{{PIPELINE_MODE}}` | `lite`, `full`, or `brownfield` | `lite` |
+| `{{CHANGE_TARGET}}` | Brownfield only — the behavior the initiative will alter | tenant onboarding flow |
 | `{{TYPECHECK_COMMAND}}` | Type checker if separate | `dart analyze` |
 | `{{ROLLBACK_COMMAND}}` | How to undo the last change | `git revert HEAD` |
 | `{{DEFAULT_REVIEW_DEPTH}}` | `low` / `medium` / `high` floor | `medium` |
@@ -223,6 +236,8 @@ phased-engineering-pipeline/
     ├── reviewer-sre-prompt.md       # Reviewer: SRE & Security Auditor
     ├── qa-prompt.md                 # Phase 4: QA & Release verification in a clean checkout
     ├── retro-prompt.md              # Phase 5: Retro — session archaeology
+    ├── archaeology-prompt.md         # Phase 0a: read-only mapping of an existing codebase
+    ├── piecemeal-growth.md           # Review mode: what can be removed (loaded on demand)
     ├── progress-template.md         # PROGRESS.md template
     ├── eval-hooks.md                # Eval planning + cold start (only when EVAL_COMMAND is set)
     ├── run-economics.md             # Cost tracking + caching while tuning the pipeline
