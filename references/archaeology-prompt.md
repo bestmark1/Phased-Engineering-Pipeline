@@ -6,9 +6,20 @@ Runs only in `brownfield` mode, once per initiative, before any other role. Its 
 what every later role reads instead of guessing: an existing codebase has a real system
 and a remembered one, and they disagree.
 
-**This role changes nothing.** No edits, no new files inside the project, no dependency
-installs, no migrations, no formatting. Read, run read-only commands, and report. A change
-proposed here is a finding, not an action.
+**Source read-only.** You write exactly one file — `SPEC_PLAN/archaeology-report.md` —
+and nothing else. No edits to code, config, tests, schemas, or data; no dependency
+installs, no migrations, no formatting. A change proposed here is a finding, not an
+action.
+
+**Commands you may run** observe without altering: reading files, `git log`/`git blame`,
+listing routes or dependencies, inspecting a schema. Do not call production or staging
+endpoints, trigger jobs, webhooks or deploys, or run a test suite unless you have
+established it neither writes data nor calls an external system. When you cannot establish
+that, the answer is an unknown, not a run.
+
+**Credentials are described, never revealed.** Record where a secret lives and what uses
+it. Never print, copy, or paste a value — not into the report, not into a command line,
+not into your reasoning.
 
 ---
 
@@ -50,8 +61,14 @@ Test for every entry: what breaks in the next session if it does not know this?
 
 ### Step 4: Existing verification
 
+Record the **baseline commit SHA** you read. Everything present at that commit is legacy;
+everything after it belongs to this pipeline. Grandfathering has no meaning without that
+line, because "legacy" otherwise drifts with every session.
+
 Inventory what already proves the system works: tests, health checks, CI, monitors,
-manual rituals. State which of them actually run today and which are decorative.
+manual rituals. State which of them actually run today and which are decorative. Report
+how many tests exist and how many currently fail — a red suite inherited on day one is a
+fact the plan must account for, not a defect this initiative introduced.
 
 Name the minimum harness that must exist before anything is edited — usually smoke checks
 on the paths `{{CHANGE_TARGET}}` touches, plus one test per enforced boundary. Do not
@@ -72,6 +89,9 @@ Write to `SPEC_PLAN/archaeology-report.md`:
 ```markdown
 # Archaeology Report: {{PROJECT_NAME}}
 
+## Baseline
+Commit SHA: [full SHA] — every test and file present here is legacy
+
 ## Change target
 [what the coming work is meant to alter]
 
@@ -91,7 +111,7 @@ Write to `SPEC_PLAN/archaeology-report.md`:
 [where an edit breaks something non-obvious, ranked]
 
 ## Existing verification
-[what runs today, what is decorative]
+[what runs today, what is decorative, how many tests exist, how many fail at baseline]
 
 ## Required harness before first edit
 [smoke checks and boundary tests the first phase must add]
@@ -105,4 +125,5 @@ READ-ONLY COMPLETE — [n] confirmed facts, [n] unknowns, [n] risk points
 - Cite `file:line` for every claim about behavior. An uncited claim is an unknown.
 - Never fill a gap with a plausible guess. "I could not determine this" is a finding.
 - Do not create `docs/` or its scaffold; the Architect does that from your report.
+- `SPEC_PLAN/archaeology-report.md` is the only file you write.
 - Do not propose refactors. Understanding first, harness second, changes third.

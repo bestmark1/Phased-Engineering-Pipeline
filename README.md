@@ -9,6 +9,7 @@
 Instead of asking Claude to "build a system" and hoping for the best, this skill enforces a professional BMAD engineering workflow with explicit approval gates:
 
 ```
+[Archaeology] → archaeology-report.md (brownfield mode) → ⛔ READ-ONLY COMPLETE
 [Product] → Narrative.md + MRD.md (Full mode) + PRD.md → ⛔ USER APPROVAL
   → [Consistency: product] → ⛔ CONSISTENCY PASS
   → git: create feature/{slug} branch, commit product artifacts
@@ -17,6 +18,7 @@ Instead of asking Claude to "build a system" and hoping for the best, this skill
       → [Consistency: full] → cross-artifact-analysis.md → ⛔ CONSISTENCY PASS
       → loop per vertical slice:
           [Developer] → self-review loop → deterministic gate (build/lint/typecheck/test)
+          → subtraction pass (what can this phase drop?)
           → [Reviewer SOLID] ‖ [Reviewer SRE]  (topology by review depth)
           → critic loop on findings → APPROVE → next slice
       → [QA & Release] → clean checkout starts → criteria exercised inside it
@@ -127,7 +129,7 @@ Three additions, each answering something the pipeline could not do before.
 
 | Change | Rationale |
 |---------|-------------|
-| `brownfield` mode + read-only Archaeology role | The flow began at Product, so entering a codebase it did not write had no path: the first act would have been editing a system nobody had mapped. Archaeology describes what the code actually does, citing `file:line`, and changes nothing. Legacy tests are grandfathered so the first QA run reports real findings instead of hundreds of orphans |
+| `brownfield` mode + read-only Archaeology role | The flow began at Product, so entering a codebase it did not write had no path: the first act would have been editing a system nobody had mapped. Archaeology describes what the code actually does, citing `file:line`, and writes one file — its own report — while leaving source, config, tests and data untouched. Legacy tests are grandfathered so the first QA run reports real findings instead of hundreds of orphans |
 | Subtraction pass + `piecemeal-growth.md` mode | Every gate asked whether something was missing; none asked what could be removed. Agents add configuration, fallbacks and abstractions for futures nobody ordered. The mode is loaded on demand and reports KEEP/REMOVE/QUESTION with evidence — held in standing context it would bias the Developer against finishing new work, so principle 8 carries a deliberately weaker standing form |
 | Stable criterion IDs (`AC-001`, `QR-001`) | QA used to number criteria at validation time, after the PRD, the traceability matrix and the tests had each referred to them differently. IDs are now assigned once where criteria are written and reused verbatim downstream. Flat, not hierarchical: `2.4.1` is an address and a position at once, so restructuring forces a choice between breaking references and keeping a misleading number |
 

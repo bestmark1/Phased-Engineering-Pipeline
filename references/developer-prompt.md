@@ -41,8 +41,8 @@ Additionally:
 - `{{BUILD_COMMAND}}` must pass with zero errors on the files produced
 - No hardcoded secrets — use environment variables or secure configuration
 - **No orphan tests.** Every test must name what it proves — a PRD acceptance
-  criterion by its ID (`AC-014`), an architecture constraint, or a defect that must
-  not return — in the test description or a one-line comment. The ID is what lets
+  criterion or quality requirement by its ID (`AC-014`, `QR-003`), an architecture
+  constraint, or a defect that must not return — in the test description or a one-line comment. The ID is what lets
   QA match your test to the criterion without guessing from the wording. Cover internal logic as thoroughly
   as its requirement demands; the rule is traceability, not a limit on how many
   tests you write. If you want to test something no requirement covers, say so in

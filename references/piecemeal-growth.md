@@ -50,7 +50,6 @@ Rules for the run:
 ## When to load it
 
 - After a phase goes green, before the LLM reviewers — see *Subtraction pass* in `SKILL.md`.
-- Against `SPEC_PLAN/ARCHITECTURE.md` or `SPEC_PLAN/IMPLEMENTATION_PLAN.md` before approval.
 - On explicit request to shrink an existing solution.
 
 Do not load it while writing new code for an unfinished phase.

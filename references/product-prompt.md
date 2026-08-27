@@ -116,7 +116,9 @@ document, assigned as you write them. They are addresses, not positions: the num
 encodes where the criterion sits, so reordering or regrouping the PRD leaves every
 reference intact. Architecture, plan, tests and QA all cite these IDs rather than
 inventing their own numbering, which is how a criterion stays the same thing at every
-stage. A retired criterion keeps its number forever; the next one continues the sequence.
+stage. A criterion that no longer applies is marked in place as `**AC-014 [RETIRED]** — reason`
+and keeps its number forever; the next new criterion continues the sequence. Retired
+criteria stay visible in the PRD, stay out of coverage counts, and are never reassigned.
 
 ```markdown
 # PRD — {{PROJECT_NAME}}
@@ -148,6 +150,7 @@ only where it genuinely applies — an empty table beats invented thresholds.
 | ID | Area | Requirement | Verified by |
 |----|------|-------------|-------------|
 | QR-001 | Security | e.g. session tokens are not readable by client scripts | |
+| QR-002 | Privacy | … | |
 | Privacy | what personal data is stored, and for how long | |
 | Performance | e.g. first response under 2s on a mid-range phone | |
 | Accessibility | e.g. the primary flow is completable by keyboard alone | |

@@ -10,13 +10,16 @@ description: |
   black-box acceptance criteria verified against the running product, vertical-slice
   phases, release gate, artifact-change protocol, self-review loop, session-archaeology
   retro, STRICT_MODE, and llms.txt reference caching.
+  Brownfield mode adds a read-only Archaeology pass that maps an existing codebase before
+  anything is edited; a subtraction pass asks what each phase can drop.
   Gate discipline: deterministic checks before LLM review, review depth by risk,
   structured verdicts with UNKNOWN, critic loop on failure, agent guardrails,
   report-only run economics, and optional eval hooks for LLM-bearing products.
 use_when:
   - Building from scratch
   - "Design + plan + code"
-  - User says "build", "architect", "implement a full system", "phased pipeline", "BMAD pipeline", "new feature end-to-end"
+  - Entering an existing or inherited codebase that needs mapping before changes
+  - User says "build", "architect", "implement a full system", "phased pipeline", "BMAD pipeline", "new feature end-to-end", "take over this project", "legacy codebase"
 does_not_handle:
   - Debugging an existing bug with no project framing
   - Single-function edits
@@ -34,8 +37,10 @@ at two moments is one prompt invoked twice.
 
 ```text
 brownfield mode only:
-[Archaeology: read-only] → SPEC_PLAN/archaeology-report.md
-→ ⛔ READ-ONLY COMPLETE — nothing edited yet
+git: create feature/{slug} branch, mkdir SPEC_PLAN/
+[Archaeology: source read-only] → SPEC_PLAN/archaeology-report.md   ← the only file it writes
+→ ⛔ READ-ONLY COMPLETE — no source, config, test or data change yet
+→ git: commit the report
 
 [Product] → SPEC_PLAN/Narrative.md + MRD.md (Full mode) + PRD.md
 → ⛔ USER APPROVAL
@@ -115,8 +120,9 @@ brownfield mode only:
 8. **Grow the design from present forces**
    - Implement the active phase's clauses and Definition of Done in full.
    - Do not add capability, abstraction, configuration, fallback, or recovery machinery
-     without grounding in a current requirement, an approved boundary, an observed
-     failure, or a named risk.
+     without grounding in a current criterion, a boundary named in an approved artifact,
+     a failure that has occurred, or a risk the owner accepted with its likelihood and
+     cost written down. "It could happen" is not grounding — anything can.
    - Silence in the spec does not license skipping behavior the stated scenario needs.
      Under-implementing is not simplicity — it is a defect wearing simplicity's clothes.
    - Durable data, external inputs and calls, security boundaries, and risks with high
@@ -168,14 +174,23 @@ repository changes substantially underneath the plan.
 
 Two adjustments apply for as long as the project stays in this mode:
 
-- **Legacy tests are grandfathered.** Principle 6 binds new and modified tests. Tests that
-  predate the pipeline are recorded once in `docs/tech-debt-tracker.md` as baseline debt
-  and never block a phase. A legacy test must be classified — traced to a requirement or
-  deleted with reason — at the moment a phase modifies it or relies on it. Without this,
-  the first QA run declares hundreds of orphans and buries the actual work.
+- **Legacy tests are grandfathered — for traceability only.** Legacy means present at the
+  baseline SHA the archaeology report records; everything after it is this pipeline's.
+  Principle 6 binds new and modified tests, so a legacy test lacking a named requirement
+  is baseline debt in `docs/tech-debt-tracker.md`, counted once, never enumerated as
+  orphans. It becomes classifiable — traced or deleted with reason — when a phase edits it
+  or cites it as evidence for a specific criterion.
+  Grandfathering does not extend to failures. Tests already red at baseline are recorded
+  with their count and either fixed first or compared against that recorded baseline; a
+  test that turns red after it is a regression and blocks the gate like any other.
 - **The Constitution starts descriptive.** `SPEC_PLAN/CONSTITUTION.md` records the rules
-  the code already obeys before it records the rules the owner wants. A constraint the
-  existing system violates everywhere is a finding, not a law.
+  the code already obeys before it records the rules the owner wants, in two separate
+  sections. A constraint the existing system violates everywhere is a finding, not a law.
+- **The report is input, not an archive.** Every role after Archaeology reads
+  `SPEC_PLAN/archaeology-report.md` alongside its usual inputs. The Tech Lead turns its
+  *Required harness before first edit* into the opening work of the first phase that
+  touches behavior — otherwise the Developer either skips it or builds it out of phase
+  scope, and phase isolation takes the blame for a planning omission.
 
 ## Configuration
 
@@ -365,8 +380,11 @@ costs the phase.
 
 **Criterion IDs never move.** Rewording a criterion keeps its ID. Splitting one into two
 keeps the original ID for the part that retains the intent and appends a new number for
-the rest. A criterion that no longer applies is marked retired in place, with a line
-saying why; its number is never reassigned. Renumbering an approved PRD silently
+the rest. A criterion that no longer applies is marked in place as
+`**AC-014 [RETIRED]** — reason`; its number is never reassigned. Retired criteria stay
+visible in the PRD and in the traceability matrix, and drop out of everything that counts:
+no phase covers them, no test must prove them, and QA excludes them from coverage and from
+the verdict. Renumbering an approved PRD silently
 invalidates every test comment, plan entry and QA report that cites it — the references
 still parse, they just point somewhere else, which is worse than breaking outright.
 
@@ -436,16 +454,21 @@ Once a phase is green and committed, run one pass whose only question is what ca
 removed. Load `references/piecemeal-growth.md`, point it at that phase's diff, and take
 back three verdicts: KEEP, REMOVE, QUESTION, each carrying its evidence.
 
-- It reports; it never deletes. An accepted REMOVE is an ordinary change inside the same
-  phase scope and re-runs the deterministic checks before review.
+- It reports; it never deletes. The Developer decides on each finding and applies the
+  accepted ones inside the same phase scope, re-runs the deterministic checks, and amends
+  or adds one phase-scoped commit before the reviewers are called — so reviewers judge one
+  coherent state, not code plus a pending list of deletions.
+- A REMOVE that contradicts an approved artifact is not the Developer's call: it goes
+  through *Changing an approved artifact* like any other discovery.
 - It runs after the deterministic gate and before the LLM reviewers, so reviewers judge
   code that has already shed its speculative parts.
 - No findings is a legitimate result, stated in one line. Advisory, never a blocking gate.
 - Skip it at Low review depth — docs, copy, and dependency bumps have nothing to subtract.
+- Count its tokens and time in the phase total; otherwise Medium and High phases look
+  cheaper than they are next to Low, where the pass never runs.
 
-Rationale: agents add configuration, fallbacks, and abstractions for futures nobody
-ordered, and each one is paid for by whoever maintains the code next. Nothing else in the
-pipeline is looking for that; every other gate asks whether something is missing.
+Every other gate asks whether something is missing. This one is the only place that asks
+the opposite.
 
 ### When the product itself contains an LLM
 
