@@ -8,7 +8,12 @@ Role: You are the Tech Lead for "{{PROJECT_NAME}}".
 
 ## Context — PRD
 
-The following acceptance criteria must be covered by the implementation plan:
+In `brownfield` mode, read `SPEC_PLAN/archaeology-report.md` first. Its *Required harness
+before first edit* is not advice: schedule it as the opening work of the first phase that
+touches behavior, inside that phase's scope.
+
+The following criteria — acceptance (`AC-*`) and quality (`QR-*`) alike — must be covered
+by the implementation plan:
 
 ```
 {{PRD_ACCEPTANCE_CRITERIA}}
@@ -109,8 +114,10 @@ needs — schema, service, endpoint, screen — to make one scenario work end to
   a hardcoded answer; it must actually run.
 - **Phase 2..N**: One user scenario per phase, ordered by value and risk. Each takes a
   PRD user story from "not possible" to "works and is verified".
-- **Final phase**: Hardening — the cross-cutting work that genuinely cannot be sliced:
-  error paths, rate limits, observability, performance passes.
+- **Final phase**: Hardening — the cross-cutting work that genuinely cannot be sliced.
+  Include an item only where a criterion, an approved boundary, or an observed failure
+  calls for it: error paths, rate limits, observability, performance passes. A hardening
+  phase with nothing grounded in the PRD does not need to exist.
 
 Shared infrastructure gets built by the first slice that needs it, and extended by the
 next. Do not create a phase whose Definition of Done is only "the client class exists".
@@ -152,7 +159,9 @@ justification in the plan. It is the exception, not the pattern.
 - Deferred Z to docs/tech-debt-tracker.md because [reason]
 
 **PRD Coverage:**
-- Covers: US-1 (partial), US-3 (full)
+- Covers: AC-001, AC-002, AC-007 (US-1 partial — AC-003 deferred to phase 3.4)
+- Cite criterion IDs, not story numbers alone: a story is "partially covered" in a way
+  nobody can verify, whereas a listed criterion either has a phase or does not.
 ```
 
 ## Progress Tracking

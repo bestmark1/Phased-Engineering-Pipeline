@@ -110,6 +110,16 @@ quoted downstream as fact. Name real alternatives. Anything unverified goes in s
 The single source of truth for architecture, development, and QA validation.
 **Every user story needs at least 2 acceptance criteria.**
 
+**Every criterion gets an ID here, once.** Acceptance criteria are `AC-001`, `AC-002`, …
+and quality requirements are `QR-001`, `QR-002`, … — flat, sequential across the whole
+document, assigned as you write them. They are addresses, not positions: the number never
+encodes where the criterion sits, so reordering or regrouping the PRD leaves every
+reference intact. Architecture, plan, tests and QA all cite these IDs rather than
+inventing their own numbering, which is how a criterion stays the same thing at every
+stage. A criterion that no longer applies is marked in place as `**AC-014 [RETIRED]** — reason`
+and keeps its number forever; the next new criterion continues the sequence. Retired
+criteria stay visible in the PRD, stay out of coverage counts, and are never reassigned.
+
 ```markdown
 # PRD — {{PROJECT_NAME}}
 
@@ -128,7 +138,7 @@ One paragraph: what problem, for whom, why it matters.
 **As a** [role], **I want** [action], **so that** [benefit].
 
 **Acceptance Criteria:**
-- **Given** [context], **When** [action], **Then** [expected result]
+- **AC-001** — **Given** [context], **When** [action], **Then** [expected result]
   *Verified by:* [how someone observes this — request and expected response, screen and
   expected text, CLI invocation and expected exit code]
 
@@ -137,9 +147,10 @@ One paragraph: what problem, for whom, why it matters.
 Requirements that are not a user story but still decide whether this ships. Include a row
 only where it genuinely applies — an empty table beats invented thresholds.
 
-| Area | Requirement | Verified by |
-|------|-------------|-------------|
-| Security | e.g. session tokens are not readable by client scripts | |
+| ID | Area | Requirement | Verified by |
+|----|------|-------------|-------------|
+| QR-001 | Security | e.g. session tokens are not readable by client scripts | |
+| QR-002 | Privacy | … | |
 | Privacy | what personal data is stored, and for how long | |
 | Performance | e.g. first response under 2s on a mid-range phone | |
 | Accessibility | e.g. the primary flow is completable by keyboard alone | |

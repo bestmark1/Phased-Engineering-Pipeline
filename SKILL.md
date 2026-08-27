@@ -10,13 +10,16 @@ description: |
   black-box acceptance criteria verified against the running product, vertical-slice
   phases, release gate, artifact-change protocol, self-review loop, session-archaeology
   retro, STRICT_MODE, and llms.txt reference caching.
+  Brownfield mode adds a read-only Archaeology pass that maps an existing codebase before
+  anything is edited; a subtraction pass asks what each phase can drop.
   Gate discipline: deterministic checks before LLM review, review depth by risk,
   structured verdicts with UNKNOWN, critic loop on failure, agent guardrails,
   report-only run economics, and optional eval hooks for LLM-bearing products.
 use_when:
   - Building from scratch
   - "Design + plan + code"
-  - User says "build", "architect", "implement a full system", "phased pipeline", "BMAD pipeline", "new feature end-to-end"
+  - Entering an existing or inherited codebase that needs mapping before changes
+  - User says "build", "architect", "implement a full system", "phased pipeline", "BMAD pipeline", "new feature end-to-end", "take over this project", "legacy codebase"
 does_not_handle:
   - Debugging an existing bug with no project framing
   - Single-function edits
@@ -33,6 +36,12 @@ author — framing, market, requirements — are one pass; a role that judges th
 at two moments is one prompt invoked twice.
 
 ```text
+brownfield mode only:
+git: create feature/{slug} branch, mkdir SPEC_PLAN/
+[Archaeology: source read-only] → SPEC_PLAN/archaeology-report.md   ← the only file it writes
+→ ⛔ READ-ONLY COMPLETE — no source, config, test or data change yet
+→ git: commit the report
+
 [Product] → SPEC_PLAN/Narrative.md + MRD.md (Full mode) + PRD.md
 → ⛔ USER APPROVAL
 → [Consistency: product] → SPEC_PLAN/clarification-report.md
@@ -51,6 +60,7 @@ at two moments is one prompt invoked twice.
    → self-review loop (verify → fix → re-verify)
    → deterministic gate: build ‖ lint ‖ typecheck ‖ test   ← LLM reviewers not called until green
    → git: commit code
+   → subtraction pass: load `references/piecemeal-growth.md` → KEEP/REMOVE/QUESTION findings
    → [Reviewer SOLID] ‖ [Reviewer SRE]   ← topology set by review depth (Low/Medium/High)
    → findings? critic loop: fix findings only → re-run checks → re-review failing criteria
    → UNKNOWN on a blocking criterion? → escalate to second reviewer, then owner
@@ -89,18 +99,36 @@ at two moments is one prompt invoked twice.
 6. **Tests are evidence of requirements**
    - A test proves a named requirement: a PRD acceptance criterion, an architecture
      constraint, or a defect that must not return. Every test names what it proves.
+   - Criteria carry stable IDs (`AC-001`, `QR-001`) assigned once in the PRD and reused
+     unchanged by architecture, plan, tests and QA. Each role renumbering for itself is
+     how four documents end up disagreeing about which criterion is which.
    - A test that names nothing is an **orphan** — it freezes an accidental implementation,
      and the next session maintains the test instead of reconsidering the approach.
    - Traceability, not scarcity: internal logic may be covered as thoroughly as its
      requirement demands.
    - Wanting a test for something no requirement covers means a **missing requirement** —
      raise it, do not encode it.
+   - In `brownfield` mode this binds new and modified tests only; pre-existing tests are
+     baseline debt until a phase touches them.
 
 7. **Document surprises, not general knowledge**
    - `docs/` must capture only what an agent cannot derive from general knowledge:
      strange decisions, workarounds, non-obvious constraints, dangerous places.
    - Never document what a framework or database is.
    - Test for every doc entry: "what breaks the next session if it doesn't know this?"
+
+8. **Grow the design from present forces**
+   - Implement the active phase's clauses and Definition of Done in full.
+   - Do not add capability, abstraction, configuration, fallback, or recovery machinery
+     without grounding in a current criterion, a boundary named in an approved artifact,
+     a failure that has occurred, or a risk the owner accepted with its likelihood and
+     cost written down. "It could happen" is not grounding — anything can.
+   - Silence in the spec does not license skipping behavior the stated scenario needs.
+     Under-implementing is not simplicity — it is a defect wearing simplicity's clothes.
+   - Durable data, external inputs and calls, security boundaries, and risks with high
+     cost keep proportionate rigor before the first incident.
+   - The aggressive form of this stance is a loadable mode, not a standing rule:
+     `references/piecemeal-growth.md`.
 
 ## Pipeline modes
 
@@ -126,6 +154,44 @@ Use:
 Flow:
 `Product (Narrative + MRD + PRD) → Consistency → Architecture → Plan → Build`
 
+### Brownfield mode
+Use:
+- an existing codebase this pipeline did not produce
+- inherited or handed-over work
+- any project whose behavior nobody present can fully explain
+
+Flow:
+`Archaeology (read-only) → Product (Lite) → Consistency → Architecture → Plan → Build`
+
+The system already exists, so the first job is finding out what it actually does. The
+Archaeologist reads and reports; it edits nothing. Its report is the input every later
+role reads instead of guessing, and the harness it names is built by the first
+implementation phase — adding a test is itself a change and belongs after the read-only
+gate, not inside it.
+
+Run archaeology **once per initiative**, not once per phase. Refresh it only after the
+repository changes substantially underneath the plan.
+
+Two adjustments apply for as long as the project stays in this mode:
+
+- **Legacy tests are grandfathered — for traceability only.** Legacy means present at the
+  baseline SHA the archaeology report records; everything after it is this pipeline's.
+  Principle 6 binds new and modified tests, so a legacy test lacking a named requirement
+  is baseline debt in `docs/tech-debt-tracker.md`, counted once, never enumerated as
+  orphans. It becomes classifiable — traced or deleted with reason — when a phase edits it
+  or cites it as evidence for a specific criterion.
+  Grandfathering does not extend to failures. Tests already red at baseline are recorded
+  with their count and either fixed first or compared against that recorded baseline; a
+  test that turns red after it is a regression and blocks the gate like any other.
+- **The Constitution starts descriptive.** `SPEC_PLAN/CONSTITUTION.md` records the rules
+  the code already obeys before it records the rules the owner wants, in two separate
+  sections. A constraint the existing system violates everywhere is a finding, not a law.
+- **The report is input, not an archive.** Every role after Archaeology reads
+  `SPEC_PLAN/archaeology-report.md` alongside its usual inputs. The Tech Lead turns its
+  *Required harness before first edit* into the opening work of the first phase that
+  touches behavior — otherwise the Developer either skips it or builds it out of phase
+  scope, and phase isolation takes the blame for a planning omission.
+
 ## Configuration
 
 Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in prompts resolves from this table.
@@ -133,7 +199,8 @@ Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in prompts reso
 | Placeholder | Description | Example |
 |---|---|---|
 | `{{PROJECT_NAME}}` | Project name | Weather Tracker |
-| `{{PIPELINE_MODE}}` | `lite` or `full` | `full` |
+| `{{PIPELINE_MODE}}` | `lite`, `full`, or `brownfield` | `full` |
+| `{{CHANGE_TARGET}}` | Brownfield only — the behavior the initiative will alter | tenant onboarding flow |
 | `{{TECH_STACK}}` | Runtime + language + frameworks | Node.js, TypeScript strict, Next.js |
 | `{{BUILD_COMMAND}}` | Build verification | `npm run build` |
 | `{{RUN_COMMAND}}` | Start the product the way a user reaches it | `npm run dev` |
@@ -161,6 +228,7 @@ PROGRESS.md                   # execution state: ⬜ / 🔄 / ✅ / ⛔
 HANDOFF.md                    # what the next session needs to know
 
 SPEC_PLAN/
+  archaeology-report.md       # brownfield mode only
   Narrative.md
   MRD.md                      # Full mode only
   PRD.md
@@ -187,6 +255,7 @@ skill, not a role the agent should improvise.
 
 | Phase | Role | Prompt file | When |
 |---|------|-------------|------|
+| 0a | Archaeology | `references/archaeology-prompt.md` | brownfield only — read-only, once per initiative |
 | 0 | Product | `references/product-prompt.md` | always — writes Narrative, MRD (Full), PRD |
 | — | Domain Analyst | `references/analyst-prompt.md` | when domain research is needed |
 | 0c | Consistency (`product`) | `references/consistency-prompt.md` | after product approval |
@@ -200,6 +269,8 @@ skill, not a role the agent should improvise.
 | 5 | Retro | `references/retro-prompt.md` | after QA PASS, advisory |
 
 `references/docs-scaffold.md` is not a role — it is the canonical `docs/` tree definition.
+`references/piecemeal-growth.md` is not a role either — it is a review mode loaded for the
+subtraction pass and unloaded afterwards.
 
 ## Role outputs
 
@@ -208,6 +279,7 @@ artifact summary — what must exist when the role is done.
 
 | Phase | Role | Produces |
 |---|------|----------|
+| 0a | Archaeology | `SPEC_PLAN/archaeology-report.md` (brownfield only) — confirmed facts with `file:line`, unknowns, surprises, change surface, risk points, harness the first phase must add. Creates nothing else |
 | 0 | Product | `SPEC_PLAN/Narrative.md` (story, why now, constraints, non-goals, risks), `SPEC_PLAN/MRD.md` (Full mode: ICP, JTBD, alternatives, positioning), `SPEC_PLAN/PRD.md` (user stories, black-box criteria with verification method, quality requirements, success metrics) |
 | 0c | Consistency (`product`) | `SPEC_PLAN/clarification-report.md` — ambiguity, contradictions, gaps, assumptions taken |
 | 1 | Architect | `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/CONSTITUTION.md`, `PROJECT_INDEX.md`, `AGENTS.md`, `docs/` scaffold |
@@ -306,6 +378,16 @@ naming, internal structure, a clarification that changes no behavior. When in do
 it as material: one question costs minutes, an unapproved behavior change found at release
 costs the phase.
 
+**Criterion IDs never move.** Rewording a criterion keeps its ID. Splitting one into two
+keeps the original ID for the part that retains the intent and appends a new number for
+the rest. A criterion that no longer applies is marked in place as
+`**AC-014 [RETIRED]** — reason`; its number is never reassigned. Retired criteria stay
+visible in the PRD and in the traceability matrix, and drop out of everything that counts:
+no phase covers them, no test must prove them, and QA excludes them from coverage and from
+the verdict. Renumbering an approved PRD silently
+invalidates every test comment, plan entry and QA report that cites it — the references
+still parse, they just point somewhere else, which is worse than breaking outright.
+
 Every artifact change gets a line in `HANDOFF.md` — what was discovered, which artifact
 changed, whether the owner approved it. A silent edit to an approved document is
 indistinguishable from scope creep on review.
@@ -365,6 +447,28 @@ Within any gate, run cheap deterministic checks **before** invoking an LLM revie
 Rationale: a linter finds a syntax problem for free and with certainty. Paying an LLM
 to find the same problem less reliably is waste. LLM reviewers judge logic, architecture
 and failure modes — never syntax, formatting, or anything a tool already proves.
+
+### Subtraction pass
+
+Once a phase is green and committed, run one pass whose only question is what can be
+removed. Load `references/piecemeal-growth.md`, point it at that phase's diff, and take
+back three verdicts: KEEP, REMOVE, QUESTION, each carrying its evidence.
+
+- It reports; it never deletes. The Developer decides on each finding and applies the
+  accepted ones inside the same phase scope, re-runs the deterministic checks, and amends
+  or adds one phase-scoped commit before the reviewers are called — so reviewers judge one
+  coherent state, not code plus a pending list of deletions.
+- A REMOVE that contradicts an approved artifact is not the Developer's call: it goes
+  through *Changing an approved artifact* like any other discovery.
+- It runs after the deterministic gate and before the LLM reviewers, so reviewers judge
+  code that has already shed its speculative parts.
+- No findings is a legitimate result, stated in one line. Advisory, never a blocking gate.
+- Skip it at Low review depth — docs, copy, and dependency bumps have nothing to subtract.
+- Count its tokens and time in the phase total; otherwise Medium and High phases look
+  cheaper than they are next to Low, where the pass never runs.
+
+Every other gate asks whether something is missing. This one is the only place that asks
+the opposite.
 
 ### When the product itself contains an LLM
 

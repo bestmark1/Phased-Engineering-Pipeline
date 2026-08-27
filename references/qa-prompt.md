@@ -68,11 +68,16 @@ If the clean checkout will not start, stop here and report `RELEASE BLOCKED`. Cr
 verified in a broken environment prove nothing.
 
 ### Step 1: Extract Acceptance Criteria
-List every Given/When/Then criterion from the PRD. Number them AC-1, AC-2, etc.
+List every Given/When/Then criterion from the PRD **using the IDs the PRD already
+assigned** — `AC-001`, `AC-002`, … Do not renumber them: your report is read next to the
+PRD, the plan and the tests, and a second numbering makes those four documents disagree
+about which criterion is which. A criterion with no ID is a PRD defect — report it as one. A criterion marked `[RETIRED]`
+is listed once as retired and excluded from every count and from the verdict; verifying a
+requirement the owner withdrew wastes the run and can fail a release for nothing.
 Each criterion carries a *Verified by* line — that is the check you run in Step 2.
 
 Include the PRD's **Quality Requirements** table (security, privacy, performance,
-accessibility, data recovery) as numbered criteria too: QR-1, QR-2, … They ship or fail
+accessibility, data recovery) the same way, by their `QR-###` IDs. They ship or fail
 the release exactly like user stories do, and skipping them is how they get discovered
 by a user instead of by you.
 
@@ -130,6 +135,11 @@ Do not flag a test merely for covering internal logic or for being one of many o
 same criterion. Thorough coverage of a real requirement is correct; the defect is a
 test with no requirement behind it.
 
+**Brownfield mode:** flag only tests this pipeline's phases wrote or modified. Tests that
+predate the pipeline belong in `docs/tech-debt-tracker.md` as baseline debt, counted once
+and reported as a single line — never enumerated as orphans and never blocking. A legacy
+test becomes flaggable the moment a phase edits it or leans on it as evidence.
+
 ## Output Format
 
 ```
@@ -150,10 +160,11 @@ test with no requirement behind it.
 
 ## Acceptance Criteria Coverage
 
-| # | User Story | Criterion | Status | Observed evidence |
+| Criterion ID | Source | Criterion | Status | Observed evidence |
 |---|-----------|-----------|--------|-------------------|
-| AC-1 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | `POST /api/x → 201 {"id":"7f2"}` |
-| AC-2 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | rendered "Session expired" on /join/abc |
+| AC-001 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | `POST /api/x → 201 {"id":"7f2"}` |
+| AC-002 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | rendered "Session expired" on /join/abc |
+| QR-001 | Quality: Security | … | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | observed behavior, not a file path |
 | ... | ... | ... | ... | ... |
 
 Evidence is what the product did when run. A file path or function name in this column
@@ -216,7 +227,7 @@ One row per architectural layer or domain area. This file is cumulative — upda
 
 ## Action — Verdict
 
-**If ALL acceptance criteria pass AND all commands succeed:**
+**If ALL active criteria — `AC-*` and `QR-*` alike — pass AND all commands succeed:**
 
 `QA PASS` requires that the product was actually started and exercised. If it was never
 run, no combination of green commands and clean code justifies a pass — report
@@ -224,7 +235,7 @@ run, no combination of green commands and clean code justifies a pass — report
 
 Reply with:
 ```
-QA PASS: All acceptance criteria verified against the running product.
+QA PASS: All active criteria (AC and QR) verified against the running product.
 ```
 
 **If ANY criterion fails OR any command fails:**
@@ -233,7 +244,7 @@ For each failure emit a structured finding:
 
 ```json
 {
-  "criterion": "AC-3",
+  "criterion": "AC-003",
   "status": "FAIL",
   "severity": "blocking",
   "evidence": "src/app/join/[sessionId]/page.tsx — no handler for an expired session id",

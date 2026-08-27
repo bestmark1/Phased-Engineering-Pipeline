@@ -33,6 +33,10 @@ Every user story must be traceable to an architectural component.
 
 {{FUTURE_EXTENSIBILITY}}
 
+Name only extension points an approved artifact asks for. An extensibility seam with no
+requirement behind it is speculative machinery someone maintains for years — write
+`none required` and move on (principle 8).
+
 ## Tech Stack
 
 {{TECH_STACK_DETAIL}}
@@ -53,7 +57,9 @@ Every user story must be traceable to an architectural component.
    - **Sequence Diagram** — primary happy-path flow through the system
 4. Define core **{{INTERFACE_STYLE}}** for each component in `{{CORE_INTERFACES}}`:
    Include at minimum: one data model, one service contract, one infrastructure contract
-5. Outline error handling strategies:
+5. Outline error handling strategies, each tied to a criterion, an approved boundary, or a
+   failure someone has actually seen — state the grounding beside the mechanism, and write
+   `not required` where there is none:
    - Fault tolerance: how the system behaves when one dependency fails
    - Structured logging format with correlation ID for request tracing
    - Retry/backoff policy for transient failures
@@ -106,6 +112,9 @@ One-paragraph description of what this project is and who it serves.
 - Orphan tests (proving nothing named) are banned: they freeze an accidental
   implementation, and future sessions maintain the test instead of reconsidering
   the code.
+- In `brownfield` mode this binds tests written or modified after the baseline SHA in
+  `SPEC_PLAN/archaeology-report.md`. Pre-existing tests are baseline debt, not orphans,
+  until a phase edits one or cites it as evidence.
 - This is traceability, not scarcity. Internal logic may be covered as thoroughly
   as its requirement demands.
 - A test wanted for behavior no requirement covers signals a missing requirement.
@@ -143,7 +152,10 @@ Create the project knowledge base structure per `references/docs-scaffold.md`.
 ## 8. Error Handling Strategy
 ## 9. Logging Format (structured, with example)
 ## 10. PRD Traceability Matrix
-    | User Story | Architectural Component | Notes |
+    | Criterion ID | User Story | Architectural Component | Notes |
+    (one row per active AC/QR ID from the PRD — an ID with no component is a gap, and an
+     ID that does not exist in the PRD is a mistake in this table. Retired IDs keep a row
+     marked RETIRED and need no component)
 ## 11. Open Questions (your clarifying questions — see constraint below)
 ```
 
