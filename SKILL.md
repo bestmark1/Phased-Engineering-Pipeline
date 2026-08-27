@@ -264,6 +264,7 @@ artifact summary — what must exist when the role is done.
 
 | Phase | Role | Produces |
 |---|------|----------|
+| 0a | Archaeology | `SPEC_PLAN/archaeology-report.md` (brownfield only) — confirmed facts with `file:line`, unknowns, surprises, change surface, risk points, harness the first phase must add. Creates nothing else |
 | 0 | Product | `SPEC_PLAN/Narrative.md` (story, why now, constraints, non-goals, risks), `SPEC_PLAN/MRD.md` (Full mode: ICP, JTBD, alternatives, positioning), `SPEC_PLAN/PRD.md` (user stories, black-box criteria with verification method, quality requirements, success metrics) |
 | 0c | Consistency (`product`) | `SPEC_PLAN/clarification-report.md` — ambiguity, contradictions, gaps, assumptions taken |
 | 1 | Architect | `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/CONSTITUTION.md`, `PROJECT_INDEX.md`, `AGENTS.md`, `docs/` scaffold |
