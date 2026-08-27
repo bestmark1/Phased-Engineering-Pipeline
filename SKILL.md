@@ -94,6 +94,9 @@ brownfield mode only:
 6. **Tests are evidence of requirements**
    - A test proves a named requirement: a PRD acceptance criterion, an architecture
      constraint, or a defect that must not return. Every test names what it proves.
+   - Criteria carry stable IDs (`AC-001`, `QR-001`) assigned once in the PRD and reused
+     unchanged by architecture, plan, tests and QA. Each role renumbering for itself is
+     how four documents end up disagreeing about which criterion is which.
    - A test that names nothing is an **orphan** — it freezes an accidental implementation,
      and the next session maintains the test instead of reconsidering the approach.
    - Traceability, not scarcity: internal logic may be covered as thoroughly as its
@@ -358,6 +361,13 @@ external dependency, or scope nobody asked for. Proceed and record when it is im
 naming, internal structure, a clarification that changes no behavior. When in doubt, treat
 it as material: one question costs minutes, an unapproved behavior change found at release
 costs the phase.
+
+**Criterion IDs never move.** Rewording a criterion keeps its ID. Splitting one into two
+keeps the original ID for the part that retains the intent and appends a new number for
+the rest. A criterion that no longer applies is marked retired in place, with a line
+saying why; its number is never reassigned. Renumbering an approved PRD silently
+invalidates every test comment, plan entry and QA report that cites it — the references
+still parse, they just point somewhere else, which is worse than breaking outright.
 
 Every artifact change gets a line in `HANDOFF.md` — what was discovered, which artifact
 changed, whether the owner approved it. A silent edit to an approved document is

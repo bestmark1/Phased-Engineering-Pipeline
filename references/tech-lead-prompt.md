@@ -152,7 +152,9 @@ justification in the plan. It is the exception, not the pattern.
 - Deferred Z to docs/tech-debt-tracker.md because [reason]
 
 **PRD Coverage:**
-- Covers: US-1 (partial), US-3 (full)
+- Covers: AC-001, AC-002, AC-007 (US-1 partial — AC-003 deferred to phase 3.4)
+- Cite criterion IDs, not story numbers alone: a story is "partially covered" in a way
+  nobody can verify, whereas a listed criterion either has a phase or does not.
 ```
 
 ## Progress Tracking

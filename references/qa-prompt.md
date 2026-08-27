@@ -68,11 +68,14 @@ If the clean checkout will not start, stop here and report `RELEASE BLOCKED`. Cr
 verified in a broken environment prove nothing.
 
 ### Step 1: Extract Acceptance Criteria
-List every Given/When/Then criterion from the PRD. Number them AC-1, AC-2, etc.
+List every Given/When/Then criterion from the PRD **using the IDs the PRD already
+assigned** — `AC-001`, `AC-002`, … Do not renumber them: your report is read next to the
+PRD, the plan and the tests, and a second numbering makes those four documents disagree
+about which criterion is which. A criterion with no ID is a PRD defect — report it as one.
 Each criterion carries a *Verified by* line — that is the check you run in Step 2.
 
 Include the PRD's **Quality Requirements** table (security, privacy, performance,
-accessibility, data recovery) as numbered criteria too: QR-1, QR-2, … They ship or fail
+accessibility, data recovery) the same way, by their `QR-###` IDs. They ship or fail
 the release exactly like user stories do, and skipping them is how they get discovered
 by a user instead of by you.
 

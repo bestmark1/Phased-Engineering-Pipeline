@@ -143,7 +143,9 @@ Create the project knowledge base structure per `references/docs-scaffold.md`.
 ## 8. Error Handling Strategy
 ## 9. Logging Format (structured, with example)
 ## 10. PRD Traceability Matrix
-    | User Story | Architectural Component | Notes |
+    | Criterion ID | User Story | Architectural Component | Notes |
+    (one row per AC/QR ID from the PRD — an ID with no component is a gap, and an
+     ID that does not exist in the PRD is a mistake in this table)
 ## 11. Open Questions (your clarifying questions — see constraint below)
 ```
 
