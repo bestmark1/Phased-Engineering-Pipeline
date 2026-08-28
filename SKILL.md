@@ -186,6 +186,11 @@ Two adjustments apply for as long as the project stays in this mode:
 - **The Constitution starts descriptive.** `SPEC_PLAN/CONSTITUTION.md` records the rules
   the code already obeys before it records the rules the owner wants, in two separate
   sections. A constraint the existing system violates everywhere is a finding, not a law.
+- **Understanding, then harness, then change.** No phase may refactor, rename, or
+  restructure a path that has no check on it yet. Rewriting code whose behavior nothing
+  verifies is how a phase silently drops a rule the original author knew about and nobody
+  wrote down. Behavior the initiative must preserve gets its check first, in the same
+  phase, before the code around it moves.
 - **The report is input, not an archive.** Every role after Archaeology reads
   `SPEC_PLAN/archaeology-report.md` alongside its usual inputs. The Tech Lead turns its
   *Required harness before first edit* into the opening work of the first phase that
