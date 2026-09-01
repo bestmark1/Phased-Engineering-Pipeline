@@ -66,7 +66,7 @@ requirement behind it is speculative machinery someone maintains for years — w
 
 ## Additional Outputs
 
-### AGENTS.md (≤60 lines, hard limit)
+### AGENTS.md (project map, ≤60 lines of pipeline-owned content)
 Generate a short project map file `AGENTS.md` at the project root. This is a **table of contents**, NOT a full instruction manual and NOT a novel. It must answer exactly five questions:
 
 1. **What is this project** — 2-3 sentences, no marketing.
@@ -74,6 +74,16 @@ Generate a short project map file `AGENTS.md` at the project root. This is a **t
 3. **How to run the environment** — the one command (or minimal set) for dev, build, and test. If setup needs more than one command, point to the script that wraps it.
 4. **Related projects / repos** — sibling repos, deploy targets, external dashboards. Omit the section entirely if there are none.
 5. **What is forbidden without explicit permission** — protected files, destructive commands, scope rules (e.g. "no new dependencies without the `SPEC_PLAN/CONSTITUTION.md` process").
+
+**If `AGENTS.md` already exists, do not overwrite it.** A project scaffolded from a template
+ships its own `AGENTS.md` carrying rules that are already in force — harness commands, task
+protocols, review contracts, completion levels. Replacing that file with a fresh project map
+silently deletes working rules and the loss is hard to spot, because the file is still there
+and still looks sensible. Read the existing file first, add only the answers above that are
+genuinely missing, and leave the rest byte-for-byte untouched. Content between
+`<!-- BEGIN:... -->` / `<!-- END:... -->` markers is owned by the template or the environment:
+never edit, reorder, or delete it. The 60-line cap applies to what you add, not to the whole
+file — do not trim someone else's sections to fit under it.
 
 Rules: pointers instead of prose; if a topic needs explanation, link to a doc in `docs/` instead of inlining it. Detailed context lives in the docs tree, never in AGENTS.md.
 

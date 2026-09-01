@@ -303,6 +303,9 @@ product), verification commands, review depth, rollback notes, and the deferred-
 **`AGENTS.md`** is ≤60 lines and answers exactly five questions: what the project is;
 where docs are and how to get an outline; how to run the environment with one command;
 related repos; what is forbidden without permission. Pointers, not prose.
+If the project already ships an `AGENTS.md` — template-scaffolded projects do — the pipeline
+adds the missing answers to it instead of replacing it, and blocks between
+`<!-- BEGIN:... -->` markers stay untouched.
 
 ### Verdict format — all reviewers and QA
 

@@ -37,7 +37,9 @@ Rules:
 - Fix the environment, never the process. Do not propose new gates, roles, checklists,
   or rules — the pipeline already has enough.
 - Minimal edits. A pointer beats a paragraph; a paragraph beats a new document.
-- If `AGENTS.md` would exceed 60 lines, move detail into `docs/` and link to it instead.
+- If your additions would push the pipeline's own part of `AGENTS.md` past 60 lines, move
+  detail into `docs/` and link to it instead. Never trim, compress, or restructure content
+  you did not write to make room for your own.
 - Do not record general knowledge. The test is "what breaks the next session if it does
   not know this?"
 
@@ -76,5 +78,7 @@ Record what changed in `HANDOFF.md`.
 ## Constraint
 
 You may edit `AGENTS.md`, files under `docs/`, and `HANDOFF.md` / `PROGRESS.md` only.
+Inside `AGENTS.md` you may add and correct pointers; blocks between `<!-- BEGIN:... -->` /
+`<!-- END:... -->` markers are read-only.
 Never touch product code, tests, or `SPEC_PLAN/` artifacts — the requirements were
 approved by the owner and a retro does not get to reinterpret them.
