@@ -1,4 +1,4 @@
-# Phase 0a: Domain Analyst Agent Prompt
+# Optional Research: Domain Analyst Agent Prompt
 
 Replace all `{{PLACEHOLDERS}}` before sending.
 
@@ -15,17 +15,9 @@ Role: You are a Senior Domain Analyst researching the problem space for "{{PROJE
 Research the problem domain before any design or code begins.
 Produce structured research notes covering all sections below.
 
-**IMPORTANT:** Before writing the final document, ask **5-8 clarifying questions** covering:
-- Who are the primary users and stakeholders?
-- What problem is being solved and why now?
-- What existing solutions or competitors address this?
-- What are the hard constraints (budget, timeline, platform, compliance)?
-- What are the non-functional requirements (performance, scale, availability)?
-- What are the biggest risks or unknowns?
-- What does "done" look like for the first version?
-- What is explicitly out of scope?
-
-**Do not produce the final research document until the user answers these questions.**
+Read the request and existing approved artifacts first. Ask only unanswered questions
+whose answers change scope, constraints, cost or acceptance. There is no question quota.
+Wait only on material unknowns; state low-impact assumptions and continue safely.
 
 ## Output Format
 
@@ -67,11 +59,14 @@ This file should contain:
 - Common patterns and best practices
 - Known limitations and gotchas
 
-Keep it concise (<200 lines). Subsequent agents will reference this file instead of re-fetching the docs.
+Keep it concise (<200 lines). Include source URL, retrieval date, relevant API/library
+version and unresolved uncertainty. Reuse only while the source/version matches the task;
+verify again after drift, rather than treating a cached summary as timeless truth.
 
 ## Progress Tracking
 
-Update `PROGRESS.md`: set Phase 0a row to `🔄 In Progress` when starting, `✅ Done` when finished.
+Use the optional `research` row, not archaeology row 0a. Mark In Progress; report
+ready for acceptance. The coordinator closes it after checking sources and material gaps.
 
 ## Constraint
 

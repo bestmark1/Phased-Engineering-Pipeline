@@ -1,6 +1,7 @@
 # Project Knowledge Base Scaffold
 
-The Architect creates this directory structure after Phase 1.
+The Architect creates missing, needed documents during Phase 1; Lite reuses the existing
+scaffold. Preserve populated files and create directories only when needed.
 Subsequent agents populate it throughout the pipeline.
 
 ## Structure
@@ -14,7 +15,7 @@ docs/
 ├── EXECUTION_RULES.md        # How work is executed in this project (Architect)
 ├── surprises.md              # Project-specific surprises only (Developer/Reviewers)
 ├── tech-debt-tracker.md      # Known debt items (Developer/Reviewers)
-├── QUALITY_SCORE.md          # Domain/layer quality grades (QA)
+├── QUALITY_SCORE.md          # Domain/layer verified coverage and gaps (QA)
 ├── decisions/
 │   └── index.md              # Catalog of design decisions
 ├── exec-plans/
@@ -37,7 +38,7 @@ noise an agent has to scan past.
 
 | # | Decision | Date | Status | Link |
 |---|----------|------|--------|------|
-| 1 | Initial architecture | YYYY-MM-DD | Active | ARCHITECTURE.md |
+| 1 | Initial architecture | YYYY-MM-DD | Active | ../../SPEC_PLAN/ARCHITECTURE.md |
 ```
 
 ### docs/tech-debt-tracker.md
@@ -79,7 +80,7 @@ Updated by QA agent after each validation pass.
 
 ## Usage
 
-- **Architect** creates the scaffold and `SPEC_PLAN/CONSTITUTION.md`
+- **Architect** creates or validates/reuses the scaffold and `SPEC_PLAN/CONSTITUTION.md`
 - **Analyst** saves distilled docs to `docs/references/{tool}-llms.txt`
 - **Developer** appends to `docs/tech-debt-tracker.md` when deferring
 - **Developer** appends to `docs/surprises.md` when hitting non-obvious behavior, workarounds, or hidden constraints

@@ -1,5 +1,9 @@
 # Phase 0: Product Agent Prompt
 
+Apply `references/gate-policy.md` for approvals, evidence and completion.
+Resolve inputs using `references/role-inputs.md` before dispatch.
+
+
 Replace all `{{PLACEHOLDERS}}` before sending.
 
 Produces the product framing in one pass: `Narrative.md`, `MRD.md` (Full mode only), and
@@ -26,7 +30,9 @@ Pipeline mode: `{{PIPELINE_MODE}}` — write `MRD.md` only in `full` mode.
 
 ## Task
 
-Write the three artifacts in order, each as its own file. Order matters: framing decides
+In Lite/brownfield, first validate existing approved framing and write only its delta.
+Record reused decisions and approval evidence; do not recreate valid documents.
+Write the applicable artifacts in order, each as its own file. Order matters: framing decides
 what the requirements are for, so do not start the PRD until the narrative holds up.
 
 ---
@@ -108,7 +114,7 @@ quoted downstream as fact. Name real alternatives. Anything unverified goes in s
 ## Artifact 3 — `SPEC_PLAN/PRD.md`
 
 The single source of truth for architecture, development, and QA validation.
-**Every user story needs at least 2 acceptance criteria.**
+**Every user story needs enough criteria to distinguish correct behavior and relevant failure paths; no fixed quota.**
 
 **Every criterion gets an ID here, once.** Acceptance criteria are `AC-001`, `AC-002`, …
 and quality requirements are `QR-001`, `QR-002`, … — flat, sequential across the whole
@@ -151,10 +157,9 @@ only where it genuinely applies — an empty table beats invented thresholds.
 |----|------|-------------|-------------|
 | QR-001 | Security | e.g. session tokens are not readable by client scripts | |
 | QR-002 | Privacy | … | |
-| Privacy | what personal data is stored, and for how long | |
-| Performance | e.g. first response under 2s on a mid-range phone | |
-| Accessibility | e.g. the primary flow is completable by keyboard alone | |
-| Data recovery | what happens to user data on failure; what is restorable | |
+| QR-003 | Performance | agreed latency target under stated conditions | measured timing |
+| QR-004 | Accessibility | primary flow is completable by keyboard alone | keyboard walkthrough |
+| QR-005 | Data recovery | agreed recoverable state after failure | disposable restore test |
 
 ## 6. Technical Constraints
 Platform, runtime, dependencies, compliance.
@@ -169,24 +174,27 @@ Anything unresolved that may affect architecture or implementation.
 ### PRD quality rules
 
 1. Every story follows "As a / I want / So that".
-2. Every criterion follows "Given / When / Then" and is testable — no "fast", "nice", "easy".
-3. **Criteria are black-box and product-level.** Describe what the user or an external
+2. Every acceptance criterion follows "Given / When / Then" and is testable — no "fast", "nice", "easy".
+3. **Acceptance criteria are black-box and product-level.** Describe what the user or an external
    system observes — never table names, function names, internal IDs, or framework
    specifics. The implementation must be fully replaceable without rewriting a criterion.
 4. **Every criterion names how it is verified.** QA exercises the running product and
    records what it observed, so each criterion must say what "observed" means for it. A
    criterion nobody can describe a check for is not testable yet — rewrite it or move it
    to Open Questions.
-5. Goals measurable, non-goals explicit.
+5. QRs may express internal invariants; specify the appropriate executable/static/contract
+   or runtime evidence instead of forcing every QR into a user-facing scenario.
+6. Goals measurable, non-goals explicit.
 
 ---
 
 ## Progress Tracking
 
-Update `PROGRESS.md`: set the Phase 0 row to `🔄 In Progress` when starting, `✅ Done`
-when all three artifacts exist.
+Set Phase 0 to `🔄 In Progress` at start. Report **ready for owner approval** when
+the applicable artifacts/deltas are complete. The coordinator marks Done only after
+recorded approval and the product consistency gate; file existence alone is insufficient.
 
 ## Constraint
 
 Requirements only. Do not propose architecture, database schemas, or code. Output the
-artifacts and stop — one owner approval covers all three, and it comes before any design.
+artifacts and stop — one owner approval covers all applicable product artifacts and deltas, and it comes before any design.

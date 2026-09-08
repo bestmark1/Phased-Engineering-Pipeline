@@ -1,8 +1,13 @@
 # Phase 5: Retro Agent Prompt — session archaeology
 
+Apply `references/gate-policy.md` for approvals, evidence and completion.
+Resolve inputs using `references/role-inputs.md` before dispatch.
+
+
 Replace all `{{PLACEHOLDERS}}` before sending.
 
-Runs after `QA PASS`, before the PR is opened. Advisory: it never blocks the PR.
+Runs after accepted QA, before local handoff or an explicitly authorized PR. Findings
+are advisory; documentation changes that affect reproducibility still need rechecking.
 
 ---
 
@@ -72,7 +77,9 @@ and `docs/` worse, which is the opposite of this step's purpose.
 
 ## Progress Tracking
 
-Update `PROGRESS.md`: set the Retro row to `✅ Done`.
+Report completed documentation changes and checks; the coordinator closes the Retro row.
+If startup instructions or executable commands changed, recheck affected behavior and
+refresh the release snapshot before claiming readiness. Do not silently commit or ship.
 Record what changed in `HANDOFF.md`.
 
 ## Constraint

@@ -1,205 +1,104 @@
 ---
 name: phased-engineering-pipeline
-description: |
-  Full-system phased engineering with product framing and disciplined execution:
-  Narrative, MRD, PRD, clarification, architecture, constitution, phase planning,
-  cross-artifact analysis, execution-by-phase, QA validation, release gate, and retro.
-  Includes: SPEC_PLAN/ artifact hub, PROJECT_INDEX.md navigation hub, AGENTS.md project map
-  (short five-question formula), CONSTITUTION.md governance, docs/ knowledge base with
-  docs/surprises.md, decision logs, tech debt tracking, tests-as-evidence policy,
-  black-box acceptance criteria verified against the running product, vertical-slice
-  phases, release gate, artifact-change protocol, self-review loop, session-archaeology
-  retro, STRICT_MODE, and llms.txt reference caching.
-  Brownfield mode adds a read-only Archaeology pass that maps an existing codebase before
-  anything is edited; a subtraction pass asks what each phase can drop.
-  Gate discipline: deterministic checks before LLM review, review depth by risk,
-  structured verdicts with UNKNOWN, critic loop on failure, agent guardrails,
-  report-only run economics, and optional eval hooks for LLM-bearing products.
-use_when:
-  - Building from scratch
-  - "Design + plan + code"
-  - Entering an existing or inherited codebase that needs mapping before changes
-  - User says "build", "architect", "implement a full system", "phased pipeline", "BMAD pipeline", "new feature end-to-end", "take over this project", "legacy codebase"
-does_not_handle:
-  - Debugging an existing bug with no project framing
-  - Single-function edits
-  - One-shot fixes with no planning value
+description: >
+  Plan and deliver a full system or substantial end-to-end feature through product,
+  architecture, implementation phases, independent review and QA. Use for an explicit
+  phased pipeline or a multi-stage initiative, including unfamiliar existing codebases.
+  Not for isolated bugs, small edits or ordinary codebase questions.
 ---
 
-# Phased Engineering Pipeline v3
+# Phased Engineering Pipeline
 
-Seven specialized roles, each with its own prompt in `references/`. Multiple gates.
-Feature branches. Vertical slices. Verification against a clean checkout.
+Product framing, architecture, vertical slices, independent review and reproducible QA.
+Keep the specialized roles and approval gates; load each role's reference only when it runs.
+This skill does not select or change models. It does not authorize publication or deployment.
 
-A role exists only where it must **not** be the author of what it judges. Roles that all
-author — framing, market, requirements — are one pass; a role that judges the same thing
-at two moments is one prompt invoked twice.
+## Flow
 
 ```text
-brownfield mode only:
-git: create feature/{slug} branch, mkdir SPEC_PLAN/
-[Archaeology: source read-only] → SPEC_PLAN/archaeology-report.md   ← the only file it writes
-→ ⛔ READ-ONLY COMPLETE — no source, config, test or data change yet
-→ git: commit the report
-
-[Product] → SPEC_PLAN/Narrative.md + MRD.md (Full mode) + PRD.md
-→ ⛔ USER APPROVAL
-→ [Consistency: product] → SPEC_PLAN/clarification-report.md
-→ ⛔ CONSISTENCY PASS
-→ git: create feature/{slug} branch, mkdir SPEC_PLAN/, commit approved product artifacts
-→ [Architect] → SPEC_PLAN/ARCHITECTURE.md + SPEC_PLAN/CONSTITUTION.md + PROJECT_INDEX.md + AGENTS.md + docs/
-→ ⛔ USER APPROVAL
-→ git: commit architecture artifacts
-→ [Tech Lead] → SPEC_PLAN/IMPLEMENTATION_PLAN.md + SPEC_PLAN/phase-registry.md
-→ ⛔ USER APPROVAL
-→ git: commit execution plan
-→ [Consistency: full] → SPEC_PLAN/cross-artifact-analysis.md
-→ ⛔ CONSISTENCY PASS
-→ loop per implementation phase:
-   [Developer: current phase only]
-   → self-review loop (verify → fix → re-verify)
-   → deterministic gate: build ‖ lint ‖ typecheck ‖ test   ← LLM reviewers not called until green
-   → git: commit code
-   → subtraction pass: load `references/piecemeal-growth.md` → KEEP/REMOVE/QUESTION findings
-   → [Reviewer SOLID] ‖ [Reviewer SRE]   ← topology set by review depth (Low/Medium/High)
-   → findings? critic loop: fix findings only → re-run checks → re-review failing criteria
-   → UNKNOWN on a blocking criterion? → escalate to second reviewer, then owner
-   → APPROVE → record run cost in PROGRESS.md → update HANDOFF.md → next phase
-→ [QA & Release] → clean checkout starts → every criterion exercised inside it
-→ issues? → fix → re-validate
-→ ⛔ QA PASS + RELEASE READY
-→ [Retro] → session archaeology → minimal improvements to AGENTS.md / docs
-→ ⛔ OWNER PERMISSION for any outward-facing action
-→ git: push → gh pr create
-→ ⛔ USER REVIEWS DIFF
+coordinator: inspect working tree, choose mode, initialize PROGRESS.md once
+brownfield only: Archaeology (source read-only) → report → READ-ONLY COMPLETE
+Product: create or validate/reuse Narrative + PRD (+ MRD in Full)
+  → OWNER APPROVAL of new/materially changed product decisions
+Consistency (product) → resolve findings → gate accepted
+Architect: create or validate/reuse architecture, constitution and project map
+  → OWNER APPROVAL of new/materially changed architectural decisions
+Tech Lead: create or update phase plan → OWNER APPROVAL of the execution plan
+Consistency (full) → gate accepted
+for each active implementation slice:
+  Developer → self-check → ready for review (NOT Done)
+  deterministic checks → subtraction pass at Medium/High → re-check accepted edits
+  independent reviewer(s) and phase QA according to risk
+  findings → targeted repair → checks + review of fixes and their affected behavior
+  coordinator validates gate receipt → Done → next slice
+QA: clean checkout of exact commit → release readiness + active AC/QR evidence
+  → QA PASS, or FAIL/UNKNOWN with evidence; never silently waive gaps
+Retro: minimal documentation improvements, no product edits
+local handoff is a valid endpoint
+push / PR / deploy only when explicitly authorized for those actions
 ```
+
+For every commit shown or implied by a role, first apply `references/gate-policy.md`.
+A dirty working tree is not permission to stash or overwrite other work. Branch creation
+must preserve the starting state; do not create the same branch twice in brownfield mode.
 
 ## Core principles
 
-1. **The repository is the source of truth**
-   - Markdown artifacts in repo carry meaning: strategy, requirements, architecture,
-     rules, decisions, and long-lived context.
-   - `PROGRESS.md` carries execution state: what is open, active, blocked, done.
-   - Knowledge that lives only in a chat session does not survive it.
+- Repository artifacts carry decisions; PROGRESS.md carries state; HANDOFF.md carries
+  what another session needs. Do not equate an artifact's existence with approval.
+- Build vertical slices with a user-visible result. Phase isolation concerns intent,
+  not a rigid file whitelist; necessary helpers/lockfiles are allowed within that intent.
+  Never pull in future capabilities. Record deferred work with its target phase and reason.
+- A test names the requirement, architectural constraint or regression it protects.
+  Thorough internal coverage is welcome; tests without a purpose are findings, not a
+  reason to silently delete them. Raise missing requirements rather than invent behavior.
+- Preserve AC/QR IDs from PRD through architecture, plan, tests and QA. Never renumber or
+  reuse retired IDs. See `references/artifact-changes.md` before changing approved artifacts.
+- Implement the active slice in full, without speculative abstractions or recovery
+  mechanisms. Real data, external inputs/calls and security boundaries retain rigor.
+- Document project-specific surprises, not general framework tutorials. Capture debt
+  explicitly; create documentation directories only when their first file is needed.
+- Evidence must match the claim: run the product for user-visible behavior; use appropriate
+  executable/static/contract checks for internal invariants. Green tests do not invalidate
+  a concrete counterexample outside their coverage. No evidence means UNKNOWN, not PASS.
+- The author does not perform independent acceptance of their own work. Deterministic
+  checks precede reviewers; reviewers diagnose only what those checks do not establish.
 
-2. **Phase isolation**
-   - Developer may execute only the active implementation phase.
-   - Future-phase work is deferred unless explicitly allowed by the implementation plan.
+## Modes and reuse
 
-3. **Verification over vibes**
-   - “Looks good” is not evidence.
-   - Every phase must define commands, checks, and observable completion criteria.
+- **Full:** new product or unresolved market/positioning decisions. Narrative + MRD + PRD,
+  then architecture, plan, slices, independent review and final QA.
+- **Lite:** bounded initiative or improvement with established framing. Read existing
+  approved artifacts, record what remains valid, and write only the initiative's delta.
+  Reuse unchanged product/architecture decisions and their recorded approvals. Do not
+  regenerate a constitution, diagrams or whole-product PRD merely to fill a template.
+  The plan still states affected criteria, regressions to preserve and verification.
+- **Brownfield:** map an unfamiliar existing system once per initiative before changing it,
+  then use Lite. Archaeology is source read-only; refresh after material repository drift.
+  No application test/config/schema changes belong in that pass. Its minimum regression
+  harness becomes the first work of the first slice touching the relevant behavior.
 
-4. **Tracked debt is acceptable; hidden debt is not**
-   - Deferred work goes to `docs/tech-debt-tracker.md`.
+All modes retain the logical stages, independent consistency checks and applicable
+approvals. Reuse is not silent skipping: record the artifact/decision and why it still
+applies. Unresolved or changed behavior, cost, contracts or permissions needs approval.
+A standalone bugfix or minor edit does not need this pipeline at all.
 
-5. **Navigation must remain maintainable**
-   - Agents may propose restructuring long docs into a parent summary plus child docs.
+### Brownfield baseline
 
-6. **Tests are evidence of requirements**
-   - A test proves a named requirement: a PRD acceptance criterion, an architecture
-     constraint, or a defect that must not return. Every test names what it proves.
-   - Criteria carry stable IDs (`AC-001`, `QR-001`) assigned once in the PRD and reused
-     unchanged by architecture, plan, tests and QA. Each role renumbering for itself is
-     how four documents end up disagreeing about which criterion is which.
-   - A test that names nothing is an **orphan** — it freezes an accidental implementation,
-     and the next session maintains the test instead of reconsidering the approach.
-   - Traceability, not scarcity: internal logic may be covered as thoroughly as its
-     requirement demands.
-   - Wanting a test for something no requirement covers means a **missing requirement** —
-     raise it, do not encode it.
-   - In `brownfield` mode this binds new and modified tests only; pre-existing tests are
-     baseline debt until a phase touches them.
+Record the baseline SHA, test identities and failure signatures, not only failure counts.
+A pre-existing red test is not automatically this initiative's defect, but a newly red
+one is a regression. Any baseline exception must be explicitly agreed and recorded with
+its scope; syntax/build/setup failures preventing useful verification remain blockers.
+Apply `references/gate-policy.md` consistently in Developer, reviewers and QA.
 
-7. **Document surprises, not general knowledge**
-   - `docs/` must capture only what an agent cannot derive from general knowledge:
-     strange decisions, workarounds, non-obvious constraints, dangerous places.
-   - Never document what a framework or database is.
-   - Test for every doc entry: "what breaks the next session if it doesn't know this?"
-
-8. **Grow the design from present forces**
-   - Implement the active phase's clauses and Definition of Done in full.
-   - Do not add capability, abstraction, configuration, fallback, or recovery machinery
-     without grounding in a current criterion, a boundary named in an approved artifact,
-     a failure that has occurred, or a risk the owner accepted with its likelihood and
-     cost written down. "It could happen" is not grounding — anything can.
-   - Silence in the spec does not license skipping behavior the stated scenario needs.
-     Under-implementing is not simplicity — it is a defect wearing simplicity's clothes.
-   - Durable data, external inputs and calls, security boundaries, and risks with high
-     cost keep proportionate rigor before the first incident.
-   - The aggressive form of this stance is a loadable mode, not a standing rule:
-     `references/piecemeal-growth.md`.
-
-## Pipeline modes
-
-Choose the lightest mode that preserves quality.
-
-### Lite mode
-Use:
-- internal tools
-- constrained features
-- improvements to an existing product
-- cases where market framing is already known
-
-Flow:
-`Product (Narrative + PRD) → Consistency → Architecture → Plan → Build`
-
-### Full mode
-Use:
-- net-new products
-- unclear ICP / segment / positioning
-- roadmap-sensitive initiatives
-- strategic work where market framing matters
-
-Flow:
-`Product (Narrative + MRD + PRD) → Consistency → Architecture → Plan → Build`
-
-### Brownfield mode
-Use:
-- an existing codebase this pipeline did not produce
-- inherited or handed-over work
-- any project whose behavior nobody present can fully explain
-
-Flow:
-`Archaeology (read-only) → Product (Lite) → Consistency → Architecture → Plan → Build`
-
-The system already exists, so the first job is finding out what it actually does. The
-Archaeologist reads and reports; it edits nothing. Its report is the input every later
-role reads instead of guessing, and the harness it names is built by the first
-implementation phase — adding a test is itself a change and belongs after the read-only
-gate, not inside it.
-
-Run archaeology **once per initiative**, not once per phase. Refresh it only after the
-repository changes substantially underneath the plan.
-
-Two adjustments apply for as long as the project stays in this mode:
-
-- **Legacy tests are grandfathered — for traceability only.** Legacy means present at the
-  baseline SHA the archaeology report records; everything after it is this pipeline's.
-  Principle 6 binds new and modified tests, so a legacy test lacking a named requirement
-  is baseline debt in `docs/tech-debt-tracker.md`, counted once, never enumerated as
-  orphans. It becomes classifiable — traced or deleted with reason — when a phase edits it
-  or cites it as evidence for a specific criterion.
-  Grandfathering does not extend to failures. Tests already red at baseline are recorded
-  with their count and either fixed first or compared against that recorded baseline; a
-  test that turns red after it is a regression and blocks the gate like any other.
-- **The Constitution starts descriptive.** `SPEC_PLAN/CONSTITUTION.md` records the rules
-  the code already obeys before it records the rules the owner wants, in two separate
-  sections. A constraint the existing system violates everywhere is a finding, not a law.
-- **Understanding, then harness, then change.** No phase may refactor, rename, or
-  restructure a path that has no check on it yet. Rewriting code whose behavior nothing
-  verifies is how a phase silently drops a rule the original author knew about and nobody
-  wrote down. Behavior the initiative must preserve gets its check first, in the same
-  phase, before the code around it moves.
-- **The report is input, not an archive.** Every role after Archaeology reads
-  `SPEC_PLAN/archaeology-report.md` alongside its usual inputs. The Tech Lead turns its
-  *Required harness before first edit* into the opening work of the first phase that
-  touches behavior — otherwise the Developer either skips it or builds it out of phase
-  scope, and phase isolation takes the blame for a planning omission.
+Legacy test traceability is debt, not a blocking orphan list. This applies only to tests
+at the recorded baseline. A test edited or used as evidence now must name its purpose.
+Describe existing rules before desired rules in the brownfield constitution; a desired
+constraint widely violated today is a finding, not permission for a sweeping rewrite.
 
 ## Configuration
 
-Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in prompts resolves from this table.
+Resolve project settings from the repository and approved decisions before the phase that needs them. Role-specific inputs and their sources are in `references/role-inputs.md`; they are not extra user questions.
 
 | Placeholder | Description | Example |
 |---|---|---|
@@ -212,46 +111,46 @@ Fill these placeholders before starting. Every `{{PLACEHOLDER}}` in prompts reso
 | `{{TEST_COMMAND}}` | Test runner | `npm test` |
 | `{{LINT_COMMAND}}` | Linter / static analysis | `npm run lint` |
 | `{{TYPECHECK_COMMAND}}` | Type checker if separate | `tsc --noEmit` |
-| `{{QUALITY_RULES}}` | Stack-specific quality rules | strict TS, no `any`, constructor DI |
+| `{{QUALITY_RULES}}` | Stack-specific quality rules | strict TS, no secret logging |
 | `{{INTERFACE_STYLE}}` | Contract style | TypeScript interfaces |
 | `{{DOCS_URL}}` | Official docs URL | `https://nextjs.org/docs` |
-| `{{ROLLBACK_COMMAND}}` | How to undo last change | `git revert HEAD` |
-| `{{STRICT_MODE}}` | `true` blocks gates, `false` advisory | `true` |
-| `{{EVAL_COMMAND}}` | Eval suite for LLM behavior; empty when the product has no LLM | `npx promptfoo eval` |
+| `{{ROLLBACK_COMMAND}}` | Code rollback only; data restoration requires its own tested procedure | `git revert HEAD` |
+| `{{STRICT_MODE}}` | Noncritical major findings block when `true`; `false` makes only those advisory. Safety, required checks, approvals and UNKNOWN are never bypassed | `true` |
+| `{{EVAL_COMMAND}}` | Eval suite for LLM behavior; empty only when no LLM behavior is in scope; otherwise record eval setup as pending | `npx promptfoo eval` |
 | `{{DEFAULT_REVIEW_DEPTH}}` | `low`, `medium`, or `high` — floor for this project | `medium` |
 
-## Artifact manifest
 
-Everything the pipeline must produce, and where it lives. `PROGRESS.md` is created by the
-Architect from `references/progress-template.md` and carries execution state for the whole
-run — one row per phase, plus run cost and blockers.
+## Artifacts and ownership
+
+The coordinator initializes PROGRESS.md from `references/progress-template.md` before
+Product (and before optional research), preserving any existing state. Roles report
+outputs and evidence; only the coordinator closes a phase after required gates.
+HANDOFF.md records readiness, blockers, approvals, baseline exceptions and next work.
 
 ```text
-PROJECT_INDEX.md              # navigation hub
-AGENTS.md                     # project map, ≤60 lines
-PROGRESS.md                   # execution state: ⬜ / 🔄 / ✅ / ⛔
-HANDOFF.md                    # what the next session needs to know
-
+PROJECT_INDEX.md                  navigation
+AGENTS.md                        preserve existing content; add missing map answers only
+PROGRESS.md / HANDOFF.md          state / continuation evidence
 SPEC_PLAN/
-  archaeology-report.md       # brownfield mode only
-  Narrative.md
-  MRD.md                      # Full mode only
-  PRD.md
-  clarification-report.md
-  ARCHITECTURE.md
-  CONSTITUTION.md
-  IMPLEMENTATION_PLAN.md
-  phase-registry.md
-  cross-artifact-analysis.md
-
-docs/                         # full tree: references/docs-scaffold.md
-  README.md
-  EXECUTION_RULES.md
-  surprises.md
-  tech-debt-tracker.md
-  QUALITY_SCORE.md
-  decisions/  exec-plans/  references/  archive/     # created on first use
+  archaeology-report.md          brownfield only
+  Narrative.md / PRD.md           product framing (may reuse in Lite)
+  MRD.md                         Full only
+  clarification-report.md        product consistency
+  ARCHITECTURE.md / CONSTITUTION.md
+  IMPLEMENTATION_PLAN.md / phase-registry.md
+  cross-artifact-analysis.md      full consistency
+  EVAL_PLAN.md                    LLM behavior only
+  gates/                         JSON gate receipts and referenced review evidence
 ```
+
+`references/docs-scaffold.md` defines docs/; do not duplicate that tree elsewhere.
+Every implementation phase names: purpose, scope, observable outcome, expected files,
+dependencies, DoD, required checks, review depth, approvals and rollback/recovery evidence.
+
+AGENTS.md answers five questions: project purpose, doc navigation, how to run, related
+repos (if any), and what needs permission. The ≤60-line cap applies only to pipeline-owned
+additions. Read existing content; preserve it and all `<!-- BEGIN:... -->` blocks.
+Do not trim somebody else's rules to make room. Link long explanations into docs/.
 
 ## Role → prompt file
 
@@ -261,11 +160,11 @@ skill, not a role the agent should improvise.
 | Phase | Role | Prompt file | When |
 |---|------|-------------|------|
 | 0a | Archaeology | `references/archaeology-prompt.md` | brownfield only — read-only, once per initiative |
-| 0 | Product | `references/product-prompt.md` | always — writes Narrative, MRD (Full), PRD |
+| 0 | Product | `references/product-prompt.md` | always — creates or validates/reuses approved framing |
 | — | Domain Analyst | `references/analyst-prompt.md` | when domain research is needed |
 | 0c | Consistency (`product`) | `references/consistency-prompt.md` | after product approval |
-| 1 | Architect | `references/architect-prompt.md` | always |
-| 2 | Tech Lead | `references/tech-lead-prompt.md` | always |
+| 1 | Architect | `references/architect-prompt.md` | always — may reuse unchanged approved decisions |
+| 2 | Tech Lead | `references/tech-lead-prompt.md` | always — may reuse unchanged approved decisions |
 | 2a | Consistency (`full`) | `references/consistency-prompt.md` | after the plan |
 | 3 | Developer | `references/developer-prompt.md` | per slice |
 | 3r | Reviewer SOLID | `references/reviewer-solid-prompt.md` | per review depth |
@@ -277,340 +176,67 @@ skill, not a role the agent should improvise.
 `references/piecemeal-growth.md` is not a role either — it is a review mode loaded for the
 subtraction pass and unloaded afterwards.
 
-## Role outputs
 
-Each role's full instructions live in its prompt file (see the table above). This is the
-artifact summary — what must exist when the role is done.
+## Gates, verdicts and completion
 
-| Phase | Role | Produces |
-|---|------|----------|
-| 0a | Archaeology | `SPEC_PLAN/archaeology-report.md` (brownfield only) — confirmed facts with `file:line`, unknowns, surprises, change surface, risk points, harness the first phase must add. Creates nothing else |
-| 0 | Product | `SPEC_PLAN/Narrative.md` (story, why now, constraints, non-goals, risks), `SPEC_PLAN/MRD.md` (Full mode: ICP, JTBD, alternatives, positioning), `SPEC_PLAN/PRD.md` (user stories, black-box criteria with verification method, quality requirements, success metrics) |
-| 0c | Consistency (`product`) | `SPEC_PLAN/clarification-report.md` — ambiguity, contradictions, gaps, assumptions taken |
-| 1 | Architect | `SPEC_PLAN/ARCHITECTURE.md`, `SPEC_PLAN/CONSTITUTION.md`, `PROJECT_INDEX.md`, `AGENTS.md`, `docs/` scaffold |
-| 2 | Tech Lead | `SPEC_PLAN/IMPLEMENTATION_PLAN.md`, `SPEC_PLAN/phase-registry.md` |
-| 2a | Consistency (`full`) | `SPEC_PLAN/cross-artifact-analysis.md` — cross-artifact contradictions, coverage gaps, ordering risks, slice integrity |
-| 3 | Developer | Code for the current slice only, plus updates to `PROGRESS.md`, `HANDOFF.md`, `docs/tech-debt-tracker.md`, `docs/surprises.md` |
-| 3r | Reviewer SOLID | Structured findings on layering, dependency direction, naming, type safety, contract fidelity, DI discipline |
-| 3r | Reviewer SRE | Structured findings on resilience, rollback safety, error boundaries, resource handling, observability, security, guardrail violations |
-| 4 | QA & Release | Report: clean-checkout readiness, criteria exercised with observed evidence, exit codes, scope creep, orphan tests, `docs/QUALITY_SCORE.md` |
-| 5 | Retro | Minimal fixes to `AGENTS.md` and `docs/`, recorded in `HANDOFF.md` |
+Before a gate, load `references/gate-policy.md`. It is the single policy for risk depth,
+STRICT_MODE, baseline exceptions, permissions and eligibility for Done. Role prompts do
+not invent alternatives. Reviews share the JSON envelope in that reference; Markdown
+reports can accompany it but do not replace a verdict.
 
-**Every phase in `IMPLEMENTATION_PLAN.md`** must carry: goal, scope, user-visible outcome,
-expected files, dependencies, Definition of Done (including a check against the running
-product), verification commands, review depth, rollback notes, and the deferred-work format.
+Before dispatch, resolve the inputs described in `references/role-inputs.md`. Do not send
+unresolved placeholders; read the approved artifacts rather than ask the owner to retype them.
 
-**`AGENTS.md`** is ≤60 lines and answers exactly five questions: what the project is;
-where docs are and how to get an outline; how to run the environment with one command;
-related repos; what is forbidden without permission. Pointers, not prose.
-If the project already ships an `AGENTS.md` — template-scaffolded projects do — the pipeline
-adds the missing answers to it instead of replacing it, and blocks between
-`<!-- BEGIN:... -->` markers stay untouched.
+Before marking a phase Done, the coordinator compares the receipt's required gates to the
+approved plan and runs the local validator (Python 3, no dependencies):
 
-### Verdict format — all reviewers and QA
-
-Free-text verdicts cannot be acted on mechanically and produce fix loops that never
-converge. Every reviewing role emits one structured finding per issue, with fields
-`criterion`, `status`, `severity`, `evidence`, `fix`, `rubric_version`. The full field
-spec lives in each reviewer's own prompt.
-
-- `status` is `PASS`, `FAIL`, or `UNKNOWN`.
-- `evidence` must name a file and line, a command and its output, or an artifact section.
-  A finding with no checkable evidence is not `FAIL` — it is `UNKNOWN`.
-- Reviewers never write replacement code.
-
-**`UNKNOWN` is a first-class verdict.** A reviewer that cannot verify a criterion must say
-so rather than guess in either direction; forcing a binary answer manufactures both false
-approvals and false blocks. `UNKNOWN` on a blocking criterion triggers escalation, not a
-gate failure.
-
-### Critic loop — how a failed gate converges
-
-A failed gate means one targeted repair, not a re-run of the phase:
-
-1. Reviewer returns structured findings.
-2. Developer fixes **only the findings**, touching nothing else.
-3. Deterministic checks re-run.
-4. Reviewer re-examines **only the previously failing criteria**.
-
-Re-reviewing a whole phase after a two-line fix costs full price for no new information.
-Three failures on one criterion means the finding, the fix, or the requirement is wrong —
-stop and escalate to the owner.
-
-## Phase isolation rule
-
-Developer may execute only the active implementation phase.
-
-Phases are **vertical slices**: each one ends with something a user can do, cutting
-through whatever layers it needs. A phase whose outcome is only "the layer exists" is a
-planning defect — see `references/tech-lead-prompt.md`.
-
-Rules:
-- Never pull tasks from future phases.
-- Scope is about **intent, not a file whitelist**. Touching a file the plan did not list
-  is fine when it serves this slice — lockfiles, generated code, a helper discovered
-  mid-implementation. Building a capability the plan did not name is not.
-- Do not change files outside the current slice's purpose unless:
-  1. required for a blocking bug fix inside the current phase, and
-  2. recorded in `HANDOFF.md` and `PROGRESS.md`.
-- If a needed change belongs to a future phase, log:
-  `Deferred to Phase N: <reason>`
-- Reviewers review only the current phase diff against:
-  - current phase Definition of Done
-  - PRD acceptance criteria touched by that phase
-  - architecture constraints relevant to that phase
-
-## Changing an approved artifact
-
-Implementation discovers what planning could not know: an API behaves differently than
-documented, a requirement is impossible as written, two criteria contradict each other
-only once code exists. Without a route for this, an agent either quietly builds something
-other than what was approved, or buries the discovery in `tech-debt-tracker.md` and
-implements the known-wrong thing. Both produce a product that contradicts its own spec.
-
-**Update the earliest artifact the discovery invalidates, then propagate downstream.**
-
-| What the discovery changes | Earliest artifact to update |
-|---|---|
-| What the product does for the user | `SPEC_PLAN/PRD.md` |
-| A contract, data shape, or dependency direction | `SPEC_PLAN/ARCHITECTURE.md` |
-| Only how a phase is built | `SPEC_PLAN/IMPLEMENTATION_PLAN.md` |
-| A project rule or convention | `SPEC_PLAN/CONSTITUTION.md` |
-
-Leaving the PRD stale while the code moves on is how a spec quietly becomes fiction.
-
-**Stop and ask the owner** when the change is material: observable behavior, a contract
-someone depends on, data retention or deletion, security or permissions, cost, a new
-external dependency, or scope nobody asked for. Proceed and record when it is immaterial —
-naming, internal structure, a clarification that changes no behavior. When in doubt, treat
-it as material: one question costs minutes, an unapproved behavior change found at release
-costs the phase.
-
-**Criterion IDs never move.** Rewording a criterion keeps its ID. Splitting one into two
-keeps the original ID for the part that retains the intent and appends a new number for
-the rest. A criterion that no longer applies is marked in place as
-`**AC-014 [RETIRED]** — reason`; its number is never reassigned. Retired criteria stay
-visible in the PRD and in the traceability matrix, and drop out of everything that counts:
-no phase covers them, no test must prove them, and QA excludes them from coverage and from
-the verdict. Renumbering an approved PRD silently
-invalidates every test comment, plan entry and QA report that cites it — the references
-still parse, they just point somewhere else, which is worse than breaking outright.
-
-Every artifact change gets a line in `HANDOFF.md` — what was discovered, which artifact
-changed, whether the owner approved it. A silent edit to an approved document is
-indistinguishable from scope creep on review.
-
-## Documentation restructure policy
-
-Agents must preserve navigability: split a file that mixes concerns or grows too long to
-scan, keep the parent as summary plus links, move old detail to `docs/archive/`, and
-update `PROJECT_INDEX.md`. Agents may propose a restructure proactively, and must never
-change canonical meaning while moving text. Full policy: `references/docs-scaffold.md`.
-
-## Verification protocol
-
-Claude saying “done” has no engineering value.
-
-Every stage must define how success is observed.
-
-### Verification levels
-
-| Level | Tools | Applies to |
-|---|---|---|
-| Basic | exit codes, lint, typecheck, unit tests for the phase's own requirements | every coding phase |
-| Medium | integration tests, contract tests, smoke tests | QA |
-| High | production logs, metrics, manual checklists | post-deploy, outside this skill |
-
-### Exit-code rules
-Any required verification command must return exit code 0.
-Non-zero exit code = FAIL.
-Agent must not continue through a blocking gate.
-
-### Evidence hierarchy
-
-Not all verdicts carry equal weight. Trust evidence in this order, and never let a
-weaker source override a stronger one:
-
-1. **Environment / end-state checks** — does the thing actually work when run.
-2. **Executable tests and static analysis** — build, test, lint, typecheck exit codes.
-3. **Contract checks** — types, interfaces, schemas, API shapes.
-4. **Human verdict** — the owner's review of the diff.
-5. **LLM judge** — Reviewer and QA verdicts, for what remains subjective.
-
-The model that writes the code and the model that reviews it share blind spots.
-An LLM reviewer is the weakest oracle in this list, not the strongest — it is there
-to catch what levels 1–4 structurally cannot express, such as architectural intent
-or naming clarity.
-
-### Gate order — deterministic checks run first
-
-Within any gate, run cheap deterministic checks **before** invoking an LLM reviewer:
-
-```text
-{{BUILD_COMMAND}} → {{LINT_COMMAND}} → {{TYPECHECK_COMMAND}} → {{TEST_COMMAND}}
-   → any check FAILED? → return to Developer with the raw output. Do not call a reviewer.
-   → all PASSED? → invoke the LLM reviewer(s) for this gate's review depth
+```bash
+python3 <skill-root>/scripts/validate_gate.py <project>/SPEC_PLAN/gates/<phase>.json
 ```
 
-Rationale: a linter finds a syntax problem for free and with certainty. Paying an LLM
-to find the same problem less reliably is waste. LLM reviewers judge logic, architecture
-and failure modes — never syntax, formatting, or anything a tool already proves.
+Exit 0 means the supplied receipt permits completion; nonzero means malformed/incomplete
+records, blocked checks or unresolved review/approval. This validates declared evidence,
+not the truth of a model's claims or the completeness of an invented plan. The coordinator
+must inspect the real artifacts/outputs. It neither changes PROGRESS.md nor executes commands.
 
-### Subtraction pass
+### Repair and subtraction
 
-Once a phase is green and committed, run one pass whose only question is what can be
-removed. Load `references/piecemeal-growth.md`, point it at that phase's diff, and take
-back three verdicts: KEEP, REMOVE, QUESTION, each carrying its evidence.
+A failed review triggers a targeted repair, not reimplementation. Re-run applicable checks;
+review previously failing criteria AND behavior the fix could regress. Stop after repeated
+failures on the same issue and reconsider the requirement, finding and root cause.
+Do not run reviewers repeatedly until one agrees. Escalate substantive uncertainty to an
+independent review and then the owner; unresolved blocking UNKNOWN cannot become Done.
 
-- It reports; it never deletes. The Developer decides on each finding and applies the
-  accepted ones inside the same phase scope, re-runs the deterministic checks, and amends
-  or adds one phase-scoped commit before the reviewers are called — so reviewers judge one
-  coherent state, not code plus a pending list of deletions.
-- A REMOVE that contradicts an approved artifact is not the Developer's call: it goes
-  through *Changing an approved artifact* like any other discovery.
-- It runs after the deterministic gate and before the LLM reviewers, so reviewers judge
-  code that has already shed its speculative parts.
-- No findings is a legitimate result, stated in one line. Advisory, never a blocking gate.
-- Skip it at Low review depth — docs, copy, and dependency bumps have nothing to subtract.
-- Count its tokens and time in the phase total; otherwise Medium and High phases look
-  cheaper than they are next to Low, where the pass never runs.
+At Medium/High depth, after checks pass, load `references/piecemeal-growth.md` for one
+advisory KEEP/REMOVE/QUESTION pass. Developer applies only accepted, grounded findings,
+then rechecks before independent review. No commit/amend is a prerequisite. A removal
+that changes an approved artifact follows `references/artifact-changes.md`.
 
-Every other gate asks whether something is missing. This one is the only place that asks
-the opposite.
+### LLM behavior
 
-### When the product itself contains an LLM
+If behavior in scope depends on an LLM, load `references/eval-hooks.md` even if EVAL_COMMAND
+is not configured yet. Pending eval setup is not evidence that the product has no LLM.
+No model behavior in scope: record n/a. Otherwise plan the eval before the dependent phase.
+Do not design a new metrics framework here; use suitable existing project tooling.
 
-If the product's behavior depends on a model — prompts, agents, RAG, classification,
-generation — build/test/lint cannot express whether it works. Tests prove the code runs;
-they say nothing about whether the output is any good.
+### Release and retro
 
-When `{{EVAL_COMMAND}}` is set, read `references/eval-hooks.md`: it covers eval planning,
-the cold-start bootstrap for a project with no traces yet, and which established runners
-to delegate to. This pipeline calls eval tooling; it does not reimplement metrics or judges.
+Final QA uses an isolated checkout of the recorded commit, not a copy of the dirty working
+tree. Provision disposable dependencies and explicitly provided test configuration; never
+reuse production credentials/data for mutation. Acceptance criteria need runtime evidence;
+QRs may use the appropriate static, contract or runtime check specified in the plan.
+QA verifies and reports, never ships. If a commit is needed but not authorized, ask once;
+report release verification pending rather than silently committing to satisfy the workflow.
 
-When `{{EVAL_COMMAND}}` is empty, skip this entirely.
+After accepted QA, Retro may improve pointers/docs but not code or approved requirements.
+If that changes startup instructions or executable commands, recheck the affected behavior
+and refresh the reviewed snapshot before claiming release readiness.
 
-### Review depth by risk
+### Session handoff
 
-Not every change deserves the full review topology. Pick depth from the change, not habit.
-
-| Depth | Trigger | Gate |
-|---|---|---|
-| **Low** | docs, comments, copy, config values, dependency bumps | deterministic checks + one combined review |
-| **Medium** | ordinary feature or bugfix inside one phase scope | deterministic checks + one Reviewer + QA against acceptance criteria |
-| **High** | auth, payments, data migrations, deletion paths, external API contracts, secrets handling, anything in `SPEC_PLAN/CONSTITUTION.md` marked critical | Reviewer SOLID and Reviewer SRE independently + QA + human diff approval |
-
-When `{{STRICT_MODE}}=true`, High depth cannot be downgraded.
-The Tech Lead assigns a depth to each phase in `IMPLEMENTATION_PLAN.md`; the Developer
-may raise it, never lower it.
-
-### Escalation instead of repeated runs
-
-Do **not** run the same reviewer multiple times on the same artifact hoping for
-agreement. Repeated calls to one model with one prompt produce correlated results:
-they measure the judge's stability, not the code's quality, and unanimity requirements
-reject correct work at compounding rates.
-
-Escalate only on genuine uncertainty:
-
-1. One reviewer produces a structured verdict.
-2. Escalate to a **second, differently-prompted** reviewer only when the verdict is
-   `UNKNOWN`, or carries a blocking finding whose evidence field is weak or absent.
-3. The two disagree → the owner decides.
-4. Periodically (roughly every tenth verdict) re-run one gate blind and compare, to
-   keep a feel for how consistent the reviewers actually are.
-
-### Run economics — measure, do not block
-
-Every gate and phase costs real money and time. Record tokens, duration, approximate cost
-and review round-trips per phase in `PROGRESS.md`. Thresholds stay **report-only** until
-enough comparable runs exist to know the normal spread — a budget invented before that
-data is either meaningless or a source of false failures.
-
-Details, plus response caching while iterating on the pipeline itself:
-`references/run-economics.md`.
-
-### Release readiness — does it work outside this session
-
-Criteria that pass in the working directory the code was written in prove the product
-works **there**. The classic failure is a build that exists only in the agent's session:
-an uncommitted file, a variable set by hand in one shell, a service started manually, a
-migration applied straight to a database.
-
-So QA does not verify in that directory. It first builds a **clean checkout** — fresh
-clone, install from the lockfile, `{{RUN_COMMAND}}` — confirms `.env.example` covers every
-variable the code reads, that migrations run and roll back, and that a health check
-answers. Then it exercises every acceptance criterion inside that checkout. One setup,
-two proofs: the product is reproducible, and it does what was promised.
-
-Anything done by hand is a missing artifact — commit it or record it in
-`docs/surprises.md`. If the clean checkout will not start, the verdict is
-`RELEASE BLOCKED` and criteria are not evaluated at all. QA verifies and reports;
-it never ships.
-
-### Agent guardrails
-
-Before executing any command, the Developer must refuse and escalate to the owner when
-the action would:
-
-- delete or overwrite outside the current phase's declared file scope,
-- run a destructive command against anything but a disposable local target,
-- write credentials, tokens, or `.env` contents into a tracked file, a log, or a commit,
-- force-push, rewrite published history, or push directly to the default branch,
-- perform an outward-facing action (deploy, publish, send, purchase) not named in the
-  current phase's Definition of Done.
-
-These are refusals, not warnings. Record each escalation in `HANDOFF.md`.
-
-**Pushing and opening a PR are outward-facing actions.** The flow ends with
-`git push → gh pr create`, and that step needs the owner's explicit go-ahead in the
-session where it happens — being drawn in the diagram is not standing permission.
-Permission covers that one action, not the rest of the session, and never extends to
-merging or deploying.
-
-## Pre-execution checklist
-
-Before any code changes:
-- [ ] `git status` is clean — leftovers from an earlier session get reviewed or stashed
-      first, never swept into this phase's commit
-- [ ] Read current phase in `IMPLEMENTATION_PLAN.md`
-- [ ] Confirm current phase scope in `phase-registry.md`
-- [ ] Confirm work is inside active phase scope
-
-## Post-execution checklist
-
-Before ending the session or claiming completion:
-- [ ] Validate against phase Definition of Done
-- [ ] Update `PROGRESS.md`
-- [ ] Update `HANDOFF.md`
-- [ ] Update `docs/tech-debt-tracker.md` if anything is deferred
-- [ ] Update `docs/surprises.md` if anything non-obvious was discovered
-- [ ] Note the next highest-priority open item
-
-## Retro: session archaeology
-
-After QA PASS and before opening the PR, audit the session itself: where the agent
-stalled, what context was missing, what got asked more than once. Apply the smallest
-structural fixes — a pointer in `AGENTS.md`, an entry in `docs/surprises.md`, a corrected
-doc — so the next session does not hit the same walls.
-
-Advisory, never a blocking gate: no findings is a legitimate result, stated in one line.
-Fixes are pointers and docs, never new process. Full instructions:
-`references/retro-prompt.md`.
-
-## Recommended git discipline
-
-- Create `feature/{slug}` branch after product approval.
-- Commit after each major artifact gate:
-  - product artifacts
-  - architecture artifacts
-  - implementation plan
-  - each code phase
-  - QA fixes
-- Use small, phase-aligned commits.
-- Do not combine multiple implementation phases in one commit.
-- Stage files by name. `git add .` and `git add -A` are how `.env` files, credentials,
-  scratch scripts and build output reach a commit — review the staged diff first.
-- Start a phase from a clean working tree.
-
-
+- Keep active work In Progress until its gates are accepted; explain ready-for-review,
+  blocked or UNKNOWN in HANDOFF.md. Do not let the next session infer acceptance from files.
+- Update PROGRESS/HANDOFF, relevant debt and surprises; record the next bounded step.
+- Report observed checks, assumptions, gaps and risks. Record available run telemetry via
+  `references/run-economics.md`; unavailable metrics stay unavailable, explicit budgets apply.
+- Stage/commit only authorized own changes; push/PR are optional, separately authorized.

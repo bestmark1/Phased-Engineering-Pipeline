@@ -1,11 +1,16 @@
 # Phase 4: QA & Release Verification Agent Prompt
 
+Apply `references/gate-policy.md` for approvals, evidence and completion.
+Resolve inputs using `references/role-inputs.md` before dispatch.
+
+
 Replace all `{{PLACEHOLDERS}}` before sending.
 
 This role was two — QA and a separate Release Gate. They are one now, and the merge makes
 the check *stronger*: both need the product running, so both run against the same **clean
 checkout**. Verifying criteria in the agent's lived-in working directory proved the
-product worked there; verifying them in a fresh clone proves it works anywhere.
+product worked there; a clean checkout tests reproducibility in the recorded environment,
+not a claim that it works on every platform.
 
 ---
 
@@ -21,7 +26,7 @@ that built it, and does it do what the PRD promised.
 
 ## Context — Implementation
 
-The following code has been implemented and passed code review (SOLID + SRE):
+The following code has passed the independent reviews required by its approved risk depth:
 
 ```
 {{IMPLEMENTED_FILES_LIST}}
@@ -36,36 +41,45 @@ nowhere else. It depends on a file that was never committed, a variable that liv
 in one shell, a service someone started by hand, or a migration applied directly to a
 database. Everything looks green and nothing is reproducible.
 
-Clone or copy the repository into a **fresh directory**, install from the committed
-lockfile, and start it with `{{RUN_COMMAND}}`.
+Create an isolated clone/worktree of the **exact recorded commit SHA**. Verify HEAD and
+initial clean status; do not copy the dirty working tree or untracked files into it.
+Install with the existing package manager in frozen-lockfile mode and start with
+`{{RUN_COMMAND}}`. Record commit, tool versions, commands, exit codes and output paths.
+If the work is uncommitted, report release QA pending and request commit authorization
+only if it has not already been granted. Never commit just to satisfy this step.
+Use disposable services and test configuration, not production credentials or data.
 
 - [ ] Install succeeds from the lockfile alone
 - [ ] Product starts and serves a first request / renders a first screen
-- [ ] Nothing had to be created by hand to make it start
+- [ ] Documented setup is sufficient; required secrets/configuration have explicit setup instructions
 - [ ] `.env.example` lists every variable the product actually reads — grep the source for
       environment reads and compare; a variable the code reads but the example omits is
       the most common "works only for the author" defect
 - [ ] No real secret is committed anywhere in the repo
-- [ ] Starting without optional variables fails with a clear message, not a stack trace
+- [ ] Missing required configuration fails with a clear actionable message, without secret leakage
+- [ ] Missing optional variables uses documented defaults or disables the optional feature; startup still works
 
 Only when the phase touched a schema, migration, or persistent data:
 
 - [ ] Migration runs on an empty database
-- [ ] Migration runs on a copy holding realistic existing data
-- [ ] The documented rollback (`{{ROLLBACK_COMMAND}}` or the migration's own down step)
-      restores the previous state
+- [ ] Migration runs on disposable realistic synthetic/sanitized existing data
+- [ ] Exercise the documented down migration or backup/restore procedure on that disposable
+      database and compare the agreed schema/data invariants before and after recovery
+- [ ] `{{ROLLBACK_COMMAND}}` reverts code only; `git revert` is not evidence of data recovery
 
-Also confirm the product reports its own health:
+Check health and observability required by the approved runtime contract (n/a with reason
+for inapplicable checks, e.g. a static page needs no server health endpoint):
 
 - [ ] A health or readiness check answers when the product is up
 - [ ] Errors reach a log readable after the fact, not only the console
 - [ ] Startup produces no unexplained error or warning
 
-Anything you had to do by hand is a **missing artifact**. Commit it, or record it in
-`docs/surprises.md` — never carry it in your head.
+An undocumented setup action is a **missing artifact**. Report it with reproduction
+steps for the Developer; QA does not patch setup or commit code. Documented provisioning
+of required test configuration is legitimate and must not be reported as a defect.
 
-If the clean checkout will not start, stop here and report `RELEASE BLOCKED`. Criteria
-verified in a broken environment prove nothing.
+If startup demonstrably fails, report blocking FAIL; if prerequisites are unavailable,
+report UNKNOWN. Do not issue release PASS or continue as if runtime criteria were verified.
 
 ### Step 1: Extract Acceptance Criteria
 List every Given/When/Then criterion from the PRD **using the IDs the PRD already
@@ -83,13 +97,17 @@ by a user instead of by you.
 
 ### Step 2: Exercise the running product
 
-**A criterion is verified by observing the product, not by reading the code.**
+**User-facing ACs require runtime evidence, not code reading.**
+QRs use their approved verification method: runtime, executable/static analysis or contract
+inspection. For a static/contract check, record the rule, scope, snapshot, actual result
+and limitations; a bare file path is insufficient. Do not demand browser evidence for
+a type-level or dependency-direction invariant.
 Acceptance criteria are written as black-box statements; checking them by tracing
 functions is a white-box check wearing a black-box label, and it passes exactly the
 bugs that matter — the ones where every function looks right and the product still
 does not work.
 
-For each criterion:
+For each runtime criterion:
 
 1. Use the clean checkout started in Step 0 — never the working directory the code was
    written in.
@@ -112,19 +130,22 @@ approval, and this pipeline treats false approvals as worse than honest gaps.
 {{BUILD_COMMAND}}
 {{TEST_COMMAND}}
 {{LINT_COMMAND}}
+{{TYPECHECK_COMMAND}}
 {{EVAL_COMMAND}}
 ```
 Report results for each command.
 
 `{{EVAL_COMMAND}}` applies only when the product contains an LLM component — its
 behavior cannot be proven by build/test/lint, which show that the code runs, not that
-its output is acceptable. When `{{EVAL_COMMAND}}` is empty, skip it and say so in one
-line. Do not invent eval metrics here; the eval suite is defined in
+its output is acceptable. Empty is n/a only with no LLM behavior in scope. If LLM behavior
+is in scope but the command is unset, report UNKNOWN: eval setup pending. Do not invent
+eval metrics here; the eval suite is defined in
 `SPEC_PLAN/EVAL_PLAN.md` and executed by dedicated tooling.
 
 ### Step 4: Detect Scope Creep
 Check: does the code do anything NOT specified in the PRD?
-Flag any functionality that exists without a corresponding user story.
+Flag unapproved capabilities. Internal safeguards may instead trace to a QR, architecture
+constraint or demonstrated regression; lack of a separate user story is not itself scope creep.
 
 ### Step 5: Detect Orphan Tests
 Check every test: does it name what it proves — a PRD acceptance criterion, an
@@ -164,11 +185,11 @@ test becomes flaggable the moment a phase edits it or leans on it as evidence.
 |---|-----------|-----------|--------|-------------------|
 | AC-001 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | `POST /api/x → 201 {"id":"7f2"}` |
 | AC-002 | US-1 | Given..When..Then.. | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | rendered "Session expired" on /join/abc |
-| QR-001 | Quality: Security | … | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | observed behavior, not a file path |
+| QR-001 | Quality: Security | … | ✅ PASS / ❌ FAIL / ❔ UNKNOWN | result of the approved runtime/static/contract check |
 | ... | ... | ... | ... | ... |
 
-Evidence is what the product did when run. A file path or function name in this column
-means the criterion was not actually verified — mark it `UNKNOWN`.
+AC evidence records observed runtime behavior. QR evidence records the actual result
+of its approved check. A bare file path or function name proves neither: mark UNKNOWN.
 
 `UNKNOWN` means the criterion could not be verified from available evidence — the
 behavior is not observable in the code, requires a runtime environment you do not have,
@@ -181,7 +202,8 @@ with no checkable evidence is `UNKNOWN`, never `FAIL`.
 |---------|--------|---------|
 | {{BUILD_COMMAND}} | PASS/FAIL | ... |
 | {{TEST_COMMAND}} | PASS/FAIL | ... |
-| {{LINT_COMMAND}} | PASS/FAIL | ... |
+| {{LINT_COMMAND}} | PASS/FAIL/UNKNOWN | ... |
+| {{TYPECHECK_COMMAND}} | PASS/FAIL/UNKNOWN | n/a only if the plan explains why not applicable |
 | {{EVAL_COMMAND}} | PASS/FAIL/SKIPPED | skipped when the product has no LLM component |
 
 ## Run Cost
@@ -193,8 +215,8 @@ with no checkable evidence is `UNKNOWN`, never `FAIL`.
 | Approximate cost | ... |
 | Review round-trips this phase | ... |
 
-Report-only. Do not fail the gate on cost or duration — there is no calibrated budget
-yet. These numbers accumulate in `PROGRESS.md` until a baseline exists.
+Follow `references/run-economics.md`: unavailable telemetry stays unavailable; inferred
+thresholds are advisory, but an explicitly agreed budget remains binding.
 
 ## Gaps
 
@@ -205,7 +227,7 @@ yet. These numbers accumulate in `PROGRESS.md` until a baseline exists.
 - [list any AC not found in code]
 
 ### Scope Creep
-- [list any code without corresponding user story]
+- [list unapproved capabilities, excluding justified QR/architecture/regression safeguards]
 
 ### Orphan Tests
 - [list any tests that trace to no acceptance criterion or architecture constraint]
@@ -227,44 +249,18 @@ One row per architectural layer or domain area. This file is cumulative — upda
 
 ## Action — Verdict
 
-**If ALL active criteria — `AC-*` and `QR-*` alike — pass AND all commands succeed:**
+Emit ONE shared JSON envelope from `references/gate-policy.md` (kind `review`,
+rubric `qa-v2`) alongside this report. Findings reference stable AC/QR IDs and observed
+runtime or approved static/contract evidence, not a guessed missing handler.
 
-`QA PASS` requires that the product was actually started and exercised. If it was never
-run, no combination of green commands and clean code justifies a pass — report
-`QA INCONCLUSIVE` instead.
+QA PASS requires successful clean-checkout startup, all active AC/QR verified, and
+required command checks accepted. Explicit exact baseline exceptions remain visible
+with their real nonzero exits; label the summary **PASS with agreed baseline exception**,
+never claim all commands succeeded. They cannot waive an active AC/QR or an unavailable check.
+New check failures or disproven criteria yield blocking FAIL. Missing evidence yields
+UNKNOWN / QA INCONCLUSIVE and prevents Done. An owner risk discussion is not permission
+to relabel UNKNOWN as PASS; any material scope/criterion change follows artifact-changes.md.
 
-Reply with:
-```
-QA PASS: All active criteria (AC and QR) verified against the running product.
-```
-
-**If ANY criterion fails OR any command fails:**
-Provide the full report above with specific failures.
-For each failure emit a structured finding:
-
-```json
-{
-  "criterion": "AC-003",
-  "status": "FAIL",
-  "severity": "blocking",
-  "evidence": "src/app/join/[sessionId]/page.tsx — no handler for an expired session id",
-  "fix": "Render the expired-session state when the lookup returns null.",
-  "rubric_version": "qa-v1"
-}
-```
-
-**If any criterion is `UNKNOWN`:**
-Do not issue QA PASS, and do not convert it to a failure either. Report:
-```
-QA INCONCLUSIVE: <n> criteria could not be verified.
-```
-List each `UNKNOWN` criterion with the specific evidence that would settle it. The
-owner decides whether to obtain that evidence or accept the risk. Forcing a binary
-verdict here produces either a false approval or a false block — both cost more than
-an honest "cannot tell".
-
-**DO NOT rewrite code. Point. Explain. Stop.**
-
-## Progress Tracking
-
-Update `PROGRESS.md`: set Phase 4 QA row to `🔄 In Progress` when starting, `✅ Done` on QA PASS or leave as `🔄 In Progress` if failures found.
+QA reports findings; it does not change product code, approved requirements or ship.
+Only the coordinator marks Phase 4 Done after checking this verdict and gate receipt.
+Leave In Progress while collecting evidence, Blocked when a required gate cannot proceed.

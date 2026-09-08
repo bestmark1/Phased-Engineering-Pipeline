@@ -67,20 +67,13 @@ line, because "legacy" otherwise drifts with every session.
 
 Inventory what already proves the system works: tests, health checks, CI, monitors,
 manual rituals. State which of them actually run today and which are decorative. Report
-how many tests exist and how many currently fail — a red suite inherited on day one is a
+test counts plus exact failing test IDs, failure signatures, commands, environment and log paths — a red suite inherited on day one is a
 fact the plan must account for, not a defect this initiative introduced.
 
 Name the minimum harness that must exist before anything is edited — usually smoke checks
 on the paths `{{CHANGE_TARGET}}` touches, plus one test per enforced boundary. Do not
 build it here; adding a test is a change, and it belongs to the first implementation
 phase, after this read-only gate passes.
-
-### Step 5: Optional — a disposable report
-
-When the structure is hard to hold in prose, generate a single-use interactive HTML report
-outside the repository: module map, data flow, risk points, dependency highlighting. It is
-a tool for understanding, not production code. It is never committed and never referenced
-by a later artifact — copy anything worth keeping into the report below.
 
 ## Output Format
 
@@ -111,7 +104,7 @@ Commit SHA: [full SHA] — every test and file present here is legacy
 [where an edit breaks something non-obvious, ranked]
 
 ## Existing verification
-[what runs today, what is decorative, how many tests exist, how many fail at baseline]
+[what runs today; baseline SHA, commands, environment, test IDs + failure signatures and logs]
 
 ## Required harness before first edit
 [smoke checks and boundary tests the first phase must add]

@@ -3,7 +3,7 @@
 A loadable review mode, not a standing instruction. Load it **after** a change is green,
 point it at a specific diff, and ask what can be removed. Keeping this text permanently in
 context biases the Developer toward under-implementing new work — the standing rule lives
-in Core principle 8 instead, and it is deliberately weaker than what follows.
+in SKILL.md Core principles instead, and it is deliberately weaker than what follows.
 
 ## The stance
 
@@ -49,7 +49,7 @@ Rules for the run:
 
 ## When to load it
 
-- After a phase goes green, before the LLM reviewers — see *Subtraction pass* in `SKILL.md`.
+- After a phase goes green, before the LLM reviewers — see *Repair and subtraction* in `SKILL.md`.
 - On explicit request to shrink an existing solution.
 
 Do not load it while writing new code for an unfinished phase.

@@ -1,5 +1,9 @@
 # Phase 2: Tech Lead Agent Prompt
 
+Apply `references/gate-policy.md` for approvals, evidence and completion.
+Resolve inputs using `references/role-inputs.md` before dispatch.
+
+
 Replace `{{PLACEHOLDERS}}` with approved content before sending.
 
 ---
@@ -34,7 +38,8 @@ We strictly follow a phased engineering pipeline.
 
 ## Task
 
-Create a step-by-step **Implementation Plan** based on the approved `ARCHITECTURE.md`.
+Create or update a step-by-step **Implementation Plan** based on the approved
+`ARCHITECTURE.md`. In Lite, reuse valid decisions and plan the initiative delta only.
 
 Break the build into logical, sequential phases. For each phase specify:
 
@@ -57,10 +62,16 @@ Break the build into logical, sequential phases. For each phase specify:
    A Definition of Done that only lists green commands proves the code compiles, not that
    the slice works. QA and the Release Gate will look for observed evidence — plan for it.
 6. **Review depth** — `low`, `medium`, or `high`, never below `{{DEFAULT_REVIEW_DEPTH}}`:
-   - `low` — docs, comments, copy, config values, dependency bumps
+   - `low` — non-executable docs/comments/copy or demonstrably behavior-neutral changes
+   - Configuration and dependency changes follow their impact, not their file extension
    - `medium` — ordinary feature or bugfix work
    - `high` — auth, payments, data migrations, deletion paths, external API contracts,
      secrets handling, anything `SPEC_PLAN/CONSTITUTION.md` marks critical
+
+   High-risk impact takes precedence over a generic low-risk category and the project floor.
+   Name required gate IDs, gate types, evidence, approvals and rollback/data recovery checks
+   in the plan and phase registry using `references/gate-policy.md`. DoD does not authorize
+   commit, publication, deployment or data mutation.
 
    Depth sets the review topology for the phase. Assigning `high` everywhere defeats the
    purpose: it makes a trivial config change cost as much as a payment flow, and the
@@ -82,12 +93,15 @@ For those phases:
 **Cold start.** A new project has no production traces, so most eval tooling has nothing
 to consume. Do not defer evaluation until traces exist. Instead, derive the first cases
 from the PRD: every acceptance criterion about model behavior is already an eval case
-needing only a concrete input and a checkable property of the output. Plan 10–20 of
-these, and mark the phase after which real outputs become available — that is when
+needing only a concrete input and a checkable property of the output. Draft a small
+representative set covering relevant success and failure paths, and mark the phase
+after which real outputs become available — that is when
 issue-discovery and golden-dataset tooling starts to apply, and not before.
 
-Flag in the plan that the spec-derived cases must be written by the owner. A model that
-authors both the behavior and the standard it is judged against proves nothing.
+The agent may draft inputs and expected properties. The owner/domain expert approves
+the expectations before they become the acceptance standard. Model self-grading alone
+is not acceptance. If LLM behavior exists but EVAL_COMMAND is unset, mark setup pending
+and schedule it before the dependent phase; do not silently skip evals.
 
 If no phase involves an LLM, leave `{{EVAL_COMMAND}}` empty and skip this section —
 most projects need nothing here.
@@ -154,6 +168,10 @@ justification in the plan. It is the exception, not the pattern.
 
 **Review depth:** low / medium / high — one line of justification
 
+**Required gates:** IDs + types + expected evidence; explicit approval/reuse records
+
+**Rollback/recovery:** tested code rollback and, if applicable, disposable data recovery
+
 **Decisions:**
 - Chose X over Y because [reason]
 - Deferred Z to docs/tech-debt-tracker.md because [reason]
@@ -166,9 +184,10 @@ justification in the plan. It is the exception, not the pattern.
 
 ## Progress Tracking
 
-Update `PROGRESS.md`: refine Phase 3.x rows to match the actual plan phases. Set Phase 2 row to `🔄 In Progress` when starting, `✅ Done` when finished.
+Refine Phase 3.x rows and phase-registry.md to match the plan. Set Phase 2 In Progress;
+report ready for approval. The coordinator closes it only after owner approval and full consistency.
 
 ## Constraint
 
-Output ONLY the plan. No code. No explanations outside the plan format.
+Output the plan and state/registry updates above. No implementation code.
 Every user story from the PRD must be covered by at least one phase.

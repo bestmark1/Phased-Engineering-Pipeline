@@ -1,9 +1,9 @@
 # PROGRESS.md template
 
-The Architect creates `PROGRESS.md` from this template. Every later role updates its own row.
-
-The Architect creates this file; every later role updates its own row. Status values are
-`⬜ Not started`, `🔄 In Progress`, `✅ Done`, `⛔ Blocked`.
+The coordinator initializes this file before Product/research, preserving existing state.
+Roles may mark In Progress and attach evidence; only the coordinator marks Done after
+the required gates and approvals, validated against the approved plan.
+Statuses: `⬜ Not started`, `🔄 In Progress`, `✅ Done`, `⛔ Blocked`.
 
 ```markdown
 # Progress — {{PROJECT_NAME}}
@@ -12,6 +12,8 @@ Pipeline mode: {{PIPELINE_MODE}} · Strict mode: {{STRICT_MODE}}
 
 | Phase | Role | Artifact | Status | Updated |
 |-------|------|----------|--------|---------|
+| 0a | Archaeology (brownfield only) | SPEC_PLAN/archaeology-report.md | ⬜ | |
+| research | Domain Analyst (if needed) | domain notes | ⬜ | |
 | 0 | Product | Narrative.md + MRD.md (Full) + PRD.md | ⬜ | |
 | 0c | Consistency (product) | SPEC_PLAN/clarification-report.md | ⬜ | |
 | 1 | Architect | SPEC_PLAN/ARCHITECTURE.md | ⬜ | |
@@ -24,7 +26,8 @@ Pipeline mode: {{PIPELINE_MODE}} · Strict mode: {{STRICT_MODE}}
 
 ## Run cost per phase
 
-Report-only until a baseline exists — never a gate.
+Record available telemetry only; unknown stays unavailable. Suggested thresholds are
+advisory until calibrated; explicit owner budgets still apply.
 
 | Phase | Tokens in/out | Duration | Approx. cost | Review round-trips |
 |-------|---------------|----------|--------------|--------------------|
@@ -35,6 +38,8 @@ Report-only until a baseline exists — never a gate.
 |------|-------|---------|-----------------------|
 ```
 
-The Architect pre-fills rows `3.1`–`3.N` as placeholders; the Tech Lead replaces them with
-the real phases once `IMPLEMENTATION_PLAN.md` exists.
-
+Tech Lead replaces 3.x placeholders with actual phases. Omit optional rows only with a
+recorded n/a reason. Link each completed row to its gate receipt and applicable approval.
+Product completion includes owner approval + product consistency; plan completion includes
+owner approval + full consistency. Reused artifacts include approval provenance, not a
+new approval request for unchanged decisions. Ready for review is still In Progress.

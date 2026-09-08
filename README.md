@@ -1,319 +1,192 @@
 # phased-engineering-pipeline
 
-> Claude Code skill that orchestrates seven specialized roles — eight when entering an existing codebase — through a full BMAD engineering pipeline: **Product → Consistency → Architect → Tech Lead → Developer** with SOLID and SRE code reviewers, then **QA & release verification in a clean checkout** and a **session-archaeology retro**. A role exists only where it must not be the author of what it judges. Includes auto git commits, feature branch workflow, CI/CD awareness, `SPEC_PLAN/` artifact hub, knowledge base (`docs/`) with a surprises log, AGENTS.md project map, decision logs, and tech debt tracking.
+A phased workflow for substantial end-to-end initiatives: product framing, architecture,
+vertical slices, independent review and reproducible QA. Not a default process for small fixes.
 
----
+## Current workflow
 
-## What it does
+[SKILL.md](SKILL.md) is the entry point. It preserves Product, optional Domain Analyst,
+Archaeology, Consistency, Architect, Tech Lead, Developer, SOLID/SRE reviewers, QA and Retro.
+The pipeline does not select models; existing agent/model settings remain separate.
 
-Instead of asking Claude to "build a system" and hoping for the best, this skill enforces a professional BMAD engineering workflow with explicit approval gates:
+- **Full:** new framing with Narrative + MRD + PRD, followed by architecture and delivery.
+- **Lite:** reuse approved framing/architecture, record applicability and implement a delta.
+- **Brownfield:** read-only archaeology and an exact test baseline, then Lite delivery.
+- Coordinator initializes PROGRESS before Product/research. Roles report readiness, not
+  acceptance; Done requires the approved checks, independent review and owner approvals.
+- Reviewer depth follows impact and the project floor. Critical configuration/dependency
+  changes remain High. Final QA uses an isolated checkout of an exact commit.
+- Runtime ACs need runtime observations. Internal QRs use their approved static/contract
+  or runtime check. Data recovery needs a disposable restore test, not just a code revert.
+- No automatic commit/push/PR/deploy. An explicit owner request authorizes an action;
+  writing it into a Definition of Done does not. Preserve unrelated uncommitted changes.
 
-```
-[Archaeology] → archaeology-report.md (brownfield mode) → ⛔ READ-ONLY COMPLETE
-[Product] → Narrative.md + MRD.md (Full mode) + PRD.md → ⛔ USER APPROVAL
-  → [Consistency: product] → ⛔ CONSISTENCY PASS
-  → git: create feature/{slug} branch, commit product artifacts
-  → [Architect] → ARCHITECTURE.md + CONSTITUTION.md + AGENTS.md + docs/ → ⛔ USER APPROVAL
-    → [Tech Lead] → IMPLEMENTATION_PLAN.md (with Decision Log) → ⛔ USER APPROVAL
-      → [Consistency: full] → cross-artifact-analysis.md → ⛔ CONSISTENCY PASS
-      → loop per vertical slice:
-          [Developer] → self-review loop → deterministic gate (build/lint/typecheck/test)
-          → subtraction pass (what can this phase drop?)
-          → [Reviewer SOLID] ‖ [Reviewer SRE]  (topology by review depth)
-          → critic loop on findings → APPROVE → next slice
-      → [QA & Release] → clean checkout starts → criteria exercised inside it
-          → QA PASS + RELEASE READY → [Retro]
-          → ⛔ OWNER PERMISSION → git: push → gh pr create → ⛔ USER REVIEWS DIFF
-```
+The canonical contracts are [gate-policy.md](references/gate-policy.md),
+[role-inputs.md](references/role-inputs.md), and
+[artifact-changes.md](references/artifact-changes.md). They define STRICT_MODE,
+exact baseline exceptions, shared JSON verdicts, resolved inputs and stable AC/QR IDs.
+STRICT_MODE=false makes noncritical major findings advisory, not safety or checks optional.
 
-**Domain Analysis (optional)** — A Domain Analyst researches the problem space, stakeholders, competitors, and risks. Asks 5-8 clarifying questions. Saves distilled vendor docs to `docs/references/{tool}-llms.txt` for reuse.
+## Installation / updating
 
-**Phase 0 — Product** — One pass writes `Narrative.md` (story, why now, constraints, non-goals, risks), `MRD.md` in Full mode (ICP, jobs to be done, alternatives, positioning), and `PRD.md` with user stories, acceptance criteria (Given / When / Then), and success metrics. Every criterion is black-box and names how it will be verified; a **Quality Requirements** table covers security, privacy, performance, accessibility, and data recovery. One owner approval covers all three.
-
-**Consistency check** — The same role runs twice: after product approval it scans the PRD for ambiguity, contradictions and untestable criteria; after the plan it checks PRD, architecture and plan against each other for coverage gaps, terminology drift, ordering risks and phases with no user-visible outcome. It never fixes anything — it points, explains, and asks.
-
-**Phase 1 — Architecture** — A Senior Architect reads the official docs, asks 3-5 clarifying questions, then produces:
-- `ARCHITECTURE.md` with C4 diagrams (Mermaid), contracts/interfaces, dependency layer order, error handling strategy
-- `AGENTS.md` — project map capped at 60 lines, answering five questions: what the project is, where the docs are, how to run the environment, related repos, what is forbidden without permission
-- `docs/` knowledge base scaffold per project principles
-
-**Phase 2 — Implementation Plan** — A Tech Lead converts the approved architecture into `IMPLEMENTATION_PLAN.md`. Phases are **vertical slices**, not layers: a walking skeleton first, then one user scenario per phase, hardening last. Each phase states what a user can do that they could not before, carries a runnable Definition of Done including a check against the running product, a review depth, and a **Decision Log** (chose X over Y because…).
-
-**Phase 3 — Coding loop** — For each slice: a Senior Developer implements only that slice, runs the verification commands and reports actual exit codes, performs an explicit **self-review loop** (verify → fix → re-verify), logs deferred items to `docs/tech-debt-tracker.md` and non-obvious findings to `docs/surprises.md`, then commits. Deterministic checks (build / lint / typecheck / test) must be green **before** any reviewer is called — a linter proves for free what an LLM guesses at.
-
-Review topology follows the slice's **review depth**, not habit:
-- **Low** (docs, config, dependency bumps) — deterministic checks plus one combined review
-- **Medium** (ordinary feature work) — one reviewer plus QA against acceptance criteria
-- **High** (auth, payments, migrations, deletion paths, secrets) — **Reviewer SOLID** (layering, dependency direction, type safety, contracts) and **Reviewer SRE** (resilience, error boundaries, security, resource handling) independently, plus human diff approval
-
-Findings come back as structured verdicts; the Developer fixes only those findings, and the reviewer re-examines only the criteria that failed.
-
-**Phase 4 — QA & Release Verification** — One independent role, one setup, two proofs. It first builds a **clean checkout** — fresh clone, install from the lockfile, `{{RUN_COMMAND}}` — and confirms `.env.example` covers every variable the code reads, migrations run and roll back, and a health check answers. Then it exercises every acceptance criterion **inside that checkout** through a real interface, recording what it observed (`POST /api/session → 201`), not which function it read. Code tracing is for diagnosis only. Verdict is `QA PASS + RELEASE READY`, `RELEASE BLOCKED`, or structured findings. A criterion that cannot be exercised is `UNKNOWN`, never `PASS`.
-
-**Retro** — Session archaeology: where the agent stalled, what context was missing, what got asked twice. Applies minimal fixes to `AGENTS.md` and `docs/` so the next session does not hit the same walls.
-
-**Finish** — With the owner's explicit go-ahead: push feature branch, create PR via `gh pr create`, verify CI checks, owner reviews diff before merge.
-
----
-
-## New in v2 — Harness Engineering Upgrade
-
-Inspired by OpenAI's [Harness Engineering](https://openai.com/index/harness-engineering/) practices:
-
-| Feature | Description |
-|---------|-------------|
-| `docs/` knowledge base | Scaffold created by Architect, populated throughout pipeline |
-| `AGENTS.md` | Project map (≤60 lines): five questions, pointers instead of prose |
-| Decision Log | Each plan phase documents choices made and why |
-| Tech Debt Tracker | `docs/tech-debt-tracker.md` — tracked debt is acceptable, hidden is not |
-| Self-Review Loop | Developer: verify → self-fix → re-verify before handing off |
-| `STRICT_MODE` | `false` = advisory reviews for prototyping, `true` = all gates blocking |
-| llms.txt caching | Analyst saves distilled docs once; subsequent agents reuse |
-| Quality Score | QA updates `docs/QUALITY_SCORE.md` with coverage grades per layer |
-| Layer violations | SOLID reviewer checks dependency flow direction |
-| Boring tech principle | Architect avoids "magic" libraries; prefers stable, documented deps |
-
----
-
-## New in v3 — Gate Discipline
-
-The pipeline's reviewers are themselves LLMs. v3 treats them as such: as fallible judges
-that cost money, drift, and share blind spots with the model that wrote the code.
-
-| Feature | Description |
-|---------|-------------|
-| Evidence hierarchy | Environment checks > tests > contracts > human review > LLM judge. A judge never overrides a stronger source |
-| Deterministic-first gates | build / lint / typecheck / test run before any reviewer is invoked — a linter proves for free what an LLM guesses at |
-| Review depth by risk | `low` / `medium` / `high` per phase. A config bump does not cost what a payment flow costs |
-| Structured verdicts | `criterion` / `status` / `severity` / `evidence` / `fix` / `rubric_version` instead of prose a developer cannot act on |
-| `UNKNOWN` verdict | A criterion with no checkable evidence is not a failure. Forcing binary answers manufactures both false approvals and false blocks |
-| Critic loop | Fix only the findings, re-review only the failing criteria, escalate after three rounds on one criterion |
-| Escalation over repetition | Re-running one reviewer measures judge stability, not code quality. Escalate on uncertainty instead |
-| Agent guardrails | Refuse out-of-scope deletion, secret leakage into commits or logs, history rewrites, and unrequested outward-facing actions |
-| Run economics | Tokens, duration, cost and review round-trips recorded per phase — report-only until a baseline exists |
-| SKILL.md stays lean | Entry point holds the flow, gates and principles; role detail loads from `references/` only when that role runs |
-| Eval hooks | Optional `{{EVAL_COMMAND}}` and `SPEC_PLAN/EVAL_PLAN.md` for products containing an LLM. The pipeline calls eval tooling; it does not reimplement metrics or judges |
-
-### Context practices — what the project leaves behind for the next session
-
-| Feature | Description |
-|---------|-------------|
-| `docs/surprises.md` | Only what an agent cannot derive from general knowledge: workarounds, hidden constraints, dangerous places. Never "what a database is" |
-| Short `AGENTS.md` | Capped at 60 lines, five questions, pointers instead of prose. Detail lives in the docs tree |
-| Tests are evidence | A test proves a named requirement — an acceptance criterion, an architecture constraint, or a defect that must not return. Traceability, not scarcity: orphan tests are the defect, thorough coverage is not |
-| Black-box acceptance criteria | Criteria describe what the user observes, never internals — the implementation stays replaceable |
-| Session-archaeology retro | After QA PASS: where the agent stalled, what context was missing, then minimal fixes to `AGENTS.md` and `docs/` |
-
----
-
-## New in v3.1 — Does it actually work
-
-Documentation and review were the strong parts; proving the product runs was not. v3.1 closes that gap.
-
-| Feature | Description |
-|---------|-------------|
-| QA exercises the running product | Criteria are verified by starting the product and observing it, not by tracing functions. Evidence is `POST /api/session → 201`, not a file path. No runnable environment means `UNKNOWN`, never `PASS` |
-| Release verification | QA's clean checkout installs and starts, `.env.example` complete, migrations reversible, health check answers — and every criterion is then exercised inside that checkout. Catches the build that works only in the agent's session |
-| Vertical slices | Phases are user-visible slices, not layers. A walking skeleton first, one scenario per phase after. Nothing waits until the last phase to work |
-| Scope by intent | The plan's file list is an expectation, not a whitelist — lockfiles and generated files need no amendment; an unplanned capability does |
-| Artifact change protocol | When implementation proves an approved artifact wrong: update the earliest artifact invalidated, propagate downstream, stop for approval when the change is material |
-| Quality requirements | Security, privacy, performance, accessibility and data recovery get stated in the PRD with a verification method — instead of being discovered at release |
-| Real exit codes | "Build would pass" is no longer an acceptable result. Commands are run and their exit codes reported, or named as not run with a reason |
-| Git hygiene | Clean tree before a phase; stage files by name. `git add .` is how `.env` files and credentials reach commits |
-
----
-
-## New in v3.3 — Existing code, stable IDs, and a pass that removes
-
-Three additions, each answering something the pipeline could not do before.
-
-| Change | Rationale |
-|---------|-------------|
-| `brownfield` mode + read-only Archaeology role | The flow began at Product, so entering a codebase it did not write had no path: the first act would have been editing a system nobody had mapped. Archaeology describes what the code actually does, citing `file:line`, and writes one file — its own report — while leaving source, config, tests and data untouched. Legacy tests are grandfathered so the first QA run reports real findings instead of hundreds of orphans |
-| Subtraction pass + `piecemeal-growth.md` mode | Every gate asked whether something was missing; none asked what could be removed. Agents add configuration, fallbacks and abstractions for futures nobody ordered. The mode is loaded on demand and reports KEEP/REMOVE/QUESTION with evidence — held in standing context it would bias the Developer against finishing new work, so principle 8 carries a deliberately weaker standing form |
-| Stable criterion IDs (`AC-001`, `QR-001`) | QA used to number criteria at validation time, after the PRD, the traceability matrix and the tests had each referred to them differently. IDs are now assigned once where criteria are written and reused verbatim downstream. Flat, not hierarchical: `2.4.1` is an address and a position at once, so restructuring forces a choice between breaking references and keeping a misleading number |
-
----
-
-## New in v3.2 — Fewer roles, leaner entry point
-
-A role earns a separate invocation only where it must **not** be the author of what it
-judges. Roles that all author were merged; independence was preserved everywhere it does
-real work.
-
-| Change | Rationale |
-|---------|-------------|
-| Product = Narrative + MRD + PRD | All three author, none judge. One pass writes the requirements with the framing still in context, and one owner approval covers all three artifacts |
-| Consistency = Clarifier + Analyzer | Same job — contradictions, gaps, ambiguity — at two moments. One prompt, invoked with scope `product` after approval and `full` after the plan. Both gates unchanged |
-| QA & Release in one clean checkout | Both need the product running. Verifying criteria in the directory that built them proves it works *there*; a fresh clone proves it works anywhere. One setup, two proofs |
-| Architect and Tech Lead kept separate | Merging would save one context load but remove the gate where the owner can redirect the design before planning effort is spent |
-| Plane MCP removed | An unused optional integration still cost a role, a prompt, an artifact, four placeholders and two rules — read on every activation. Execution state lives in `PROGRESS.md` |
-| `SKILL.md` 836 → 504 lines | Detail moved into `references/`, loaded when its role runs. Nothing deleted |
-
-**On repeated runs.** Requiring the same reviewer to pass an artifact k times in a row is
-not a reliability gain — repeated calls to one model with one prompt are correlated, and
-unanimity rejects correct work at compounding rates (a judge that approves good work 90%
-of the time passes it only 73% of the time across three runs). v3 escalates on genuine
-uncertainty instead, at roughly 1.1–1.3× cost rather than 3×.
-
----
-
-## Installation
+Review the source and local modifications before installing. Do not extract over an
+existing modified installation; compare and back up first. The .skill bundle is gzipped
+tar despite its extension. For a **new empty destination**, extract with:
 
 ```bash
-# Option A — from the .skill bundle (a gzipped tar, despite the extension)
-mkdir -p ~/.claude/skills/phased-engineering-pipeline
-tar -xzf phased-engineering-pipeline.skill -C ~/.claude/skills/phased-engineering-pipeline
+mkdir -p /path/to/empty-skill-directory
+tar -xzf phased-engineering-pipeline.skill -C /path/to/empty-skill-directory
 ```
 
-```bash
-# Option B — manual
-git clone https://github.com/bestmark1/Phased-Engineering-Pipeline.git
-cp -r Phased-Engineering-Pipeline/phased-engineering-pipeline ~/.claude/skills/
-```
-
----
+The package root contains SKILL.md, references/, scripts/ and tests/. Install the complete
+package into the skill root appropriate for the host. No Python packages are required.
 
 ## Usage
 
-Claude Code activates this skill automatically when you say things like:
+Request a phased pipeline for a substantial initiative, e.g. “Plan and build this
+end-to-end feature with the phased-engineering-pipeline”. Ordinary bugfixes and small edits
+should not require this workflow. Existing approved decisions should not be re-interviewed.
+Configuration is resolved from project artifacts and tooling; see SKILL.md for the table.
 
-```
-Build a Flutter weather tracking app
-```
-```
-Architect and implement a FastAPI analytics service
-```
-```
-Create project: Payment Gateway Proxy in Go
-```
-```
-BMAD pipeline for a new feature
+## Local validation
+
+```bash
+python3 scripts/validate_gate.py /path/to/project/SPEC_PLAN/gates/3.1.json
+python3 scripts/validate_gate.py --prompt /path/to/rendered-brief.txt
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 ```
 
----
+The validator checks supplied evidence records and unresolved tokens. It neither executes
+project checks, installs a hook, changes progress nor verifies that an approval is genuine.
+The coordinator still compares gate coverage to the approved plan and inspects actual outputs.
+An accepted legacy exception is reported explicitly, never rewritten as a green test exit.
 
-## Configuration — Stack Profiles
+## Supporting references
 
-Fill these placeholders before spawning agents. The skill is **tech-stack agnostic**.
+- [progress-template.md](references/progress-template.md): state and receipt links.
+- [docs-scaffold.md](references/docs-scaffold.md): project knowledge base, created as needed.
+- [eval-hooks.md](references/eval-hooks.md): LLM behavior requires planned evals; an unset
+  command means pending setup, not no LLM. Agents may draft cases; domain owners approve expectations.
+- [run-economics.md](references/run-economics.md): observed telemetry, explicit budgets,
+  and cache boundaries. Unavailable values are not invented.
+- [piecemeal-growth.md](references/piecemeal-growth.md): grounded advisory subtraction.
 
-| Placeholder | Description | Example (Flutter) |
-|---|---|---|
-| `{{PROJECT_NAME}}` | Project name | Weather Tracker |
-| `{{TECH_STACK}}` | Runtime + language + frameworks | Flutter 3.x, Dart 3.x, Riverpod |
-| `{{BUILD_COMMAND}}` | Build verification | `flutter build apk --debug` |
-| `{{RUN_COMMAND}}` | Start the product the way a user reaches it | `flutter run -d chrome` |
-| `{{TEST_COMMAND}}` | Test runner | `flutter test` |
-| `{{LINT_COMMAND}}` | Static analysis | `flutter analyze` |
-| `{{QUALITY_RULES}}` | Language-specific quality rules | null safety, no dynamic, const constructors |
-| `{{INTERFACE_STYLE}}` | How contracts are defined | abstract class / mixin |
-| `{{DOCS_URL}}` | Official docs URL | https://docs.flutter.dev/ |
-| `{{STRICT_MODE}}` | Gate enforcement | `true` (default, all gates blocking) |
-| `{{PIPELINE_MODE}}` | `lite`, `full`, or `brownfield` | `lite` |
-| `{{CHANGE_TARGET}}` | Brownfield only — the behavior the initiative will alter | tenant onboarding flow |
-| `{{TYPECHECK_COMMAND}}` | Type checker if separate | `dart analyze` |
-| `{{ROLLBACK_COMMAND}}` | How to undo the last change | `git revert HEAD` |
-| `{{DEFAULT_REVIEW_DEPTH}}` | `low` / `medium` / `high` floor | `medium` |
-| `{{EVAL_COMMAND}}` | Eval suite; empty when the product has no LLM | `npx promptfoo eval` |
+On failure, repair the specific cause and recheck affected behavior. Repeated failure
+requires diagnosis, not another blind retry. Material changes to approved behavior,
+contracts, costs or permissions return to owner approval. QA never ships automatically.
 
-`SKILL.md` holds the full placeholder table. The skill ships no stack presets — the
-Architect fills these from the project's actual stack, and the examples above are only
-illustrative.
+## Verification scope
 
----
+The bundled tests exercise the receipt validator, not autonomous model behavior or every
+application stack. A full live multi-role run is a separate integration test. Git is
+needed for snapshot/checkout operations; a provider CLI is only needed for an explicitly
+authorized provider action. No model mapping is configured by this package.
 
-## File structure
+## Historical release notes (not the current execution contract)
 
-```
-phased-engineering-pipeline/
-├── SKILL.md                         # Entry point: flow, gates, principles, role→prompt map
-└── references/
-    ├── product-prompt.md           # Phase 0: Narrative + MRD (Full) + PRD in one pass
-    ├── analyst-prompt.md            # Domain Analyst (+ llms.txt caching)
-    ├── consistency-prompt.md        # Consistency check — invoked twice (product / full)
-    ├── architect-prompt.md          # Phase 1: Senior System Architect (+ AGENTS.md, docs/)
-    ├── tech-lead-prompt.md          # Phase 2: Tech Lead (+ Decision Log, review depth)
-    ├── developer-prompt.md          # Phase 3: Senior Developer (+ self-review, guardrails)
-    ├── reviewer-solid-prompt.md     # Reviewer: Principal Staff Engineer (+ layer violations)
-    ├── reviewer-sre-prompt.md       # Reviewer: SRE & Security Auditor
-    ├── qa-prompt.md                 # Phase 4: QA & Release verification in a clean checkout
-    ├── retro-prompt.md              # Phase 5: Retro — session archaeology
-    ├── archaeology-prompt.md         # Phase 0a: read-only mapping of an existing codebase
-    ├── piecemeal-growth.md           # Review mode: what can be removed (loaded on demand)
-    ├── progress-template.md         # PROGRESS.md template
-    ├── eval-hooks.md                # Eval planning + cold start (only when EVAL_COMMAND is set)
-    ├── run-economics.md             # Cost tracking + caching while tuning the pipeline
-    └── docs-scaffold.md             # Canonical docs/ tree + restructure policy
-```
+The following is retained from the previous README as historical context. Its process,
+thresholds, quantitative estimates and claims are not current instructions or newly
+verified results; where they differ, use SKILL.md and gate-policy.md above.
 
----
-
-## Knowledge Base (docs/)
-
-Architect creates this structure after Phase 1. Subsequent agents populate it.
-The canonical definition lives in `references/docs-scaffold.md`:
-
-```
-docs/
-├── README.md                 # Index of the knowledge base
-├── EXECUTION_RULES.md        # How work is executed in this project
-├── surprises.md              # Project-specific surprises only — never general knowledge
-├── tech-debt-tracker.md      # Updated by Developer/Reviewers when deferring
-├── QUALITY_SCORE.md          # Updated by QA after validation
-├── decisions/
-│   └── index.md              # Design decisions catalog
-├── exec-plans/
-│   ├── active/               # Current IMPLEMENTATION_PLAN.md
-│   └── completed/            # Archived plans after merge
-├── references/
-│   └── {tool}-llms.txt       # Distilled vendor docs (from Analyst)
-└── archive/                  # Superseded detail moved out during restructures
-```
-
----
-
-## Git & CI/CD Integration
-
-- **Feature branches:** `feature/{slug}` created after PRD approval
-- **Auto-commits:** `[phase-N]` format at each gate (PRD, architecture, plan, code, QA)
-- **PR creation:** `gh pr create` after QA pass
-- **CI awareness:** `gh pr checks` to verify GitHub Actions (lint, test, build)
-- **User control:** User reviews diff before merge — agent never merges automatically
-
----
-
-## Recovery procedures
-
-| Scenario | What happens |
-|----------|-------------|
-| User rejects PRD | Re-spawn PM with feedback, new approval gate |
-| User rejects Architecture | Re-spawn Architect with feedback, new approval gate |
-| User rejects Plan | Re-spawn Tech Lead with feedback, new approval gate |
-| Developer returns `BLOCKED` | Surface blocker to user, wait for decision |
-| Review loop stuck 3+ rounds | Escalate to user: retry / accept / simplify scope |
-| QA fails | Developer fixes specific criteria, QA re-validates |
-| QA cannot run the product | Report `QA INCONCLUSIVE` with what would make it runnable — never pass on code reading |
-| Clean checkout will not start | `RELEASE BLOCKED` — fix the missing artifact (uncommitted file, absent env var, irreversible migration) and re-run. Criteria are not evaluated until it starts |
-| Implementation proves an approved artifact wrong | Update the earliest artifact invalidated, propagate downstream, stop for approval if the change is material |
-| CI check fails | Read failure, fix if possible, escalate if infra issue |
-| Agent timeout | Re-spawn once, then escalate |
-
----
-
-## Supported stacks
-
-Works with any stack — all prompts use generic placeholders. Tested profiles:
-
-- **Flutter/Dart** (mobile apps)
-- **TypeScript/Node.js** (backend services, Web3)
-- **Python/FastAPI** (analytics, ML services)
-- **Go/gin** (microservices)
-
----
-
-## Requirements
-
-- [Claude Code](https://claude.ai/code) CLI
-- Claude Code skills support (`~/.claude/skills/`)
-- `gh` CLI (for PR creation and CI checks)
-- Git (for feature branch workflow)
+> ## New in v2 — Harness Engineering Upgrade
+>
+> Inspired by OpenAI's [Harness Engineering](https://openai.com/index/harness-engineering/) practices:
+>
+> | Feature | Description |
+> |---------|-------------|
+> | `docs/` knowledge base | Scaffold created by Architect, populated throughout pipeline |
+> | `AGENTS.md` | Project map (≤60 lines): five questions, pointers instead of prose |
+> | Decision Log | Each plan phase documents choices made and why |
+> | Tech Debt Tracker | `docs/tech-debt-tracker.md` — tracked debt is acceptable, hidden is not |
+> | Self-Review Loop | Developer: verify → self-fix → re-verify before handing off |
+> | `STRICT_MODE` | `false` = advisory reviews for prototyping, `true` = all gates blocking |
+> | llms.txt caching | Analyst saves distilled docs once; subsequent agents reuse |
+> | Quality Score | QA updates `docs/QUALITY_SCORE.md` with coverage grades per layer |
+> | Layer violations | SOLID reviewer checks dependency flow direction |
+> | Boring tech principle | Architect avoids "magic" libraries; prefers stable, documented deps |
+>
+> ---
+>
+> ## New in v3 — Gate Discipline
+>
+> The pipeline's reviewers are themselves LLMs. v3 treats them as such: as fallible judges
+> that cost money, drift, and share blind spots with the model that wrote the code.
+>
+> | Feature | Description |
+> |---------|-------------|
+> | Evidence hierarchy | Environment checks > tests > contracts > human review > LLM judge. A judge never overrides a stronger source |
+> | Deterministic-first gates | build / lint / typecheck / test run before any reviewer is invoked — a linter proves for free what an LLM guesses at |
+> | Review depth by risk | `low` / `medium` / `high` per phase. A config bump does not cost what a payment flow costs |
+> | Structured verdicts | `criterion` / `status` / `severity` / `evidence` / `fix` / `rubric_version` instead of prose a developer cannot act on |
+> | `UNKNOWN` verdict | A criterion with no checkable evidence is not a failure. Forcing binary answers manufactures both false approvals and false blocks |
+> | Critic loop | Fix only the findings, re-review only the failing criteria, escalate after three rounds on one criterion |
+> | Escalation over repetition | Re-running one reviewer measures judge stability, not code quality. Escalate on uncertainty instead |
+> | Agent guardrails | Refuse out-of-scope deletion, secret leakage into commits or logs, history rewrites, and unrequested outward-facing actions |
+> | Run economics | Tokens, duration, cost and review round-trips recorded per phase — report-only until a baseline exists |
+> | SKILL.md stays lean | Entry point holds the flow, gates and principles; role detail loads from `references/` only when that role runs |
+> | Eval hooks | Optional `{{EVAL_COMMAND}}` and `SPEC_PLAN/EVAL_PLAN.md` for products containing an LLM. The pipeline calls eval tooling; it does not reimplement metrics or judges |
+>
+> ### Context practices — what the project leaves behind for the next session
+>
+> | Feature | Description |
+> |---------|-------------|
+> | `docs/surprises.md` | Only what an agent cannot derive from general knowledge: workarounds, hidden constraints, dangerous places. Never "what a database is" |
+> | Short `AGENTS.md` | Capped at 60 lines, five questions, pointers instead of prose. Detail lives in the docs tree |
+> | Tests are evidence | A test proves a named requirement — an acceptance criterion, an architecture constraint, or a defect that must not return. Traceability, not scarcity: orphan tests are the defect, thorough coverage is not |
+> | Black-box acceptance criteria | Criteria describe what the user observes, never internals — the implementation stays replaceable |
+> | Session-archaeology retro | After QA PASS: where the agent stalled, what context was missing, then minimal fixes to `AGENTS.md` and `docs/` |
+>
+> ---
+>
+> ## New in v3.1 — Does it actually work
+>
+> Documentation and review were the strong parts; proving the product runs was not. v3.1 closes that gap.
+>
+> | Feature | Description |
+> |---------|-------------|
+> | QA exercises the running product | Criteria are verified by starting the product and observing it, not by tracing functions. Evidence is `POST /api/session → 201`, not a file path. No runnable environment means `UNKNOWN`, never `PASS` |
+> | Release verification | QA's clean checkout installs and starts, `.env.example` complete, migrations reversible, health check answers — and every criterion is then exercised inside that checkout. Catches the build that works only in the agent's session |
+> | Vertical slices | Phases are user-visible slices, not layers. A walking skeleton first, one scenario per phase after. Nothing waits until the last phase to work |
+> | Scope by intent | The plan's file list is an expectation, not a whitelist — lockfiles and generated files need no amendment; an unplanned capability does |
+> | Artifact change protocol | When implementation proves an approved artifact wrong: update the earliest artifact invalidated, propagate downstream, stop for approval when the change is material |
+> | Quality requirements | Security, privacy, performance, accessibility and data recovery get stated in the PRD with a verification method — instead of being discovered at release |
+> | Real exit codes | "Build would pass" is no longer an acceptable result. Commands are run and their exit codes reported, or named as not run with a reason |
+> | Git hygiene | Clean tree before a phase; stage files by name. `git add .` is how `.env` files and credentials reach commits |
+>
+> ---
+>
+> ## New in v3.3 — Existing code, stable IDs, and a pass that removes
+>
+> Three additions, each answering something the pipeline could not do before.
+>
+> | Change | Rationale |
+> |---------|-------------|
+> | `brownfield` mode + read-only Archaeology role | The flow began at Product, so entering a codebase it did not write had no path: the first act would have been editing a system nobody had mapped. Archaeology describes what the code actually does, citing `file:line`, and writes one file — its own report — while leaving source, config, tests and data untouched. Legacy tests are grandfathered so the first QA run reports real findings instead of hundreds of orphans |
+> | Subtraction pass + `piecemeal-growth.md` mode | Every gate asked whether something was missing; none asked what could be removed. Agents add configuration, fallbacks and abstractions for futures nobody ordered. The mode is loaded on demand and reports KEEP/REMOVE/QUESTION with evidence — held in standing context it would bias the Developer against finishing new work, so principle 8 carries a deliberately weaker standing form |
+> | Stable criterion IDs (`AC-001`, `QR-001`) | QA used to number criteria at validation time, after the PRD, the traceability matrix and the tests had each referred to them differently. IDs are now assigned once where criteria are written and reused verbatim downstream. Flat, not hierarchical: `2.4.1` is an address and a position at once, so restructuring forces a choice between breaking references and keeping a misleading number |
+>
+> ---
+>
+> ## New in v3.2 — Fewer roles, leaner entry point
+>
+> A role earns a separate invocation only where it must **not** be the author of what it
+> judges. Roles that all author were merged; independence was preserved everywhere it does
+> real work.
+>
+> | Change | Rationale |
+> |---------|-------------|
+> | Product = Narrative + MRD + PRD | All three author, none judge. One pass writes the requirements with the framing still in context, and one owner approval covers all three artifacts |
+> | Consistency = Clarifier + Analyzer | Same job — contradictions, gaps, ambiguity — at two moments. One prompt, invoked with scope `product` after approval and `full` after the plan. Both gates unchanged |
+> | QA & Release in one clean checkout | Both need the product running. Verifying criteria in the directory that built them proves it works *there*; a fresh clone proves it works anywhere. One setup, two proofs |
+> | Architect and Tech Lead kept separate | Merging would save one context load but remove the gate where the owner can redirect the design before planning effort is spent |
+> | Plane MCP removed | An unused optional integration still cost a role, a prompt, an artifact, four placeholders and two rules — read on every activation. Execution state lives in `PROGRESS.md` |
+> | `SKILL.md` 836 → 504 lines | Detail moved into `references/`, loaded when its role runs. Nothing deleted |
+>
+> **On repeated runs.** Requiring the same reviewer to pass an artifact k times in a row is
+> not a reliability gain — repeated calls to one model with one prompt are correlated, and
+> unanimity rejects correct work at compounding rates (a judge that approves good work 90%
+> of the time passes it only 73% of the time across three runs). v3 escalates on genuine
+> uncertainty instead, at roughly 1.1–1.3× cost rather than 3×.
+>
+> ---
+>

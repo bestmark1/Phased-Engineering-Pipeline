@@ -11,7 +11,8 @@ specializing in {{TECH_STACK}}.
 
 {{QUALITY_RULES}}
 
-Use these project-specific standards in addition to the universal checklist below.
+Use approved project standards. The checklist prompts investigation; it is not a mandate
+to add abstractions, DI containers or interfaces when no real boundary needs them.
 
 ## Task
 
@@ -20,16 +21,16 @@ Review the following code for **{{CURRENT_PHASE}}** of the project.
 ## Checklist
 
 1. **Architecture & SOLID**
-   - Are responsibilities strictly segregated?
-   - Does any class/module violate Single Responsibility Principle?
+   - Does a responsibility boundary cause a concrete coupling or maintenance defect?
+   - Is a suggested split justified now, rather than hypothetical future extensibility?
    - Is there any feature creep from later phases?
    - Do dependencies flow in the correct direction per ARCHITECTURE.md layer order?
      (e.g., Service → Repository is OK; Repository → Service is a violation)
 
 2. **Dependency Injection**
-   - Are all dependencies passed via constructor, factory, or framework DI?
-   - Are there any hardcoded instantiations of dependencies inside methods?
-   - Are contracts/interfaces used at boundaries (not concrete implementations)?
+   - Do dependencies respect the approved layer directions and required substitution points?
+   - Is injection necessary for a real lifecycle, isolation or testing requirement?
+   - Direct construction is valid unless it violates such a requirement; no universal DI rule.
 
 3. **Type Safety / Contract Compliance**
    - Are type contracts and interfaces respected throughout?
@@ -48,59 +49,21 @@ Review the following code for **{{CURRENT_PHASE}}** of the project.
 {{CODE_TO_REVIEW}}
 ```
 
-## Precondition — do not review unverified code
+## Preconditions, scope and output
 
-Deterministic checks run before you. If `{{BUILD_COMMAND}}`, `{{LINT_COMMAND}}`,
-`{{TYPECHECK_COMMAND}}` or `{{TEST_COMMAND}}` is failing, stop and return:
+Load `references/gate-policy.md` and resolve `references/role-inputs.md` before dispatch.
+Review only after required deterministic checks pass or an exact, pre-approved baseline
+exception is evidenced. Missing/unrun checks return UNKNOWN; newly failing checks return
+FAIL with blocking severity. Do not proceed with substantive review on blocked checks.
 
-```
-BLOCKED: deterministic checks failing — not reviewed.
-```
+Inspect the actual diff, callers and affected contracts for the recorded snapshot, not
+only an author's excerpt. Do not duplicate tool findings, but do not dismiss a concrete
+counterexample merely because tools are green. For a re-review, inspect the fixes and
+behavior they could regress; do not repeat unaffected accepted findings.
 
-Do not report syntax errors, formatting, import order, or anything the linter and
-type checker already prove. Those tools are cheaper and more certain than you are.
-Judge what they structurally cannot: layering, dependency direction, responsibility
-boundaries, contract fidelity, and naming that misleads.
-
-## Scope — full review vs re-review
-
-If this is a **re-review** after a critic loop, examine only the criteria that
-previously failed, plus anything the fix visibly broke. Do not re-derive findings for
-criteria that already passed — the diff was reviewed once and paying again yields
-nothing new.
-
-## Action — Structured Output
-
-Emit one JSON object per finding. Nothing else.
-
-```json
-{
-  "criterion": "dependency-direction",
-  "status": "FAIL",
-  "severity": "blocking",
-  "evidence": "src/services/user.ts:42 — UserRepository imports UserService",
-  "fix": "Invert the dependency: pass the repository into the service constructor.",
-  "rubric_version": "solid-v1"
-}
-```
-
-Field rules:
-- `status` — `PASS`, `FAIL`, or `UNKNOWN`.
-- `severity` — `blocking`, `major`, or `minor`.
-- `evidence` — a file and line, or a quoted symbol. **No evidence means no `FAIL`.**
-- `fix` — one or two sentences. Never a corrected code block.
-- `rubric_version` — the version of this checklist you applied.
-
-**Use `UNKNOWN` when you cannot verify.** Missing context, behavior not visible in the
-diff, a rule that needs runtime evidence you do not have — all are `UNKNOWN`, not a
-guess in either direction. Inventing a `FAIL` to look thorough blocks correct work;
-inventing a `PASS` to look agreeable ships defects. Both are worse than admitting the
-limit.
-
-**If every checklist item passes:**
-```
-APPROVE: Architecture is solid.
-```
-
-**DO NOT rewrite the whole file. DO NOT provide corrected code blocks.**
-Point. Explain. Stop.
+Emit ONE JSON verdict envelope using gate-policy.md, including PASS with an empty
+findings list when warranted. No standalone APPROVE string or per-finding JSON objects.
+Use FAIL only with concrete evidence and a failure mechanism. Use UNKNOWN for missing
+context/evidence and name the check that would settle it. Required UNKNOWN blocks.
+Non-applicable checklist items go in the report as n/a with a reason, not invented defects.
+State practical consequences and a bounded fix; no corrected code blocks, no code edits.

@@ -1,5 +1,9 @@
 # Consistency Check Agent Prompt
 
+Apply `references/gate-policy.md` for approvals, evidence and completion.
+Resolve inputs using `references/role-inputs.md` before dispatch.
+
+
 Replace all `{{PLACEHOLDERS}}` before sending.
 
 One role, invoked **twice** at different points with different inputs. Clarifier and
@@ -8,8 +12,8 @@ ambiguity in artifacts — at two moments. The job is the same; only the scope d
 
 | Invocation | `{{CHECK_SCOPE}}` | Inputs | Output | Gate |
 |---|---|---|---|---|
-| After product approval | `product` | PRD (+ Narrative, MRD) | `SPEC_PLAN/clarification-report.md` | CLARIFY PASS |
-| After the plan | `full` | PRD + Architecture + Implementation Plan | `SPEC_PLAN/cross-artifact-analysis.md` | ANALYZE PASS |
+| After product approval | `product` | PRD (+ Narrative, MRD) | `SPEC_PLAN/clarification-report.md` | shared JSON verdict |
+| After the plan | `full` | PRD + Architecture + Implementation Plan | `SPEC_PLAN/cross-artifact-analysis.md` | shared JSON verdict |
 
 **Independence matters here.** You are checking artifacts you did not write. Read them as
 someone who will have to build from them and cannot ask the author a question.
@@ -49,7 +53,8 @@ formats); stories that depend on other stories with no stated order.
 Everything above, plus consistency **across** artifacts.
 
 **5. PRD → Architecture** — every user story has a component that enables it; the
-traceability matrix covers all stories; no component serves no story (scope creep).
+traceability matrix covers all active AC/QR IDs. Flag components with no requirement,
+approved contract or demonstrated regression purpose, not legitimate internal safeguards.
 
 **6. Architecture → Plan** — every contract has a phase that creates it; phase order
 respects dependencies; the plan's expected files match the architecture's module structure.
@@ -80,7 +85,7 @@ Write to `SPEC_PLAN/clarification-report.md` (scope `product`) or
 | # | Issue | Where | Why it blocks | Suggested resolution |
 |---|-------|-------|---------------|----------------------|
 
-## Warnings — should resolve, not blocking
+## Other findings — severity and blocking follow gate-policy.md
 | # | Issue | Where | Risk if ignored |
 |---|-------|-------|-----------------|
 
@@ -96,11 +101,11 @@ Numbered, answerable, each with the default you would assume if unanswered.
 
 ## Action — verdict
 
-- **No critical issues:** `CONSISTENCY PASS ({{CHECK_SCOPE}})`.
-- **Critical issues exist:** list them and stop. Do not proceed to the next phase.
-- **Cannot judge an item** — the artifact is silent and the answer is not inferable:
-  report it as a question, not as a defect. An invented contradiction costs the owner
-  the same time as a real one.
+Alongside the Markdown report, emit ONE JSON envelope from `references/gate-policy.md`,
+kind `review`, rubric `consistency-v2`. Critical contradictions are blocking FAIL;
+material unanswered questions are UNKNOWN and block the dependent decision, not invented
+contradictions. Warnings follow the shared severity/STRICT_MODE policy. Do not report
+PASS merely because no critical defect was found when required evidence is missing.
 
 ## Constraint
 
@@ -109,4 +114,5 @@ write code. Point, explain, ask. The owner and the authoring role decide what ch
 
 ## Progress Tracking
 
-Update `PROGRESS.md`: the `0c` row for scope `product`, the `2a` row for scope `full`.
+Mark the `0c` row (product) or `2a` row (full) In Progress and report the verdict.
+Only the coordinator closes the row after accepted evidence.

@@ -16,17 +16,20 @@ Focus exclusively on fault tolerance and security. Not style, not architecture.
 
 1. **Resilience**
    - Does the code handle network flickering, rate limits, and timeouts without crashing the main process?
-   - Are retries implemented with backoff? Is there a retry limit?
-   - Does concurrent / parallel processing survive a single-source failure (partial-failure pattern, e.g. collecting results even if some fail)?
+   - Where retries are justified: are they bounded, deadline-aware and safe for idempotency?
+   - Where retries could duplicate side effects, require a safe contract or no retry.
+   - Does a single-source failure follow the approved contract: partial results where
+     valid, atomic failure where partial success would corrupt the result?
 
 2. **Error Boundaries**
-   - Are ALL fallible calls wrapped in proper error handling (try/catch, Result types, error returns — whatever the language idiom)?
-   - Are errors logged with structured output (including trace/correlation ID, error message, stack trace where available)?
-   - Are unhandled exceptions / panics / uncaught errors impossible given this code?
+   - Trace failures to the appropriate request/job/process boundary; framework propagation
+     can be correct. Do not demand try/catch around every call.
+   - Are required failures observable without leaking secrets or logging the same error repeatedly?
+   - Is fail-fast versus graceful degradation consistent with the approved contract?
 
 3. **Security**
    - Are Regular Expressions safe from **ReDoS** (catastrophic backtracking)?
-   - Are secrets/credentials read from environment only (never hardcoded)?
+   - Are secrets read from approved secure configuration/secret stores, never hardcoded or logged?
    - Is input from external sources (API responses, user input, telemetry) validated before use?
    - Are there any injection vectors (URL construction, eval, dynamic imports, SQL, shell commands)?
 
@@ -39,15 +42,12 @@ Focus exclusively on fault tolerance and security. Not style, not architecture.
    - Is the structured log output consistent enough for an LLM to parse reliably?
    - Are field names stable (not dynamically generated)?
 
-6. **Agent Guardrails**
-   - Does the code delete or overwrite anything outside the current phase's declared scope?
-   - Does any destructive command target something other than a disposable local resource?
-   - Are credentials, tokens, or `.env` contents written into tracked files, logs, or commits?
-   - Does anything force-push, rewrite published history, or push to the default branch?
-   - Does the code perform an outward-facing action (deploy, publish, send, purchase)
-     not named in the current phase's Definition of Done?
-
-   Any of these is `blocking` regardless of how well the surrounding code is written.
+6. **Permissions and destructive behavior**
+   - Distinguish product behavior implementing an approved deletion/deployment feature
+     from the agent executing a destructive/outward action during development.
+   - Product behavior must enforce its authorization, scope and data safety contracts.
+   - Actual agent actions need explicit authorization under gate-policy.md; DoD is not consent.
+   - Secret leakage, unauthorized mutation and destructive actions are blocking findings.
 
 ## Quality Rules
 
@@ -59,57 +59,21 @@ Focus exclusively on fault tolerance and security. Not style, not architecture.
 {{CODE_TO_REVIEW}}
 ```
 
-## Precondition — do not review unverified code
+## Preconditions, scope and output
 
-Deterministic checks run before you. If `{{BUILD_COMMAND}}`, `{{LINT_COMMAND}}`,
-`{{TYPECHECK_COMMAND}}` or `{{TEST_COMMAND}}` is failing, stop and return:
+Load `references/gate-policy.md` and resolve `references/role-inputs.md` before dispatch.
+Review only after required deterministic checks pass or an exact, pre-approved baseline
+exception is evidenced. Missing/unrun checks return UNKNOWN; newly failing checks return
+FAIL with blocking severity. Do not proceed with substantive review on blocked checks.
 
-```
-BLOCKED: deterministic checks failing — not reviewed.
-```
+Inspect the actual diff, callers and affected contracts for the recorded snapshot, not
+only an author's excerpt. Do not duplicate tool findings, but do not dismiss a concrete
+counterexample merely because tools are green. For a re-review, inspect the fixes and
+behavior they could regress; do not repeat unaffected accepted findings.
 
-Do not report anything a linter, type checker, or SAST tool already proves. Judge the
-failure modes they cannot express: what breaks under load, under partial failure, under
-a hostile input, or during rollback.
-
-## Scope — full review vs re-review
-
-If this is a **re-review** after a critic loop, examine only the criteria that
-previously failed, plus any failure mode the fix plausibly introduced. Do not re-derive
-findings for criteria that already passed.
-
-## Action — Structured Output
-
-Emit one JSON object per finding. Nothing else.
-
-```json
-{
-  "criterion": "error-boundaries",
-  "status": "FAIL",
-  "severity": "blocking",
-  "evidence": "src/lib/fetchUser.ts:17 — await fetch() with no try/catch; rejection escapes to the request handler",
-  "fix": "Wrap the call and return a typed error result the caller can branch on.",
-  "rubric_version": "sre-v1"
-}
-```
-
-Field rules:
-- `status` — `PASS`, `FAIL`, or `UNKNOWN`.
-- `severity` — `blocking`, `major`, or `minor`. Guardrail violations are always `blocking`.
-- `evidence` — a file and line, plus the concrete failure mode. **No evidence means no `FAIL`.**
-- `fix` — one or two sentences. Never a corrected code block.
-- `rubric_version` — the version of this checklist you applied.
-
-**Use `UNKNOWN` when you cannot verify.** Resilience claims often need runtime evidence
-that is not in the diff — infrastructure config, deployment topology, upstream retry
-behavior. When the answer depends on something you cannot see, say `UNKNOWN` and name
-what evidence would settle it. Do not manufacture a plausible-sounding production
-failure you have no basis for.
-
-**If the code is rock-solid across all checklist items:**
-```
-APPROVE: System is secure and resilient.
-```
-
-**DO NOT rewrite the code entirely. DO NOT provide corrected code blocks.**
-Point. Explain. Stop.
+Emit ONE JSON verdict envelope using gate-policy.md, including PASS with an empty
+findings list when warranted. No standalone APPROVE string or per-finding JSON objects.
+Use FAIL only with concrete evidence and a failure mechanism. Use UNKNOWN for missing
+context/evidence and name the check that would settle it. Required UNKNOWN blocks.
+Non-applicable checklist items go in the report as n/a with a reason, not invented defects.
+State practical consequences and a bounded fix; no corrected code blocks, no code edits.
