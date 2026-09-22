@@ -131,6 +131,7 @@ approval, and this pipeline treats false approvals as worse than honest gaps.
 {{TEST_COMMAND}}
 {{LINT_COMMAND}}
 {{TYPECHECK_COMMAND}}
+{{QUALITY_COMMAND}}
 {{EVAL_COMMAND}}
 ```
 Report results for each command.
@@ -151,6 +152,11 @@ constraint or demonstrated regression; lack of a separate user story is not itse
 Check every test: does it name what it proves — a PRD acceptance criterion, an
 architecture constraint, or a defect that must not return? Flag only tests that trace
 to nothing; they freeze an accidental implementation as if it were approved.
+
+A traced test is evidence only if it would fail when the traced behavior breaks. A test
+that asserts nothing observable (no-throw only, mocks of its own subject, unreviewed
+snapshots) is not evidence. If it is the criterion's only evidence, report the criterion
+UNKNOWN; stronger runtime evidence for the same criterion still counts.
 
 Do not flag a test merely for covering internal logic or for being one of many on the
 same criterion. Thorough coverage of a real requirement is correct; the defect is a
@@ -204,6 +210,7 @@ with no checkable evidence is `UNKNOWN`, never `FAIL`.
 | {{TEST_COMMAND}} | PASS/FAIL | ... |
 | {{LINT_COMMAND}} | PASS/FAIL/UNKNOWN | ... |
 | {{TYPECHECK_COMMAND}} | PASS/FAIL/UNKNOWN | n/a only if the plan explains why not applicable |
+| {{QUALITY_COMMAND}} | PASS/FAIL/UNKNOWN | n/a only when none is configured; mark report-only per gate-policy.md |
 | {{EVAL_COMMAND}} | PASS/FAIL/SKIPPED | skipped when the product has no LLM component |
 
 ## Run Cost

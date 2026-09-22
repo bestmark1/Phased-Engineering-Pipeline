@@ -124,6 +124,9 @@ verified results; where they differ, use SKILL.md and gate-policy.md above.
 > | Agent guardrails | Refuse out-of-scope deletion, secret leakage into commits or logs, history rewrites, and unrequested outward-facing actions |
 > | Run economics | Tokens, duration, cost and review round-trips recorded per phase — report-only until a baseline exists |
 > | SKILL.md stays lean | Entry point holds the flow, gates and principles; role detail loads from `references/` only when that role runs |
+> | Quality command gate | Optional `{{QUALITY_COMMAND}}` settles measurable properties (complexity, cycles, dead code, duplication, secrets) with the project's own thresholds, failing only on new or worsened violations; reviewers cite it instead of judging numeric limits by taste, and still report concrete defects the tool missed |
+> | Test strength | Reviewers ask whether each test would fail if its behavior broke; a weak test as the only evidence for a criterion is a major finding, and QA reports that criterion UNKNOWN unless stronger runtime evidence exists |
+> | Discovery and reuse | A raw brief gets a one-question-at-a-time interview before the PRD; the analyst compares open-source candidates with licenses, and the architect records adopt / fork / build |
 > | Eval hooks | Optional `{{EVAL_COMMAND}}` and `SPEC_PLAN/EVAL_PLAN.md` for products containing an LLM. The pipeline calls eval tooling; it does not reimplement metrics or judges |
 >
 > ### Context practices — what the project leaves behind for the next session

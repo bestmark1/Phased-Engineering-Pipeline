@@ -28,6 +28,17 @@ Domain research, when it exists:
 
 Pipeline mode: `{{PIPELINE_MODE}}` — write `MRD.md` only in `full` mode.
 
+## Discovery interview — before writing
+
+If the brief is raw (voice transcript, notes, a one-line idea) and material unknowns
+remain about users, scenarios, constraints or success, interview the owner before
+writing anything. Ask one question at a time, each chosen from the previous answer; the
+coordinator relays it and returns the answer. Ask about the problem and scenarios, not
+the stack or architecture. Stop when answers no longer change scope, constraints, cost or
+acceptance. Record the questions and answers in `SPEC_PLAN/interview.md` and derive the
+Narrative from it. Skip when approved framing, research or the repository already
+answers these questions — typical in Lite — and say that you skipped and why.
+
 ## Task
 
 In Lite/brownfield, first validate existing approved framing and write only its delta.

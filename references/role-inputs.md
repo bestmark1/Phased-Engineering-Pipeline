@@ -22,7 +22,7 @@ Optional inputs get an explicit `none / not applicable: reason`, not fabricated 
 | CHECK_SCOPE | `product` or `full` from the flow |
 | ARTIFACTS_CONTENT | Versioned input set appropriate for CHECK_SCOPE |
 | PROJECT_NAME, PIPELINE_MODE, CHANGE_TARGET, TECH_STACK, QUALITY_RULES, INTERFACE_STYLE, DOCS_URL | Project settings in SKILL.md + approved decisions |
-| BUILD_COMMAND, RUN_COMMAND, TEST_COMMAND, LINT_COMMAND, TYPECHECK_COMMAND, ROLLBACK_COMMAND, EVAL_COMMAND | Repository scripts/tooling and approved plan; no guessed commands; applicability/pending state follows gate-policy.md |
+| BUILD_COMMAND, RUN_COMMAND, TEST_COMMAND, LINT_COMMAND, TYPECHECK_COMMAND, QUALITY_COMMAND, ROLLBACK_COMMAND, EVAL_COMMAND | Repository scripts/tooling and approved plan; no guessed commands; applicability/pending state follows gate-policy.md |
 | STRICT_MODE, DEFAULT_REVIEW_DEPTH | Explicit project setting or documented defaults: true and medium |
 
 `{{PLACEHOLDERS}}` in a preamble describes substitution, it is not a project variable.

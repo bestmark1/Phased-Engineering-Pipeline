@@ -70,7 +70,8 @@ Break the build into logical, sequential phases. For each phase specify:
 
    High-risk impact takes precedence over a generic low-risk category and the project floor.
    Name required gate IDs, gate types, evidence, approvals and rollback/data recovery checks
-   in the plan and phase registry using `references/gate-policy.md`. DoD does not authorize
+   in the plan and phase registry using `references/gate-policy.md` — including a `quality`
+   command gate when `{{QUALITY_COMMAND}}` qualifies as required under that policy. DoD does not authorize
    commit, publication, deployment or data mutation.
 
    Depth sets the review topology for the phase. Assigning `high` everywhere defeats the

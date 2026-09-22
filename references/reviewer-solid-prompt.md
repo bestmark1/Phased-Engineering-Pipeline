@@ -40,8 +40,20 @@ Review the following code for **{{CURRENT_PHASE}}** of the project.
 
 4. **Naming & Clean Code**
    - Are names intention-revealing?
-   - Is there unnecessary complexity (nested ternaries, flag parameters)?
+   - Is there unnecessary complexity (nested ternaries, flag parameters)? For measurable
+     complexity, cite `{{QUALITY_COMMAND}}` output when configured; do not re-judge its limits.
    - Do comments explain WHY, not WHAT?
+
+5. **Test strength** (tests added or changed in the diff, and tests presented as evidence
+   for the changed behavior)
+   - Would each test fail if the behavior it names broke? Mentally mutate the changed
+     code — flip a condition, drop a call, return a constant — and check a test notices.
+   - Do assertions check observable outcomes, not only no-throw, calls on the subject's
+     own internals, or snapshots nobody reviewed?
+   - Are changed branches and boundary/invalid inputs covered, not only the happy path?
+   - If mutation or property-based tooling is configured, cite its output instead of guessing.
+   A weak test that is the only evidence for an AC/QR is a major finding: it turns
+   acceptance into a false pass. Otherwise it is minor.
 
 ## Code to Review
 

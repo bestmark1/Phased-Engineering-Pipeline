@@ -34,6 +34,13 @@ What problem exists, for whom, and why current solutions fail.
 ## 3. Existing Solutions / Competitors
 What already exists. Strengths and gaps.
 
+### Build vs reuse
+Open-source projects, libraries and services that already solve part of the problem:
+| Candidate | License | Maintenance (last release, open issues) | Fit gaps | Adaptation cost | Supply-chain risk |
+|-----------|---------|------------------------------------------|----------|-----------------|-------------------|
+Check license compatibility with how the product is distributed. This is a
+recommendation; the Architect records the adopt / fork / build decision.
+
 ## 4. Technical Constraints
 Platform, runtime, third-party dependencies, compliance, hard limits.
 
