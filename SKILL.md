@@ -18,7 +18,7 @@ This skill does not select or change models. It does not authorize publication o
 ```text
 coordinator: inspect working tree, choose mode, initialize PROGRESS.md once
 brownfield only: Archaeology (source read-only) → report → READ-ONLY COMPLETE
-Product: create or validate/reuse Narrative + PRD (+ MRD in Full)
+Product: discovery interview if the brief is raw → create or validate/reuse Narrative + PRD (+ MRD in Full)
   → OWNER APPROVAL of new/materially changed product decisions
 Consistency (product) → resolve findings → gate accepted
 Architect: create or validate/reuse architecture, constitution and project map
@@ -111,6 +111,7 @@ Resolve project settings from the repository and approved decisions before the p
 | `{{TEST_COMMAND}}` | Test runner | `npm test` |
 | `{{LINT_COMMAND}}` | Linter / static analysis | `npm run lint` |
 | `{{TYPECHECK_COMMAND}}` | Type checker if separate | `tsc --noEmit` |
+| `{{QUALITY_COMMAND}}` | Deterministic quality analysis with the project's own thresholds (complexity, dependency cycles, dead code, duplication, secrets); required gate only when it fails on new violations alone; empty when none is configured | `npm run quality` |
 | `{{QUALITY_RULES}}` | Stack-specific quality rules | strict TS, no secret logging |
 | `{{INTERFACE_STYLE}}` | Contract style | TypeScript interfaces |
 | `{{DOCS_URL}}` | Official docs URL | `https://nextjs.org/docs` |
@@ -133,6 +134,7 @@ AGENTS.md                        preserve existing content; add missing map answ
 PROGRESS.md / HANDOFF.md          state / continuation evidence
 SPEC_PLAN/
   archaeology-report.md          brownfield only
+  interview.md                   discovery Q&A, when the brief was raw
   Narrative.md / PRD.md           product framing (may reuse in Lite)
   MRD.md                         Full only
   clarification-report.md        product consistency

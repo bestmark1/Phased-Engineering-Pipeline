@@ -46,6 +46,16 @@ omitted because it did not run; use UNKNOWN and explain the missing evidence.
 
 - Required build/setup/check failures block before substantive review. A missing check is
   UNKNOWN, not success. Mark a check n/a in the plan only if genuinely inapplicable.
+- QUALITY_COMMAND output settles numeric limits (complexity, duplication, dependency
+  cycles, dead code, coverage of changed lines): reviewers cite it and do not re-judge
+  its thresholds. It does not bound review — a concrete defect the tool missed, above all
+  a leaked secret, is still a finding. This skill sets no universal thresholds; they are
+  stack-specific project decisions. Without the command, do not invent numeric limits.
+- A command that fails only on new or worsened violations (diff-scoped, or ratcheted
+  against a committed baseline) is a required `quality` command gate. One that fails on
+  pre-existing debt in untouched code is report-only: keep it out of `required_gates`,
+  attach its output as review evidence and record the debt in `docs/tech-debt-tracker.md`.
+  Secret findings are never debt.
 - Brownfield test exceptions need a baseline snapshot, exact test identities **and failure
   signatures**, comparable environment/command evidence, bounded scope and explicit owner
   agreement made before accepting the gate. Counts alone are never enough: one old failure

@@ -53,6 +53,7 @@ requirement behind it is speculative machinery someone maintains for years — w
 ## Design Principles
 
 - **Boring tech wins:** Prefer stable, well-documented dependencies with good LLM training set coverage. Avoid "magic" libraries. When a dependency is opaque or poorly documented, consider reimplementing the needed subset.
+- **Reuse before build:** Before designing a component from scratch, use the analyst's build-vs-reuse table or check for a maintained open-source solution. Record adopt / fork / build with its license and reason as an ADR in `docs/decisions/` (see `references/docs-scaffold.md`).
 - **Contracts before implementation:** Define interfaces first, implement second.
 - **Repository is the source of truth:** All knowledge must be in-repo, versioned, and discoverable.
 

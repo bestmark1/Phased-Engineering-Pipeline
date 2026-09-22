@@ -77,6 +77,7 @@ After writing all code, perform an explicit self-review pass:
 - [ ] All quality rules above are satisfied for every file
 - [ ] `{{BUILD_COMMAND}}` — run it, report the actual exit code
 - [ ] `{{LINT_COMMAND}}`, `{{TYPECHECK_COMMAND}}`, `{{TEST_COMMAND}}` — same
+- [ ] `{{QUALITY_COMMAND}}` when configured — same; fix what it flags in code you changed instead of arguing thresholds
 - [ ] No logic from later phases leaks into this phase
 - [ ] No future-phase stubs unless an approved active contract requires them; any such stub fails explicitly
 
@@ -130,7 +131,8 @@ When a reviewer returns structured findings, you are **not** re-implementing the
 1. Fix **only** the findings. Touch nothing else — no opportunistic cleanup, no
    refactoring you happen to notice, no renaming. Unrelated changes force a full
    re-review and cost the phase another round.
-2. Re-run `{{BUILD_COMMAND}}`, `{{LINT_COMMAND}}`, `{{TYPECHECK_COMMAND}}`, `{{TEST_COMMAND}}`.
+2. Re-run `{{BUILD_COMMAND}}`, `{{LINT_COMMAND}}`, `{{TYPECHECK_COMMAND}}`, `{{TEST_COMMAND}}`
+   and `{{QUALITY_COMMAND}}` when configured.
 3. Report which finding each change addresses, by `criterion`.
 
 If you believe a finding is wrong, say so with evidence instead of complying — a
