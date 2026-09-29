@@ -176,7 +176,8 @@ skill, not a role the agent should improvise.
 
 `references/docs-scaffold.md` is not a role — it is the canonical `docs/` tree definition.
 `references/piecemeal-growth.md` is not a role either — it is a review mode loaded for the
-subtraction pass and unloaded afterwards.
+subtraction pass and unloaded afterwards. `references/hillclimbing.md` is a slice mode for
+tuning model behavior against an eval, loaded only by such a slice.
 
 
 ## Gates, verdicts and completion
@@ -220,6 +221,9 @@ If behavior in scope depends on an LLM, load `references/eval-hooks.md` even if 
 is not configured yet. Pending eval setup is not evidence that the product has no LLM.
 No model behavior in scope: record n/a. Otherwise plan the eval before the dependent phase.
 Do not design a new metrics framework here; use suitable existing project tooling.
+A slice whose deliverable is better model behavior or lower cost at parity also loads
+`references/hillclimbing.md`: tuning/guard/final split, one change per round, and no gain
+claimed inside the eval's noise.
 
 ### Release and retro
 

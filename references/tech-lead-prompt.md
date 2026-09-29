@@ -88,6 +88,9 @@ For those phases:
 - Define `{{EVAL_COMMAND}}` and name the phase that introduces it.
 - Write eval criteria into `SPEC_PLAN/EVAL_PLAN.md` **before** the phase that needs
   them, next to the acceptance criteria they extend.
+- A phase that tunes prompts, model or effort against the eval is a hillclimbing slice:
+  plan the tuning/guard/final split, the objective and its metric with it
+  (`references/hillclimbing.md`).
 - Do not design metrics or judges here. Delegate to dedicated eval skills and
   established runners; this plan only says what must be evaluated and when.
 

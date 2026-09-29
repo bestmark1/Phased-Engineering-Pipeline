@@ -128,6 +128,9 @@ verified results; where they differ, use SKILL.md and gate-policy.md above.
 > | Test strength | Reviewers ask whether each test would fail if its behavior broke; a weak test as the only evidence for a criterion is a major finding, and QA reports that criterion UNKNOWN unless stronger runtime evidence exists |
 > | Discovery and reuse | A raw brief gets a one-question-at-a-time interview before the PRD; the analyst compares open-source candidates with licenses, and the architect records adopt / fork / build |
 > | Eval hooks | Optional `{{EVAL_COMMAND}}` and `SPEC_PLAN/EVAL_PLAN.md` for products containing an LLM. The pipeline calls eval tooling; it does not reimplement metrics or judges |
+> | Eval health | Before an eval gates anything: headroom, grader stability, plumbing separated from quality, run-to-run noise. A difference smaller than that noise is not a gain, and an unchecked eval is UNKNOWN |
+> | Hillclimbing mode | A slice that tunes prompts, model or effort splits the cases three ways — tuning, guard, and a final set evaluated once: one change per round, revert when only the tuning set moves, and no gain claimed inside the eval's noise |
+> | Grader ladder | Cheapest grader the output allows; a model judge is never the model under test, its rubric is checkable claims, and a person audits graded samples before the numbers are believed |
 >
 > ### Context practices — what the project leaves behind for the next session
 >

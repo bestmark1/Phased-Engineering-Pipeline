@@ -56,6 +56,9 @@ omitted because it did not run; use UNKNOWN and explain the missing evidence.
   pre-existing debt in untouched code is report-only: keep it out of `required_gates`,
   attach its output as review evidence and record the debt in `docs/tech-debt-tracker.md`.
   Secret findings are never debt.
+- An eval score difference smaller than that eval's measured run-to-run noise is not
+  evidence of improvement or regression. Report it as no measurable change, never as a
+  gain, and do not accept it as the evidence for an acceptance criterion.
 - Brownfield test exceptions need a baseline snapshot, exact test identities **and failure
   signatures**, comparable environment/command evidence, bounded scope and explicit owner
   agreement made before accepting the gate. Counts alone are never enough: one old failure

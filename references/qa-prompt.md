@@ -139,7 +139,9 @@ Report results for each command.
 `{{EVAL_COMMAND}}` applies only when the product contains an LLM component — its
 behavior cannot be proven by build/test/lint, which show that the code runs, not that
 its output is acceptable. Empty is n/a only with no LLM behavior in scope. If LLM behavior
-is in scope but the command is unset, report UNKNOWN: eval setup pending. Do not invent
+is in scope but the command is unset, report UNKNOWN: eval setup pending. Report the
+eval's health next to its score (saturation, grader stability, plumbing failures, noise —
+see `references/eval-hooks.md`); a score from an unchecked eval is UNKNOWN, not PASS. Do not invent
 eval metrics here; the eval suite is defined in
 `SPEC_PLAN/EVAL_PLAN.md` and executed by dedicated tooling.
 
