@@ -2,10 +2,12 @@
 name: new-product-pipeline
 description: >
   Plan and deliver a new product, or continue one this pipeline already runs, through product
-  framing, architecture, vertical slices, independent review and QA. Use for an empty repository
-  or a project whose pipeline artifacts (PRD, plan, PROGRESS) are current. For someone else's
-  code, older code built outside this pipeline or a project with stale artifacts, use
-  existing-system-pipeline. Not for isolated bugs, small edits or ordinary codebase questions.
+  framing, architecture, vertical slices, independent review and QA. Use for an empty repository,
+  a project this pipeline started that has not yet accepted a snapshot with executable specs, or
+  one whose last accepted snapshot has a green specs job. For someone else's code, code built
+  outside this pipeline without executable specs, or a stale project (specs job missing or red
+  on the last accepted snapshot), use existing-system-pipeline. Not for isolated bugs, small
+  edits or ordinary codebase questions.
 ---
 
 # New Product Pipeline
@@ -18,23 +20,25 @@ At the start of every run, load `references/pipeline-core.md`: principles, confi
 artifacts, role prompts, gates and handoff shared with existing-system-pipeline.
 Architect, Tech Lead and reviewers also load `references/quality-profile.md` (default quality
 limits, which gate applies at which depth, ratchet, observability decision). CI is set up in
-the first slice.
+the first slice. Any role that creates, reads or checks `specs/INDEX.md` or `specs/` loads
+`references/specs-contract.md` (requirement source, `specs` job, labels, black-box rules).
 
 ## Which pipeline
 
 | Situation | Pipeline |
 |---|---|
-| Empty repository / no product code yet | this skill (bootstrap, Full) |
-| Run by this pipeline; accepted snapshot has a green `specs` job in CI or local evidence | this skill (MVP or after-MVP) |
-| Run by this pipeline before executable specs existed, artifacts current | this skill; add `specs/` in the next initiative |
-| Someone else's code; own code built outside this pipeline; no executable specs | existing-system-pipeline |
-| This project is **stale** (below) | existing-system-pipeline |
+| Empty repository / no product code yet | this skill (bootstrap) |
+| Started by new-product-pipeline, no accepted snapshot with a green `specs` job yet (bootstrap / MVP in progress) | this skill |
+| Run by new-product-pipeline; last accepted snapshot has a green `specs` job (CI or local evidence) | this skill |
+| Someone else's code; own code built outside new-product-pipeline (including the former single pipeline) without executable specs | existing-system-pipeline |
+| A new-product project that is **stale** (below) | existing-system-pipeline |
 | Unclear | ask the owner one question with a recommendation |
 
-**Stale** is judged on the last *accepted* snapshot, never on a red working commit: the
-`specs` job missing, disabled or red there, or the owner declares it. Back to
-new-product-pipeline after an existing-system run restored `specs` to green on an accepted
-snapshot and updated `specs/INDEX.md`.
+**Stale** applies only after a project has had an accepted snapshot with a green `specs` job,
+and is judged on the last *accepted* snapshot, never on a red working commit: the `specs` job
+missing, disabled or red there, or the owner declares it. Back to new-product-pipeline after an
+existing-system run restored `specs` to green on an accepted snapshot and updated
+`specs/INDEX.md`. The `specs` job is defined in `references/specs-contract.md`.
 
 ## Flow
 

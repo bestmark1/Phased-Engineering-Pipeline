@@ -58,6 +58,20 @@ class RatchetTests(unittest.TestCase):
     def test_deleting_good_units_is_not_a_worsening(self):
         self.assertEqual(qr.compare(snap(a=full(crap=8), b=full(crap=1)), snap(a=full(crap=8))), [])
 
+    def test_metric_absent_from_baseline_meets_absolute_limit(self):
+        base = snap(f=dict(cyclomatic=5, crap=3))
+        self.assertIn('unbaselined cognitive 50 > limit 15',
+                      ' '.join(qr.compare(base, snap(f=dict(cyclomatic=5, cognitive=50, crap=3)))))
+        self.assertEqual(qr.compare(base, snap(f=dict(cyclomatic=5, cognitive=9, crap=3))), [])
+
+    def test_non_object_limits_is_input_error(self):
+        with tempfile.TemporaryDirectory() as d:
+            b, lim = Path(d) / 'b.json', Path(d) / 'l.json'
+            b.write_text(json.dumps(snap(f=full()))); lim.write_text('[1]')
+            r = subprocess.run([sys.executable, str(SCRIPT), str(b), str(b), '--limits', str(lim)],
+                               capture_output=True, text=True)
+            self.assertEqual(r.returncode, 2); self.assertNotIn('Traceback', r.stderr)
+
     def test_non_numeric_metrics_are_input_errors(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / 'm.json'

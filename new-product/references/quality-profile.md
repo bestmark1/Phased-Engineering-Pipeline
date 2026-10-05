@@ -41,8 +41,11 @@ Mutation jobs run in CI only at High (CI minutes).
   limits above.
 - **Existing units** must not get worse than the baseline; improving a unit that is still
   above the limit passes (complexity 20 → 18 = PASS; a new unit at 12 = FAIL).
-- A new tool or tool version is a new baseline: a separate commit approved by the owner, not
-  counted as a worsening.
+- A metric absent from a unit's baseline (e.g. re-enabled after being dropped) meets the
+  absolute limit.
+- The baseline is always read from the base commit, never regenerated in the working tree:
+  `git show <base>:<baseline path> > baseline.json`. A new tool or tool version is a new
+  baseline: a separate commit with an owner approval gate, not counted as a worsening.
 
 Every unit reports every metric of the approved profile; a missing measurement fails, it is
 never a pass. A metric the owner dropped from the profile is passed as `null` in `--limits`.

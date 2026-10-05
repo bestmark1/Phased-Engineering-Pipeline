@@ -15,11 +15,16 @@ ORIGIN = re.compile(r'^(PRD|delta|OBS|deviation:OBS-\d+)$')
 # A label opens a string literal in code: "req:AC-001", 'req:AC-001 shows name'.
 LABEL = re.compile(r'''(["'])req:((?:AC|QR|OBS)-\d+)(?=\1|\s)''')
 LINE_COMMENT = re.compile(r'^\s*(--|;|\*)')
-TEXT_SUFFIXES = {'.md', '.markdown', '.txt', '.rst', '.adoc'}
+# Spec files are test code; data, fixtures and prose never carry labels.
+CODE_SUFFIXES = {'.py', '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.go', '.rs', '.java', '.kt', '.kts',
+                 '.rb', '.php', '.cs', '.swift', '.scala', '.ex', '.exs', '.dart', '.lua', '.hs', '.clj', '.sh'}
+DASH_COMMENT = {'.lua', '.hs'}
+DOCSTRING = {'.py'}
 
 
-def code_only(lines):
-    """Yield (number, code) with //, #, /* */ and <!-- --> comments removed outside string literals."""
+def code_only(lines, suffix=''):
+    """Yield (number, code) with //, #, /* */, <!-- -->, -- (Lua/Haskell) comments and Python
+    docstrings removed outside string literals."""
     in_block = None
     for number, line in enumerate(lines, 1):
         out, i, quote = [], 0, None
@@ -32,6 +37,9 @@ def code_only(lines):
                 i, in_block = end + len(in_block), None
                 continue
             ch = line[i]
+            if not quote and suffix in DOCSTRING and line.startswith(('"""', "'''"), i):
+                in_block, i = line[i:i + 3], i + 3
+                continue
             if quote:
                 out.append(ch)
                 if ch == '\\':
@@ -40,7 +48,7 @@ def code_only(lines):
                     quote = None
             elif ch in '"\'`':
                 quote = ch; out.append(ch)
-            elif line.startswith('//', i) or ch == '#':
+            elif line.startswith('//', i) or ch == '#' or (suffix in DASH_COMMENT and line.startswith('--', i)):
                 break
             elif line.startswith('/*', i):
                 in_block, i = '*/', i + 2; continue
@@ -75,14 +83,15 @@ def parse_index(text):
 def scan_labels(spec_root, index_path):
     """Map requirement ID -> list of 'file:line' where a non-comment label references it."""
     found = {}
+    support = spec_root / 'support'
     for path in sorted(p for p in spec_root.rglob('*') if p.is_file() and p.resolve() != index_path):
-        if path.suffix.lower() in TEXT_SUFFIXES:
+        if path.suffix.lower() not in CODE_SUFFIXES or support in path.parents:
             continue
         try:
             text = path.read_text(encoding='utf-8')
         except UnicodeDecodeError:
             continue
-        for number, code in code_only(text.splitlines()):
+        for number, code in code_only(text.splitlines(), path.suffix.lower()):
             for _, req in LABEL.findall(code):
                 found.setdefault(req, []).append(f'{path.relative_to(spec_root)}:{number}')
     return found

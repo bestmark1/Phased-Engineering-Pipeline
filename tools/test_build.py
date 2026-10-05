@@ -45,6 +45,16 @@ class BuildTests(unittest.TestCase):
         for rel in core:
             self.assertEqual(a[rel].read_bytes(), b[rel].read_bytes(), rel)
 
+    def test_every_reference_has_a_load_point(self):
+        """Each references/*.md is named in SKILL.md or pipeline-core.md, where its load condition is stated."""
+        packages, _ = build.build()
+        for name, (files, _) in packages.items():
+            entry = files['SKILL.md'].read_text() + files['references/pipeline-core.md'].read_text()
+            for rel in files:
+                if rel.startswith('references/') and rel.endswith('.md'):
+                    with self.subTest(package=name, ref=rel):
+                        self.assertIn(rel, entry)
+
     def test_skill_file_cannot_shadow_core(self):
         with self.assertRaises(ValueError):
             self.files({'new-product/references/gate.md': 'shadow'})

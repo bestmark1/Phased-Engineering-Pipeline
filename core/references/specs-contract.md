@@ -55,6 +55,17 @@ One Markdown table with exactly these columns:
   a documented seed/fixture; simulators of external dependencies (payments, LLM, third-party
   APIs) listed in the plan.
 
+## The `specs` job and the `index-check` gate
+
+- **`specs` job** (CI, and the same entry point locally): runs every spec under `specs/`, the
+  dependency linter for `specs/**`, and `check_index.py`. It is mandatory from the first slice
+  that adds `specs/`. In new-product-pipeline the first slice that delivers a user-visible
+  behavior adds it; until the first accepted snapshot with a green `specs` job the project is
+  in bootstrap/MVP, not stale.
+- **`index-check`**: once `specs/INDEX.md` exists in a snapshot, every receipt for that snapshot
+  — slice and initiative — sets `index_present: true` and includes the `index-check` command
+  gate. The validator rejects a receipt with `index_present: true` and no such gate.
+
 ## Three separate checks
 
 1. Imports — the dependency linter (required gate).

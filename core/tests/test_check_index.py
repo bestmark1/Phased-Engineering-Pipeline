@@ -77,6 +77,19 @@ class IndexTests(unittest.TestCase):
         (self.root / 'README.md').write_text('Use "req:AC-001" in tests.\n')
         self.assertFinding(self.run_check([row()], 'nothing\n'), 'no executable spec')
 
+    def test_data_support_docstring_and_dash_comments_do_not_count(self):
+        (self.root / 'support').mkdir()
+        files = {'support/helpers.py': 'TAG = "req:AC-001"\n', 'fixtures.json': '{"tags": ["req:AC-001"]}\n',
+                 'data.yaml': '- "req:AC-001"\n', 'seed.sql': 'SELECT 1; -- "req:AC-001"\n',
+                 't.lua': 'local x = 1 -- "req:AC-001"\n'}
+        for rel, body in files.items():
+            (self.root / rel).write_text(body)
+        self.assertFinding(self.run_check([row()], 'def test_x():\n    """req:AC-001 covered here"""\n'),
+                           'no executable spec')
+
+    def test_label_after_docstring_still_counts(self):
+        self.assertEqual(self.run_check([row()], 'def t():\n    """doc"""\n    tag("req:AC-001")\n'), [])
+
     def test_spec_behavior_needs_when_then(self):
         self.assertFinding(self.run_check([row(behavior='User sees name')]), 'must state When and Then')
 

@@ -48,9 +48,10 @@ def compare(baseline, current, limits=LIMITS, crap_avg=CRAP_AVG):
             if value is None:
                 errors.append(f'{unit}: {metric} not measured (a missing measurement is not a pass)')
                 continue
-            if old is None and value > limit:
-                errors.append(f'{unit}: new unit {metric} {value} > limit {limit}')
-            elif old is not None and old.get(metric) is not None and value > old[metric]:
+            previous = None if old is None else old.get(metric)
+            if previous is None and value > limit:  # new unit, or metric not in the baseline
+                errors.append(f'{unit}: {"new unit " if old is None else "unbaselined "}{metric} {value} > limit {limit}')
+            elif previous is not None and value > previous:
                 errors.append(f'{unit}: {metric} worsened {old[metric]} -> {value}')
     if 'crap' not in limits:
         return errors
@@ -69,7 +70,10 @@ def main(argv=None):
     parser.add_argument('--limits', type=Path, help='JSON object overriding the approved per-unit limits')
     args = parser.parse_args(argv)
     try:
-        limits = dict(LIMITS, **(json.loads(args.limits.read_text()) if args.limits else {}))
+        override = json.loads(args.limits.read_text()) if args.limits else {}
+        if not isinstance(override, dict):
+            raise ValueError('limits must be a JSON object')
+        limits = dict(LIMITS, **override)
         if not all(v is None or number(v) for v in limits.values()):
             raise ValueError('limits must be numbers or null')
         errors = compare(load(args.baseline), load(args.current), limits)

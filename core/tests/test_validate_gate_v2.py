@@ -193,6 +193,50 @@ class ProbeRegressionTests(Blocked):
         self.assertBlocked(gate.validate_release, rel, initiative_receipt(), contains='receipt_sha256')
 
 
+class OpusReviewRegressionTests(Blocked):
+    """Findings of the independent Opus review of PR #18."""
+
+    def test_carried_over_blind_pass_with_applicability_record(self):
+        r = initiative_receipt()
+        r['gates'][2]['coverage'] = ['AC-002', dict(id='AC-001', snapshot='before-repair',
+                                                    applicability='repair touched only AC-002 paths; diff reviewed')]
+        self.assertEqual(gate.validate(r), [])
+
+    def test_carried_over_without_record_or_same_snapshot_fails(self):
+        for entry, needle in ((dict(id='AC-001', snapshot='before-repair'), 'applicability'),
+                              (dict(id='AC-001', snapshot=SHA, applicability='x'), 'earlier snapshot'),
+                              (dict(id='AC-001'), 'earlier snapshot'), (7, 'coverage entry')):
+            r = initiative_receipt(); r['gates'][2]['coverage'] = ['AC-002', entry]
+            with self.subTest(entry=entry):
+                self.assertBlocked(gate.validate, r, contains=needle)
+
+    def test_affected_only_rerun_without_carry_over_is_unknown(self):
+        r = initiative_receipt(); r['gates'][2]['coverage'] = ['AC-002']
+        self.assertBlocked(gate.validate, r, contains='incomplete coverage: AC-001')
+
+    def test_index_present_requires_index_check_on_every_receipt(self):
+        r = slice_receipt(); r['index_present'] = True
+        self.assertBlocked(gate.validate, r, contains='index-check command gate is required')
+        r = slice_receipt(command(), command(gate.INDEX_GATE, command='check_index.py')); r['index_present'] = True
+        self.assertEqual(gate.validate(r), [])
+
+    def test_receipt_spanning_two_ci_jobs(self):
+        idx = command(gate.INDEX_GATE, command='check_index.py')
+        idx['ci'].update(job='specs', run_attempt=2)
+        r = slice_receipt(command(), idx)
+        a = CIArtifactTests().artifact
+        tests_art = a()
+        specs_art = a(job='specs', run_attempt=2, commands=[dict(command='check_index.py', exit_code=0, failures=[])])
+        gate.validate_ci_artifact(r, [tests_art, specs_art])
+        self.assertBlocked(gate.validate_ci_artifact, r, [tests_art], contains='no CI artifact for its run')
+        self.assertBlocked(gate.validate_ci_artifact, r, [tests_art, a(job='specs', run_attempt=1)],
+                           contains='no CI artifact for its run')
+
+    def test_non_first_release_needs_previous_release(self):
+        self.assertBlocked(gate.validate_release, ReleaseTests().release(first_release=False),
+                           initiative_receipt(), contains='previous_release')
+
+
 class ReleaseTests(Blocked):
     def release(self, **over):
         r = dict(done_snapshot=SHA, deployed_sha=SHA, environment='prod', authorization='owner request 2026-10-05',
@@ -230,7 +274,7 @@ class ReleaseTests(Blocked):
         r['gates'] = [g for g in r['gates'] if g['id'] != gate.INDEX_GATE]
         r['required_gates'].remove(gate.INDEX_GATE)
         self.assertBlocked(gate.validate_release, self.release(), r, contains='INDEX before final QA')
-        gate.validate_release(self.release(first_release=False), r)
+        gate.validate_release(self.release(first_release=False, previous_release='SPEC_PLAN/releases/1.json'), r)
 
 
 class DocumentationTests(unittest.TestCase):
@@ -260,6 +304,11 @@ class CLITests(unittest.TestCase):
             bad = copy.deepcopy(CIArtifactTests().artifact(run_attempt=2))
             (d / 'a.json').write_text(json.dumps(bad))
             self.assertEqual(self.run_cli('--ci-artifact', d / 'a.json', d / 'r.json').returncode, 1)
+            # hash is over the file bytes, CRLF included
+            crlf = body.replace('{', '{\r\n', 1).encode()
+            (d / 'r.json').write_bytes(crlf)
+            (d / 'rel.json').write_text(json.dumps(dict(rel, receipt_sha256=hashlib.sha256(crlf).hexdigest())))
+            self.assertEqual(self.run_cli('--release', d / 'rel.json', d / 'r.json').returncode, 0)
             # release bound to another receipt (hash mismatch)
             (d / 'rel.json').write_text(json.dumps(dict(rel, receipt_sha256='0' * 64)))
             self.assertEqual(self.run_cli('--release', d / 'rel.json', d / 'r.json').returncode, 1)

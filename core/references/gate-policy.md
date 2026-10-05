@@ -130,7 +130,8 @@ CI provenance: the CI job publishes a command-level artifact (`repository`, `wor
 `job`, `run_id`, `run_attempt`, `head_sha`, `commands: [{command, exit_code, failures,
 skipped}]`). The coordinator downloads it for the exact run and attempt (`gh run download
 <run_id>`; `gh run view <run_id> --attempt <n> --json headSha,conclusion,jobs` for the
-summary) and runs the validator with `--ci-artifact`. A command the receipt declares but the
+summary) and runs the validator with `--ci-artifact`, once per job/attempt artifact when the receipt spans
+several jobs (e.g. `tests` and `specs`); each record is matched to the artifact of its own run. A command the receipt declares but the
 artifact lacks or marks skipped is not evidence. An approved legacy failure keeps its
 nonzero exit in CI too; CI never turns an exception green.
 Approval records use kind `approval`, `status`, `decision` (`approved`, `reused`, or
@@ -167,10 +168,12 @@ Do not include the receipt itself in its input snapshot (that creates a circular
 ```
 
 Receipt fields: `snapshot_kind` (`commit` or `manifest`), `scope` (`slice` or
-`initiative`), optional `require_ci` (plan demands CI evidence). An initiative receipt also
+`initiative`), optional `require_ci` (plan demands CI evidence), `index_present` (true once
+`specs/INDEX.md` exists; then the `index-check` command gate is required in every receipt). An initiative receipt also
 lists `active_criteria` (every active AC/QR ID) and contains `qa-blind` and `qa-internal`
 review gates whose `coverage` lists the AC resp. QR they verified; missing coverage is
-UNKNOWN. The validator accepts schema 2 only; receipts of phases accepted before the
+UNKNOWN. A coverage entry is an ID verified on this snapshot, or after a repair a carried-over
+record `{id, snapshot (earlier), applicability}` (`references/qa-prompt.md`). The validator accepts schema 2 only; receipts of phases accepted before the
 split stay as history and are not revalidated.
 
 For an explicitly accepted legacy test failure only, add `baseline_exception` to its
@@ -184,7 +187,7 @@ Released is a separate state after initiative completion. The coordinator writes
 `SPEC_PLAN/releases/<n>.json`: `done_snapshot`, `receipt` (path of the accepted initiative
 receipt) and `receipt_sha256` (SHA-256 of that file, checked by the CLI), `deployed_sha` (must equal `done_snapshot`), optional `artifact_digest`,
 `environment`, `authorization` (the owner's explicit deploy request), `first_release`
-(boolean) and `smoke`: the plan's approved checks, each `{id, criterion (AC/QR), status,
+(boolean; when false, `previous_release` names the earlier release record) and `smoke`: the plan's approved checks, each `{id, criterion (AC/QR), status,
 evidence}` with `criterion` an active AC/QR of the receipt. Released only when every smoke check is PASS; a generic health check is not a
 smoke check. A first release needs a passing `index-check` command gate in the accepted receipt, so the
 requirement registry existed before final QA (`references/specs-contract.md`). Validate with
