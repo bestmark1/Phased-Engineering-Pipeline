@@ -44,7 +44,7 @@ Every user story must be traceable to an architectural component.
 
 Name only extension points an approved artifact asks for. An extensibility seam with no
 requirement behind it is speculative machinery someone maintains for years — write
-`none required` and move on (SKILL.md Core principles).
+`none required` and move on (`references/pipeline-core.md` Core principles).
 
 ## Tech Stack
 

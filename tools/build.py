@@ -12,10 +12,13 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = {'new-product-pipeline': 'new-product', 'existing-system-pipeline': 'existing-system'}
+PACKAGE_DIRS = ('references', 'scripts', 'tests')
+FENCE = re.compile(r'^```.*?^```', re.S | re.M)
 CODE_SPAN = re.compile(r'`([^`\n]+)`')
-LOCAL = re.compile(r'(?:^|[\s(])(?:<skill-root>/)?((?:references|scripts|tests)/[\w.-]+(?:/[\w.-]+)*)')
-MD_LINK = re.compile(r'\]\(([^)\s]+)\)')
-EXTERNAL = re.compile(r'^(?:[a-z]+:|#|/|<)|\{\{')
+# In code: `<skill-root>/<anything>` or a path starting with a package directory.
+CODE_PATH = re.compile(r'(?:^|(?<=[\s("\'=]))(<skill-root>/[^\s`"\')]+|(?:references|scripts|tests)/[^\s`"\')]+)')
+MD_LINK = re.compile(r'\]\(\s*(<[^>]*>|[^)\s]+)')
+EXTERNAL = re.compile(r'^(?:[a-z][a-z0-9+.-]*:|#|/)|\{\{')
 
 
 def package_files(root, skill_dir):
@@ -30,34 +33,57 @@ def package_files(root, skill_dir):
     return files
 
 
+def normalize(path):
+    """Collapse . and .. against the package root; None when the path escapes it."""
+    parts = []
+    for part in PurePosixPath(path).parts:
+        if part == '..':
+            if not parts:
+                return None
+            parts.pop()
+        elif part not in ('.', ''):
+            parts.append(part)
+    return '/'.join(parts)
+
+
+def is_package_path(path):
+    return path == 'SKILL.md' or path.split('/', 1)[0] in PACKAGE_DIRS
+
+
 def link_errors(files):
-    """Package-local references must exist inside the package; relative links must not escape."""
+    """Package-local references must exist inside the package and stay within it.
+
+    Package-local: `<skill-root>/...` or `references|scripts|tests/...` inside inline or
+    fenced code, and Markdown links resolving into those directories or SKILL.md.
+    Other relative paths (SPEC_PLAN/, specs/, docs/) belong to the target project.
+    """
     errors = []
     for rel, src in files.items():
         if not rel.endswith('.md'):
             continue
         text = src.read_text(encoding='utf-8')
-        # Skill-root paths quoted as code, e.g. `references/x.md` or `<skill-root>/scripts/y.py`.
-        targets = {m for span in CODE_SPAN.findall(text) for m in LOCAL.findall(span)}
-        # Markdown links resolve relative to the linking file.
+        fenced = FENCE.findall(text)
+        code = fenced + CODE_SPAN.findall(FENCE.sub('', text))
+        candidates = []  # (as written, normalized-or-None)
+        for block in code:
+            for token in CODE_PATH.findall(block):
+                path = token.removeprefix('<skill-root>/').rstrip('.,;:')
+                if '<' in path or '{{' in path or '*' in path:
+                    continue
+                candidates.append((token, normalize(path)))
         for link in MD_LINK.findall(text):
-            if EXTERNAL.search(link):
+            link = link.strip('<>').split('#', 1)[0]
+            if not link or EXTERNAL.search(link):
                 continue
-            parts = []
-            for part in (PurePosixPath(rel).parent / link.split('#', 1)[0]).parts:
-                if part == '..':
-                    if not parts:
-                        errors.append(f'{rel}: link escapes package: {link}')
-                        break
-                    parts.pop()
-                elif part != '.':
-                    parts.append(part)
-            else:
-                targets.add('/'.join(parts))
-        for target in sorted(t.rstrip('.') for t in targets):
-            if target not in files and not any(f.startswith(target + '/') for f in files):
+            target = normalize((PurePosixPath(rel).parent / link).as_posix())
+            if target is None or is_package_path(target):
+                candidates.append((link, target))
+        for written, target in candidates:
+            if target is None:
+                errors.append(f'{rel}: path escapes package: {written}')
+            elif target not in files and not any(f.startswith(target.rstrip('/') + '/') for f in files):
                 errors.append(f'{rel}: missing package-local target: {target}')
-    return errors
+    return sorted(set(errors))
 
 
 def tar_bytes(files):

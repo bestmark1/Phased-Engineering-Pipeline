@@ -70,6 +70,35 @@ class BuildTests(unittest.TestCase):
         files = self.files({'new-product/SKILL.md': '[x](../../outside.md)'})
         self.assertIn('escapes package', ' '.join(build.link_errors(files)))
 
+    def assertFlags(self, skill_md, needle):
+        errors = ' '.join(build.link_errors(self.files({'new-product/SKILL.md': skill_md})))
+        self.assertIn(needle, errors)
+
+    def assertClean(self, skill_md):
+        self.assertEqual(build.link_errors(self.files({'new-product/SKILL.md': skill_md})), [])
+
+    # Cases from the PR #17 review.
+    def test_skill_root_path_escaping_package_fails(self):
+        self.assertFlags('`<skill-root>/../outside.md`', 'escapes package')
+
+    def test_skill_root_path_outside_package_dirs_is_checked(self):
+        self.assertFlags('`<skill-root>/absent.txt`', 'missing package-local target: absent.txt')
+
+    def test_fenced_code_paths_are_checked(self):
+        self.assertFlags('```bash\npython3 scripts/missing.py\n```\n', 'scripts/missing.py')
+
+    def test_angle_bracket_markdown_link_is_checked(self):
+        self.assertFlags('[x](<scripts/missing.py>)', 'scripts/missing.py')
+
+    def test_project_markdown_link_is_not_package_local(self):
+        self.assertClean('[p](SPEC_PLAN/PRD.md) [d](docs/x.md)')
+
+    def test_package_path_is_normalized(self):
+        self.assertClean('`references/../scripts/v.py`')
+
+    def test_placeholders_in_code_are_ignored(self):
+        self.assertClean('`<skill-root>/scripts/v.py <project>/SPEC_PLAN/gates/<phase>.json`')
+
     def test_relative_markdown_link_resolves_from_linking_file(self):
         files = self.files({'core/references/a.md': '[g](gate.md) [h](https://x.y)'})
         self.assertEqual(build.link_errors(files), [])
