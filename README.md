@@ -1,54 +1,59 @@
-# phased-engineering-pipeline
+# Phased engineering pipelines
 
-A phased workflow for substantial end-to-end initiatives: product framing, architecture,
-vertical slices, independent review and reproducible QA. Not a default process for small fixes.
+Two skills for substantial end-to-end initiatives — product framing, architecture, vertical
+slices, independent review and reproducible QA — built from one shared core.
+Not a default process for small fixes.
 
-## Current workflow
+| Skill | Use for |
+|---|---|
+| `new-product-pipeline` | an empty repository, or a project this pipeline already runs with current artifacts (modes Full / Lite) |
+| `existing-system-pipeline` | someone else's code, own code built outside the pipeline, or stale/missing artifacts (read-only archaeology + exact baseline first) |
 
-[SKILL.md](SKILL.md) is the entry point. It preserves Product, optional Domain Analyst,
-Archaeology, Consistency, Architect, Tech Lead, Developer, SOLID/SRE reviewers, QA and Retro.
-The pipeline does not select models; existing agent/model settings remain separate.
+The design and its review history live in [docs/plans/](docs/plans/). Planned changes beyond
+the split (CI evidence, quality profile, executable specs, parity) arrive in later phases.
 
-- **Full:** new framing with Narrative + MRD + PRD, followed by architecture and delivery.
-- **Lite:** reuse approved framing/architecture, record applicability and implement a delta.
-- **Brownfield:** read-only archaeology and an exact test baseline, then Lite delivery.
-- Coordinator initializes PROGRESS before Product/research. Roles report readiness, not
-  acceptance; Done requires the approved checks, independent review and owner approvals.
-- Reviewer depth follows impact and the project floor. Critical configuration/dependency
-  changes remain High. Final QA uses an isolated checkout of an exact commit.
-- Runtime ACs need runtime observations. Internal QRs use their approved static/contract
-  or runtime check. Data recovery needs a disposable restore test, not just a code revert.
-- No automatic commit/push/PR/deploy. An explicit owner request authorizes an action;
-  writing it into a Definition of Done does not. Preserve unrelated uncommitted changes.
+## Repository layout
 
-The canonical contracts are [gate-policy.md](references/gate-policy.md),
-[role-inputs.md](references/role-inputs.md), and
-[artifact-changes.md](references/artifact-changes.md). They define STRICT_MODE,
-exact baseline exceptions, shared JSON verdicts, resolved inputs and stable AC/QR IDs.
-STRICT_MODE=false makes noncritical major findings advisory, not safety or checks optional.
-
-## Installation / updating
-
-Review the source and local modifications before installing. Do not extract over an
-existing modified installation; compare and back up first. The .skill bundle is gzipped
-tar despite its extension. For a **new empty destination**, extract with:
-
-```bash
-mkdir -p /path/to/empty-skill-directory
-tar -xzf phased-engineering-pipeline.skill -C /path/to/empty-skill-directory
+```text
+core/             shared by both packages: references/, scripts/validate_gate.py, tests/
+new-product/      SKILL.md of new-product-pipeline
+existing-system/  SKILL.md + references/archaeology-prompt.md of existing-system-pipeline
+tools/build.py    assembles dist/*.skill (core + skill dir), checks package-local links,
+                  runs each package's tests in isolation; deterministic output
+dist/             built packages (committed; CI fails if stale)
 ```
 
-The package root contains SKILL.md, references/, scripts/ and tests/. Install the complete
-package into the skill root appropriate for the host. No Python packages are required.
+`core/references/pipeline-core.md` is the shared contract (principles, configuration,
+artifacts, roles, gates, handoff); each SKILL.md loads it at the start of a run. A skill
+directory may not contain a file that shadows a core file — the build fails.
 
-## Usage
+## Develop
 
-Request a phased pipeline for a substantial initiative, e.g. “Plan and build this
-end-to-end feature with the phased-engineering-pipeline”. Ordinary bugfixes and small edits
-should not require this workflow. Existing approved decisions should not be re-interviewed.
-Configuration is resolved from project artifacts and tooling; see SKILL.md for the table.
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s core/tests -v
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tools -p 'test_*.py' -v
+python3 tools/build.py          # rebuild dist/
+python3 tools/build.py --check  # what CI runs
+```
 
-## Local validation
+Python 3.11.4+ (stdlib only). Edit sources in `core/` and the skill dirs, never inside `dist/`.
+
+## Install / update
+
+Review the source and any local modifications first; never extract over a modified
+installation — back up and compare. A `.skill` file is a gzipped tar. Into a **new empty**
+directory under the host's skill root:
+
+```bash
+mkdir -p ~/.claude/skills/new-product-pipeline
+tar -xzf dist/new-product-pipeline.skill -C ~/.claude/skills/new-product-pipeline
+```
+
+Same for `existing-system-pipeline`. Each package is self-contained: SKILL.md, references/,
+scripts/, tests/. Migrating from the single `phased-engineering-pipeline` skill:
+see [docs/migration.md](docs/migration.md).
+
+## Local validation inside a package
 
 ```bash
 python3 scripts/validate_gate.py /path/to/project/SPEC_PLAN/gates/3.1.json
@@ -58,29 +63,11 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 
 The validator checks supplied evidence records and unresolved tokens. It neither executes
 project checks, installs a hook, changes progress nor verifies that an approval is genuine.
-The coordinator still compares gate coverage to the approved plan and inspects actual outputs.
-An accepted legacy exception is reported explicitly, never rewritten as a green test exit.
-
-## Supporting references
-
-- [progress-template.md](references/progress-template.md): state and receipt links.
-- [docs-scaffold.md](references/docs-scaffold.md): project knowledge base, created as needed.
-- [eval-hooks.md](references/eval-hooks.md): LLM behavior requires planned evals; an unset
-  command means pending setup, not no LLM. Agents may draft cases; domain owners approve expectations.
-- [run-economics.md](references/run-economics.md): observed telemetry, explicit budgets,
-  and cache boundaries. Unavailable values are not invented.
-- [piecemeal-growth.md](references/piecemeal-growth.md): grounded advisory subtraction.
-
-On failure, repair the specific cause and recheck affected behavior. Repeated failure
-requires diagnosis, not another blind retry. Material changes to approved behavior,
-contracts, costs or permissions return to owner approval. QA never ships automatically.
 
 ## Verification scope
 
-The bundled tests exercise the receipt validator, not autonomous model behavior or every
-application stack. A full live multi-role run is a separate integration test. Git is
-needed for snapshot/checkout operations; a provider CLI is only needed for an explicitly
-authorized provider action. No model mapping is configured by this package.
+The tests exercise the receipt validator and the package build, not autonomous model
+behavior. A live multi-role run is a separate integration test (phase 4 of the plan).
 
 ## Historical release notes (not the current execution contract)
 
