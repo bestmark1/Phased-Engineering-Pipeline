@@ -99,6 +99,25 @@ class BuildTests(unittest.TestCase):
     def test_placeholders_in_code_are_ignored(self):
         self.assertClean('`<skill-root>/scripts/v.py <project>/SPEC_PLAN/gates/<phase>.json`')
 
+    # Cases from the second PR #17 review round.
+    def test_tilde_indented_and_unclosed_fences_are_checked(self):
+        for md in ('~~~\npython3 scripts/missing.py\n~~~\n',
+                   '  ```bash\n  python3 scripts/missing.py\n  ```\n',
+                   '```\npython3 scripts/missing.py\n'):
+            with self.subTest(md=md):
+                self.assertFlags(md, 'scripts/missing.py')
+
+    def test_escaped_angle_bracket_link_resolves(self):
+        tree(self.root, {'core/references/a(b).md': ''})
+        self.assertClean(r'[ok](<references/a\(b\).md>)')
+
+    def test_balanced_parens_and_title_in_link(self):
+        tree(self.root, {'core/references/a(b).md': ''})
+        self.assertClean('[ok](references/a(b).md "title")')
+
+    def test_unterminated_link_is_not_a_link(self):
+        self.assertClean('[example](scripts/missing.py and more text')
+
     def test_relative_markdown_link_resolves_from_linking_file(self):
         files = self.files({'core/references/a.md': '[g](gate.md) [h](https://x.y)'})
         self.assertEqual(build.link_errors(files), [])

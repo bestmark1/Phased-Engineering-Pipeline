@@ -13,11 +13,14 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = {'new-product-pipeline': 'new-product', 'existing-system-pipeline': 'existing-system'}
 PACKAGE_DIRS = ('references', 'scripts', 'tests')
-FENCE = re.compile(r'^```.*?^```', re.S | re.M)
+# CommonMark-ish fences: ``` or ~~~, up to 3 spaces indent, unclosed fence runs to EOF.
+FENCE = re.compile(r'^ {0,3}(`{3,}|~{3,})[^\n]*\n.*?(?:^ {0,3}\1[ \t]*$|\Z)', re.S | re.M)
 CODE_SPAN = re.compile(r'`([^`\n]+)`')
 # In code: `<skill-root>/<anything>` or a path starting with a package directory.
 CODE_PATH = re.compile(r'(?:^|(?<=[\s("\'=]))(<skill-root>/[^\s`"\')]+|(?:references|scripts|tests)/[^\s`"\')]+)')
-MD_LINK = re.compile(r'\]\(\s*(<[^>]*>|[^)\s]+)')
+# Complete inline link: ](dest) or ](<dest>), optional title, balanced parens, backslash escapes.
+MD_LINK = re.compile(r'\]\(\s*(<(?:[^<>\\\n]|\\.)*>|(?:[^\s()\\]|\\.|\((?:[^\s()\\]|\\.)*\))+)'
+                     r'(?:\s+(?:"[^"]*"|\'[^\']*\'))?\s*\)')
 EXTERNAL = re.compile(r'^(?:[a-z][a-z0-9+.-]*:|#|/)|\{\{')
 
 
@@ -62,7 +65,7 @@ def link_errors(files):
         if not rel.endswith('.md'):
             continue
         text = src.read_text(encoding='utf-8')
-        fenced = FENCE.findall(text)
+        fenced = [m.group(0) for m in FENCE.finditer(text)]
         code = fenced + CODE_SPAN.findall(FENCE.sub('', text))
         candidates = []  # (as written, normalized-or-None)
         for block in code:
@@ -72,7 +75,7 @@ def link_errors(files):
                     continue
                 candidates.append((token, normalize(path)))
         for link in MD_LINK.findall(text):
-            link = link.strip('<>').split('#', 1)[0]
+            link = re.sub(r'\\(.)', r'\1', link.removeprefix('<').removesuffix('>')).split('#', 1)[0]
             if not link or EXTERNAL.search(link):
                 continue
             target = normalize((PurePosixPath(rel).parent / link).as_posix())
