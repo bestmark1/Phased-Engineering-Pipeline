@@ -16,15 +16,25 @@ This skill does not select or change models. It does not authorize publication o
 
 At the start of every run, load `references/pipeline-core.md`: principles, configuration,
 artifacts, role prompts, gates and handoff shared with existing-system-pipeline.
+Architect, Tech Lead and reviewers also load `references/quality-profile.md` (default quality
+limits, which gate applies at which depth, ratchet, observability decision). CI is set up in
+the first slice.
 
 ## Which pipeline
 
 | Situation | Pipeline |
 |---|---|
-| Empty repository / no product code yet | this skill (Full) |
-| Project run by this pipeline, approved artifacts current | this skill (Lite) |
-| Someone else's code; own code built outside this pipeline; stale or missing artifacts | existing-system-pipeline |
+| Empty repository / no product code yet | this skill (bootstrap, Full) |
+| Run by this pipeline; accepted snapshot has a green `specs` job in CI or local evidence | this skill (MVP or after-MVP) |
+| Run by this pipeline before executable specs existed, artifacts current | this skill; add `specs/` in the next initiative |
+| Someone else's code; own code built outside this pipeline; no executable specs | existing-system-pipeline |
+| This project is **stale** (below) | existing-system-pipeline |
 | Unclear | ask the owner one question with a recommendation |
+
+**Stale** is judged on the last *accepted* snapshot, never on a red working commit: the
+`specs` job missing, disabled or red there, or the owner declares it. Back to
+new-product-pipeline after an existing-system run restored `specs` to green on an accepted
+snapshot and updated `specs/INDEX.md`.
 
 ## Flow
 
@@ -58,6 +68,9 @@ must preserve the starting state.
 
 - **Full:** new product or unresolved market/positioning decisions. Narrative + MRD + PRD,
   then architecture, plan, slices, independent review and final QA.
+- **MVP vs after-MVP:** until the first Released the PRD is the source of AC/QR; from then on
+  `specs/INDEX.md` is, and changes flow BACKLOG.md → change (Lite) → specs
+  (`references/specs-contract.md`).
 - **Lite:** bounded initiative or improvement with established framing. Read existing
   approved artifacts, record what remains valid, and write only the initiative's delta.
   Reuse unchanged product/architecture decisions and their recorded approvals. Do not

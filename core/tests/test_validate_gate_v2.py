@@ -199,6 +199,13 @@ class ReleaseTests(Blocked):
         gate.validate_release(self.release(first_release=False), r)
 
 
+class DocumentationTests(unittest.TestCase):
+    def test_gate_policy_example_receipt_is_valid(self):
+        policy = (Path(__file__).resolve().parents[1] / 'references' / 'gate-policy.md').read_text()
+        block = policy.split('## Receipt (minimal complete example)', 1)[1].split('```json', 1)[1].split('```', 1)[0]
+        self.assertEqual(gate.validate(json.loads(block)), [])
+
+
 class CLITests(unittest.TestCase):
     def run_cli(self, *args):
         return subprocess.run([sys.executable, str(SCRIPT), *map(str, args)], capture_output=True, text=True)

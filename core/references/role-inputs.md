@@ -12,6 +12,8 @@ Optional inputs get an explicit `none / not applicable: reason`, not fabricated 
 | PROJECT_DESCRIPTION | Owner's request + approved Narrative/PRD; preserve the original request verbatim in a separate brief block |
 | DOMAIN_RESEARCH | Existing research notes, or no research needed with reason |
 | PRD_SUMMARY, PRD_CONTENT, PRD_ACCEPTANCE_CRITERIA | Approved PRD; summaries preserve active AC/QR IDs, constraints and non-goals; full document remains accessible |
+| Active AC/QR (any role) | new-product: PRD until the first Released, then `specs/INDEX.md`; existing-system: `specs/INDEX.md` from the Product delta on, regardless of Released or PRD. See `references/specs-contract.md` |
+| QA blind-pass inputs | Active AC, snapshot SHA, run instruction, test credentials/data only — no source, diff, reports, outputs or prior findings (`references/qa-prompt.md`) |
 | INTEGRATION_REQUIREMENTS, FUTURE_EXTENSIBILITY | Approved PRD + architecture decisions; no speculative extension points |
 | TECH_STACK_DETAIL | Existing manifests/lockfiles + approved stack decisions |
 | SYSTEM_COMPONENTS, CORE_INTERFACES | Existing architecture when available; otherwise scoped draft proposals from the Architect, not extra owner questionnaires |

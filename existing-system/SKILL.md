@@ -22,10 +22,16 @@ artifacts, role prompts, gates and handoff shared with new-product-pipeline.
 
 | Situation | Pipeline |
 |---|---|
-| Someone else's code; own code built outside new-product-pipeline; stale or missing artifacts | this skill |
+| Someone else's code; own code built outside new-product-pipeline; no executable specs | this skill |
+| Project of new-product-pipeline that is **stale** (below) | this skill |
 | Empty repository / no product code yet | new-product-pipeline |
-| Project run by new-product-pipeline, approved artifacts current | new-product-pipeline |
+| Run by new-product-pipeline; accepted snapshot has a green `specs` job | new-product-pipeline |
 | Unclear | ask the owner one question with a recommendation |
+
+**Stale** is judged on the last *accepted* snapshot, never on a red working commit: the
+`specs` job missing, disabled or red there, or the owner declares it. Back to
+new-product-pipeline after an existing-system run restored `specs` to green on an accepted
+snapshot and updated `specs/INDEX.md`.
 
 ## Flow
 
@@ -61,6 +67,7 @@ must preserve the starting state; do not create the same branch twice.
 | 0a | Archaeology | `references/archaeology-prompt.md` | read-only, once per initiative |
 
 The remaining roles are listed in `references/pipeline-core.md`.
+Requirements live in `specs/INDEX.md` from the Product delta on (`references/specs-contract.md`).
 
 ## Mode
 

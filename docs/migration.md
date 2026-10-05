@@ -25,6 +25,17 @@ pulling it removes its top-level SKILL.md, so the old skill disappears on its ow
    so the host does not scan a repository as a skill.
 2. Install both packages from `dist/` into new empty directories (README, "Install / update").
 
+### Done 2026-10-05
+
+- Claude: clone moved to `~/Documents/AI_projects/Phased-Engineering-Pipeline`; both packages
+  installed in `~/.claude/skills/`; the old slash command moved to `~/.claude/skill-backups/`
+  and replaced by `/new-product-pipeline` and `/existing-system-pipeline`.
+- Codex: the older copy in `~/.codex/skills/phased-engineering-pipeline` (2026-09-08) moved to
+  `~/.codex/skills-sync-backup/2026-10-05-split-retired/`; both packages installed in
+  `~/.codex/skills/` (byte-identical to the Claude install). References retargeted in Codex
+  `ai-agent-pipeline`, `Web-Pipeline`, `roast-lean-agent-pipeline`.
+- After each release of this repository, reinstall both packages in both hosts.
+
 ## 4. References to the old name (found 2026-10-05)
 
 | Location | Reference | Action |
