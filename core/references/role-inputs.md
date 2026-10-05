@@ -1,6 +1,6 @@
 # Role inputs — resolve before dispatch
 
-The SKILL.md configuration table lists project settings, not every prompt interpolation.
+The configuration table in `references/pipeline-core.md` lists project settings, not every prompt interpolation.
 Read the approved request/artifacts and repository; do not interview the owner for values
 already present. Substitute literal values before sending a role prompt. Missing material
 input means stop that role and name the gap; do not let a placeholder act as a requirement.
@@ -21,7 +21,7 @@ Optional inputs get an explicit `none / not applicable: reason`, not fabricated 
 | CODE_TO_REVIEW, IMPLEMENTED_FILES_LIST | Actual diff and changed-file inventory of the recorded snapshot, plus callers/shared utilities; not only Developer's report |
 | CHECK_SCOPE | `product` or `full` from the flow |
 | ARTIFACTS_CONTENT | Versioned input set appropriate for CHECK_SCOPE |
-| PROJECT_NAME, PIPELINE_MODE, CHANGE_TARGET, TECH_STACK, QUALITY_RULES, INTERFACE_STYLE, DOCS_URL | Project settings in SKILL.md + approved decisions |
+| PROJECT_NAME, PIPELINE_MODE, CHANGE_TARGET, TECH_STACK, QUALITY_RULES, INTERFACE_STYLE, DOCS_URL | Project settings in `references/pipeline-core.md` + approved decisions |
 | BUILD_COMMAND, RUN_COMMAND, TEST_COMMAND, LINT_COMMAND, TYPECHECK_COMMAND, QUALITY_COMMAND, ROLLBACK_COMMAND, EVAL_COMMAND | Repository scripts/tooling and approved plan; no guessed commands; applicability/pending state follows gate-policy.md |
 | STRICT_MODE, DEFAULT_REVIEW_DEPTH | Explicit project setting or documented defaults: true and medium |
 

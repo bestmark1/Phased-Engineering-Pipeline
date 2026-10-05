@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validator tests (core)
+        run: python3 -m unittest discover -s core/tests -v
+      - name: Build tool tests
+        run: python3 -m unittest discover -s tools -p 'test_*.py' -v
+      - name: Packages build, are self-contained and dist/ is fresh
+        run: python3 tools/build.py --check

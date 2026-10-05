@@ -1,46 +1,11 @@
----
-name: phased-engineering-pipeline
-description: >
-  Plan and deliver a full system or substantial end-to-end feature through product,
-  architecture, implementation phases, independent review and QA. Use for an explicit
-  phased pipeline or a multi-stage initiative, including unfamiliar existing codebases.
-  Not for isolated bugs, small edits or ordinary codebase questions.
----
+# Pipeline core — shared contract
 
-# Phased Engineering Pipeline
+Shared by `new-product-pipeline` and `existing-system-pipeline`. The skill's SKILL.md owns
+selection, flow and mode; this file owns principles, configuration, artifacts, roles, gates
+and handoff. Load it once at the start of every run.
 
-Product framing, architecture, vertical slices, independent review and reproducible QA.
-Keep the specialized roles and approval gates; load each role's reference only when it runs.
-This skill does not select or change models. It does not authorize publication or deployment.
-
-## Flow
-
-```text
-coordinator: inspect working tree, choose mode, initialize PROGRESS.md once
-brownfield only: Archaeology (source read-only) → report → READ-ONLY COMPLETE
-Product: discovery interview if the brief is raw → create or validate/reuse Narrative + PRD (+ MRD in Full)
-  → OWNER APPROVAL of new/materially changed product decisions
-Consistency (product) → resolve findings → gate accepted
-Architect: create or validate/reuse architecture, constitution and project map
-  → OWNER APPROVAL of new/materially changed architectural decisions
-Tech Lead: create or update phase plan → OWNER APPROVAL of the execution plan
-Consistency (full) → gate accepted
-for each active implementation slice:
-  Developer → self-check → ready for review (NOT Done)
-  deterministic checks → subtraction pass at Medium/High → re-check accepted edits
-  independent reviewer(s) and phase QA according to risk
-  findings → targeted repair → checks + review of fixes and their affected behavior
-  coordinator validates gate receipt → Done → next slice
-QA: clean checkout of exact commit → release readiness + active AC/QR evidence
-  → QA PASS, or FAIL/UNKNOWN with evidence; never silently waive gaps
-Retro: minimal documentation improvements, no product edits
-local handoff is a valid endpoint
-push / PR / deploy only when explicitly authorized for those actions
-```
-
-For every commit shown or implied by a role, first apply `references/gate-policy.md`.
-A dirty working tree is not permission to stash or overwrite other work. Branch creation
-must preserve the starting state; do not create the same branch twice in brownfield mode.
+Mode names used across references: `full` and `lite` run in new-product-pipeline;
+`brownfield` is the mode of existing-system-pipeline. "Brownfield only" items apply there.
 
 ## Core principles
 
@@ -64,37 +29,6 @@ must preserve the starting state; do not create the same branch twice in brownfi
 - The author does not perform independent acceptance of their own work. Deterministic
   checks precede reviewers; reviewers diagnose only what those checks do not establish.
 
-## Modes and reuse
-
-- **Full:** new product or unresolved market/positioning decisions. Narrative + MRD + PRD,
-  then architecture, plan, slices, independent review and final QA.
-- **Lite:** bounded initiative or improvement with established framing. Read existing
-  approved artifacts, record what remains valid, and write only the initiative's delta.
-  Reuse unchanged product/architecture decisions and their recorded approvals. Do not
-  regenerate a constitution, diagrams or whole-product PRD merely to fill a template.
-  The plan still states affected criteria, regressions to preserve and verification.
-- **Brownfield:** map an unfamiliar existing system once per initiative before changing it,
-  then use Lite. Archaeology is source read-only; refresh after material repository drift.
-  No application test/config/schema changes belong in that pass. Its minimum regression
-  harness becomes the first work of the first slice touching the relevant behavior.
-
-All modes retain the logical stages, independent consistency checks and applicable
-approvals. Reuse is not silent skipping: record the artifact/decision and why it still
-applies. Unresolved or changed behavior, cost, contracts or permissions needs approval.
-A standalone bugfix or minor edit does not need this pipeline at all.
-
-### Brownfield baseline
-
-Record the baseline SHA, test identities and failure signatures, not only failure counts.
-A pre-existing red test is not automatically this initiative's defect, but a newly red
-one is a regression. Any baseline exception must be explicitly agreed and recorded with
-its scope; syntax/build/setup failures preventing useful verification remain blockers.
-Apply `references/gate-policy.md` consistently in Developer, reviewers and QA.
-
-Legacy test traceability is debt, not a blocking orphan list. This applies only to tests
-at the recorded baseline. A test edited or used as evidence now must name its purpose.
-Describe existing rules before desired rules in the brownfield constitution; a desired
-constraint widely violated today is a finding, not permission for a sweeping rewrite.
 
 ## Configuration
 
@@ -161,7 +95,6 @@ skill, not a role the agent should improvise.
 
 | Phase | Role | Prompt file | When |
 |---|------|-------------|------|
-| 0a | Archaeology | `references/archaeology-prompt.md` | brownfield only — read-only, once per initiative |
 | 0 | Product | `references/product-prompt.md` | always — creates or validates/reuses approved framing |
 | — | Domain Analyst | `references/analyst-prompt.md` | when domain research is needed |
 | 0c | Consistency (`product`) | `references/consistency-prompt.md` | after product approval |

@@ -6,7 +6,7 @@ Subsequent agents populate it throughout the pipeline.
 
 ## Structure
 
-This is the **single canonical definition** of the `docs/` tree. `SKILL.md` points here;
+This is the **single canonical definition** of the `docs/` tree. `references/pipeline-core.md` points here;
 do not maintain a second version of this structure anywhere else.
 
 ```
