@@ -42,9 +42,11 @@ One Markdown table with exactly these columns:
 
 - Given-When-Then, written in the project's existing test framework — no Cucumber or other
   new dependency. Specs live under `specs/`; shared helpers only under `specs/support/`.
-- **Label:** each spec carries its requirement as a quoted string literal `"req:AC-001"` in a
-  test name, tag, marker or parameter (e.g. `@pytest.mark.req("req:AC-001")`,
-  `test("req:AC-001 shows name", …)`). A mention in a comment or unquoted text is not a label.
+- **Label:** each spec carries its requirement at the start of a string literal in code:
+  `"req:AC-001"` alone or followed by a space, in a test name, tag, marker or parameter
+  (e.g. `@pytest.mark.req("req:AC-001")`, `test("req:AC-001 shows name", …)`). The checker
+  ignores `//`, `#`, `/* */` and `<!-- -->` comments, comment-only lines and text files
+  (`.md`, `.txt`, `.rst`). It cannot recognize docstrings — reviewers reject a label there.
 - **Black box:** `specs/**` → `specs/support/**` → the product's public entry points only
   (HTTP, UI driver, CLI, published SDK). Neither imports internal product modules; enforce
   with the stack's dependency linter (import-linter, dependency-cruiser or equivalent) as a

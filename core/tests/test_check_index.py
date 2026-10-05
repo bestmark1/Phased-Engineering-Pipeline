@@ -57,6 +57,26 @@ class IndexTests(unittest.TestCase):
     def test_unquoted_mention_does_not_count(self):
         self.assertFinding(self.run_check([row()], 'covers req:AC-001 somewhere\n'), 'no executable spec')
 
+    # Inputs from the PR #18 review probes.
+    def test_documented_title_label_counts(self):
+        self.assertEqual(self.run_check([row()], 'test("req:AC-001 shows name", () => {})\n'), [])
+
+    def test_inline_and_block_comments_do_not_count(self):
+        for text in ('run(); // "req:AC-001"\n', 'x = 1  # "req:AC-001"\n', '/*\n "req:AC-001"\n*/\n',
+                     '<!-- "req:AC-001" -->\n'):
+            with self.subTest(text=text):
+                self.assertFinding(self.run_check([row()], text), 'no executable spec')
+
+    def test_mismatched_quotes_do_not_count(self):
+        self.assertFinding(self.run_check([row()], 'x = "req:AC-001\'\n'), 'no executable spec')
+
+    def test_hash_or_slashes_inside_strings_keep_the_label(self):
+        self.assertEqual(self.run_check([row()], 'u = "http://a#b"; t("req:AC-001")\n'), [])
+
+    def test_text_files_in_specs_do_not_count(self):
+        (self.root / 'README.md').write_text('Use "req:AC-001" in tests.\n')
+        self.assertFinding(self.run_check([row()], 'nothing\n'), 'no executable spec')
+
     def test_spec_behavior_needs_when_then(self):
         self.assertFinding(self.run_check([row(behavior='User sees name')]), 'must state When and Then')
 

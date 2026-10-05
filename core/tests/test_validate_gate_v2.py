@@ -1,5 +1,6 @@
 """Phase-2 contract: CI/local evidence, slice vs initiative, two-pass QA coverage, CI artifact, release."""
 import copy
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -159,10 +160,43 @@ class CIArtifactTests(Blocked):
         self.assertBlocked(gate.validate_ci_artifact, slice_receipt(), a, contains='exit code')
 
 
+class ProbeRegressionTests(Blocked):
+    """Inputs from the PR #18 review probes."""
+
+    def test_artifact_type_confusion_rejected(self):
+        a = CIArtifactTests().artifact
+        for bad, needle in ((a(run_attempt=True), 'run_attempt'), (a(run_attempt=1.0), 'run_attempt')):
+            self.assertBlocked(gate.validate_ci_artifact, slice_receipt(), bad, contains=needle)
+        for field, value in (('exit_code', False), ('exit_code', 0.0), ('failures', False), ('failures', 123),
+                             ('failures', [1, 'x']), ('skipped', 1), ('skipped', 'true')):
+            art = a(); art['commands'][0][field] = value
+            with self.subTest(field=field, value=value):
+                self.assertBlocked(gate.validate_ci_artifact, slice_receipt(), art)
+        art = a(); del art['commands'][0]['failures']
+        self.assertBlocked(gate.validate_ci_artifact, slice_receipt(), art, contains='failures')
+
+    def test_criterion_with_trailing_newline_rejected(self):
+        r = initiative_receipt(); r['active_criteria'].append('AC-003\n')
+        self.assertBlocked(gate.validate, r)
+
+    def test_smoke_for_inactive_criterion_rejected(self):
+        rel = ReleaseTests().release(); rel['smoke'][0]['criterion'] = 'AC-999'
+        self.assertBlocked(gate.validate_release, rel, initiative_receipt(), contains='not an active criterion')
+
+    def test_index_gate_must_be_a_passing_command(self):
+        r = initiative_receipt()
+        r['gates'] = [g for g in r['gates'] if g['id'] != gate.INDEX_GATE] + [review(gate.INDEX_GATE)]
+        self.assertBlocked(gate.validate_release, ReleaseTests().release(), r, contains='passing index-check command')
+
+    def test_release_without_receipt_hash_rejected(self):
+        rel = ReleaseTests().release(); del rel['receipt_sha256']
+        self.assertBlocked(gate.validate_release, rel, initiative_receipt(), contains='receipt_sha256')
+
+
 class ReleaseTests(Blocked):
     def release(self, **over):
         r = dict(done_snapshot=SHA, deployed_sha=SHA, environment='prod', authorization='owner request 2026-10-05',
-                 receipt='SPEC_PLAN/gates/final.json', first_release=True,
+                 receipt='SPEC_PLAN/gates/final.json', receipt_sha256='checked-by-cli', first_release=True,
                  smoke=[dict(id='login', criterion='AC-001', status='PASS', evidence='smoke.log')])
         r.update(over)
         return r
@@ -213,8 +247,10 @@ class CLITests(unittest.TestCase):
     def test_release_and_artifact_flags(self):
         with tempfile.TemporaryDirectory() as d:
             d = Path(d)
-            (d / 'r.json').write_text(json.dumps(initiative_receipt()))
-            (d / 'rel.json').write_text(json.dumps(ReleaseTests().release()))
+            body = json.dumps(initiative_receipt())
+            (d / 'r.json').write_text(body)
+            rel = ReleaseTests().release(receipt_sha256=hashlib.sha256(body.encode()).hexdigest())
+            (d / 'rel.json').write_text(json.dumps(rel))
             full = CIArtifactTests().artifact()
             full['commands'].append(dict(command='check_index.py', exit_code=0, failures=[]))
             (d / 'a.json').write_text(json.dumps(full))
@@ -224,6 +260,14 @@ class CLITests(unittest.TestCase):
             bad = copy.deepcopy(CIArtifactTests().artifact(run_attempt=2))
             (d / 'a.json').write_text(json.dumps(bad))
             self.assertEqual(self.run_cli('--ci-artifact', d / 'a.json', d / 'r.json').returncode, 1)
+            # release bound to another receipt (hash mismatch)
+            (d / 'rel.json').write_text(json.dumps(dict(rel, receipt_sha256='0' * 64)))
+            self.assertEqual(self.run_cli('--release', d / 'rel.json', d / 'r.json').returncode, 1)
+            # malformed artifact is an input error, not a traceback
+            (d / 'a.json').write_text(json.dumps(CIArtifactTests().artifact(commands=[dict(
+                command='pytest -q', exit_code=0, failures=123)])))
+            bad = self.run_cli('--ci-artifact', d / 'a.json', d / 'r.json')
+            self.assertIn(bad.returncode, (1, 2)); self.assertNotIn('Traceback', bad.stderr)
 
 
 if __name__ == '__main__':

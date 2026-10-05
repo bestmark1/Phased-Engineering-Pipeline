@@ -182,11 +182,11 @@ in the command record. No exception applies to a review or approval gate.
 
 Released is a separate state after initiative completion. The coordinator writes
 `SPEC_PLAN/releases/<n>.json`: `done_snapshot`, `receipt` (path of the accepted initiative
-receipt), `deployed_sha` (must equal `done_snapshot`), optional `artifact_digest`,
+receipt) and `receipt_sha256` (SHA-256 of that file, checked by the CLI), `deployed_sha` (must equal `done_snapshot`), optional `artifact_digest`,
 `environment`, `authorization` (the owner's explicit deploy request), `first_release`
 (boolean) and `smoke`: the plan's approved checks, each `{id, criterion (AC/QR), status,
-evidence}`. Released only when every smoke check is PASS; a generic health check is not a
-smoke check. A first release needs the `index-check` gate in the accepted receipt, so the
+evidence}` with `criterion` an active AC/QR of the receipt. Released only when every smoke check is PASS; a generic health check is not a
+smoke check. A first release needs a passing `index-check` command gate in the accepted receipt, so the
 requirement registry existed before final QA (`references/specs-contract.md`). Validate with
 `python3 <skill-root>/scripts/validate_gate.py --release SPEC_PLAN/releases/<n>.json <receipt>`.
 

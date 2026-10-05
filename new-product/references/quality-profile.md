@@ -44,6 +44,8 @@ Mutation jobs run in CI only at High (CI minutes).
 - A new tool or tool version is a new baseline: a separate commit approved by the owner, not
   counted as a worsening.
 
+Every unit reports every metric of the approved profile; a missing measurement fails, it is
+never a pass. A metric the owner dropped from the profile is passed as `null` in `--limits`.
 Feed the per-unit metrics exported by the project's tools to
 `python3 <skill-root>/scripts/quality_ratchet.py baseline.json current.json` (format in the
 script's help); it is the required `quality` gate described in `references/gate-policy.md`.

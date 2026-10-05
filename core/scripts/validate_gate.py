@@ -5,6 +5,7 @@ Checks consistency of the supplied records only (schema v2): it cannot prove tha
 an approval or a smoke check really happened. The coordinator verifies provenance.
 """
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -13,7 +14,7 @@ import sys
 SCHEMA = 2
 QA_BLIND, QA_INTERNAL, INDEX_GATE = 'qa-blind', 'qa-internal', 'index-check'
 CI_FIELDS = ('provider', 'repository', 'workflow', 'job', 'run_id', 'head_sha', 'conclusion', 'url')
-CRITERION = re.compile(r'^(AC|QR)-\d+$')
+CRITERION = re.compile(r'(AC|QR)-\d+')
 
 
 def require(condition, message):
@@ -109,7 +110,7 @@ def validate_initiative(receipt, records):
         require(qa in records and records[qa]['kind'] == 'review',
                 f'initiative completion requires the {qa} review gate')
     active = receipt.get('active_criteria')
-    require(strings(active) and active and all(CRITERION.match(c) for c in active),
+    require(strings(active) and active and all(CRITERION.fullmatch(c) for c in active),
             'active_criteria must list AC-/QR- IDs')
     for qa, prefix in ((QA_BLIND, 'AC-'), (QA_INTERNAL, 'QR-')):
         coverage = records[qa].get('coverage')
@@ -164,40 +165,56 @@ def validate_ci_artifact(receipt, artifact):
     require(isinstance(artifact, dict) and isinstance(artifact.get('commands'), list),
             'ci artifact must be an object with a commands list')
     run = {k: artifact.get(k) for k in ('repository', 'workflow', 'job', 'run_id', 'run_attempt', 'head_sha')}
+    require(all(text(run[k]) for k in ('repository', 'workflow', 'job', 'run_id', 'head_sha')),
+            'ci artifact: repository/workflow/job/run_id/head_sha must be strings')
+    require(type(run['run_attempt']) is int, 'ci artifact: run_attempt must be an integer')
     for record in receipt['gates']:
         if record.get('kind') != 'command' or record.get('runner') != 'ci':
             continue
         name, ci = record['id'], record['ci']
         for key, value in run.items():
-            require(ci.get(key) == value, f'{name}: ci.{key} differs from the CI artifact')
+            require(type(ci.get(key)) is type(value) and ci.get(key) == value,
+                    f'{name}: ci.{key} differs from the CI artifact')
         matches = [c for c in artifact['commands'] if isinstance(c, dict) and c.get('command') == record['command']]
         require(matches, f'{name}: command not found in the CI artifact (not executed by that run)')
         entry = matches[-1]
-        require(entry.get('skipped') is not True, f'{name}: command was skipped in CI')
-        require(entry.get('exit_code') == record['exit_code'], f'{name}: exit code differs from the CI artifact')
-        require(sorted(entry.get('failures') or []) == sorted(record['failures']),
+        require(type(entry.get('skipped', False)) is bool, f'{name}: artifact skipped must be boolean')
+        require(not entry.get('skipped', False), f'{name}: command was skipped in CI')
+        require(type(entry.get('exit_code')) is int, f'{name}: artifact exit_code must be an integer')
+        require(entry['exit_code'] == record['exit_code'], f'{name}: exit code differs from the CI artifact')
+        require(isinstance(entry.get('failures'), list) and all(isinstance(f, str) for f in entry['failures']),
+                f'{name}: artifact failures must be a list of strings')
+        require(sorted(entry['failures']) == sorted(record['failures']),
                 f'{name}: failures differ from the CI artifact')
 
 
-def validate_release(release, receipt):
+def validate_release(release, receipt, receipt_bytes=None):
     """Released = the accepted initiative commit is what was deployed and every smoke check passed."""
     require(isinstance(release, dict), 'release must be an object')
-    for field in ('done_snapshot', 'deployed_sha', 'environment', 'authorization', 'receipt'):
+    for field in ('done_snapshot', 'deployed_sha', 'environment', 'authorization', 'receipt', 'receipt_sha256'):
         require(text(release.get(field)), f'release: {field} required')
+    if receipt_bytes is not None:
+        require(hashlib.sha256(receipt_bytes).hexdigest() == release['receipt_sha256'],
+                'release: receipt_sha256 does not match the supplied receipt')
     require(type(release.get('first_release')) is bool, 'release: first_release must be boolean')
     validate(receipt)
     require(receipt['scope'] == 'initiative', 'release: receipt must be an initiative completion')
     require(receipt['snapshot'] == release['done_snapshot'], 'release: receipt is for a different snapshot')
     require(release['deployed_sha'] == release['done_snapshot'], 'release: deployed commit is not the accepted one')
     if release['first_release']:
-        require(INDEX_GATE in receipt['required_gates'],
-                f'release: first release needs {INDEX_GATE} in the accepted receipt (INDEX before final QA)')
+        index = next((g for g in receipt['gates'] if g['id'] == INDEX_GATE), None)
+        require(index is not None and index['kind'] == 'command' and index['status'] == 'PASS',
+                f'release: first release needs a passing {INDEX_GATE} command in the accepted receipt '
+                f'(INDEX before final QA)')
     smoke = release.get('smoke')
     require(isinstance(smoke, list) and smoke, 'release: approved smoke checks required')
     for check in smoke:
         require(isinstance(check, dict) and text(check.get('id')) and text(check.get('evidence')),
                 'release: smoke check needs id and evidence')
-        require(CRITERION.match(str(check.get('criterion', ''))), f'{check.get("id")}: smoke must name an AC/QR')
+        require(isinstance(check.get('criterion'), str) and CRITERION.fullmatch(check['criterion']),
+                f'{check.get("id")}: smoke must name an AC/QR')
+        require(check['criterion'] in receipt['active_criteria'],
+                f'{check["id"]}: smoke criterion {check["criterion"]} is not an active criterion of the receipt')
         require(check.get('status') == 'PASS', f'{check["id"]}: smoke not PASS ({check.get("status")})')
 
 
@@ -230,7 +247,7 @@ def main():
         if artifact is not None:
             validate_ci_artifact(receipt, artifact)
         if release is not None:
-            validate_release(release, receipt)
+            validate_release(release, receipt, content.encode('utf-8'))
             print('RELEASED: release record accepted')
             return 0
         suffix = '; agreed baseline exceptions: ' + ', '.join(exceptions) if exceptions else ''
@@ -242,6 +259,9 @@ def main():
     except ValueError as exc:
         print(f'BLOCKED: {exc}', file=sys.stderr)
         return 1
+    except (TypeError, KeyError, AttributeError) as exc:
+        print(f'INPUT ERROR: malformed record ({type(exc).__name__}: {exc})', file=sys.stderr)
+        return 2
 
 
 if __name__ == '__main__':

@@ -12,9 +12,46 @@ COLUMNS = ['ID', 'Status', 'Behavior', 'Verify', 'Evidence', 'Origin']
 ID = re.compile(r'^(AC|QR|OBS)-\d+$')
 VERIFY = ('spec', 'static', 'contract', 'eval')
 ORIGIN = re.compile(r'^(PRD|delta|OBS|deviation:OBS-\d+)$')
-# A label is a quoted string literal in code: "req:AC-001" / 'req:AC-001'.
-LABEL = re.compile(r'''["']req:((?:AC|QR|OBS)-\d+)["']''')
-COMMENT = re.compile(r'^\s*(#|//|--|/\*|\*|<!--|;)')
+# A label opens a string literal in code: "req:AC-001", 'req:AC-001 shows name'.
+LABEL = re.compile(r'''(["'])req:((?:AC|QR|OBS)-\d+)(?=\1|\s)''')
+LINE_COMMENT = re.compile(r'^\s*(--|;|\*)')
+TEXT_SUFFIXES = {'.md', '.markdown', '.txt', '.rst', '.adoc'}
+
+
+def code_only(lines):
+    """Yield (number, code) with //, #, /* */ and <!-- --> comments removed outside string literals."""
+    in_block = None
+    for number, line in enumerate(lines, 1):
+        out, i, quote = [], 0, None
+        while i < len(line):
+            if in_block:
+                end = line.find(in_block, i)
+                if end < 0:
+                    i = len(line)
+                    break
+                i, in_block = end + len(in_block), None
+                continue
+            ch = line[i]
+            if quote:
+                out.append(ch)
+                if ch == '\\':
+                    out.append(line[i + 1:i + 2]); i += 2; continue
+                if ch == quote:
+                    quote = None
+            elif ch in '"\'`':
+                quote = ch; out.append(ch)
+            elif line.startswith('//', i) or ch == '#':
+                break
+            elif line.startswith('/*', i):
+                in_block, i = '*/', i + 2; continue
+            elif line.startswith('<!--', i):
+                in_block, i = '-->', i + 4; continue
+            else:
+                out.append(ch)
+            i += 1
+        code = ''.join(out)
+        if not LINE_COMMENT.match(code):
+            yield number, code
 
 
 def parse_index(text):
@@ -39,14 +76,14 @@ def scan_labels(spec_root, index_path):
     """Map requirement ID -> list of 'file:line' where a non-comment label references it."""
     found = {}
     for path in sorted(p for p in spec_root.rglob('*') if p.is_file() and p.resolve() != index_path):
+        if path.suffix.lower() in TEXT_SUFFIXES:
+            continue
         try:
             text = path.read_text(encoding='utf-8')
         except UnicodeDecodeError:
             continue
-        for number, line in enumerate(text.splitlines(), 1):
-            if COMMENT.match(line):
-                continue
-            for req in LABEL.findall(line):
+        for number, code in code_only(text.splitlines()):
+            for _, req in LABEL.findall(code):
                 found.setdefault(req, []).append(f'{path.relative_to(spec_root)}:{number}')
     return found
 
