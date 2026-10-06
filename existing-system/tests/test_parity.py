@@ -158,10 +158,29 @@ class RunTests(unittest.TestCase):
         frozen_all = parity.run(self.repo, old, new, cmd, ENV, ('specs', 'fixtures'))
         self.assertEqual(frozen_all['results']['g']['outcome'], 'fail')  # fixture frozen too: caught
 
+    def test_frozen_helper_and_config_are_the_old_versions(self):
+        (self.repo / 'specs' / 'support').mkdir(parents=True)
+        (self.repo / 'config').mkdir()
+        runner = ('import json, os, pathlib, sys\nsys.path.insert(0, "specs/support")\nimport helper\n'
+                  'cfg = pathlib.Path("config/test.json").read_text().strip()\n'
+                  'pathlib.Path(os.environ["PARITY_RESULTS"]).write_text(json.dumps('
+                  '{"h": {"outcome": "pass", "observation": helper.VERSION + "/" + cfg}}))\n')
+        (self.repo / 'specs' / 'run.py').write_text(runner)
+        (self.repo / 'app.txt').write_text('x\n')
+        for version in ('v1', 'v2'):
+            (self.repo / 'specs' / 'support' / 'helper.py').write_text(f'VERSION = "helper-{version}"\n')
+            (self.repo / 'config' / 'test.json').write_text(f'cfg-{version}')
+            self.git('add', '-A'); self.git('commit', '-q', '-m', version)
+            if version == 'v1':
+                old = self.git('rev-parse', 'HEAD')
+        new = self.git('rev-parse', 'HEAD')
+        got = parity.run(self.repo, old, new, f'{sys.executable} specs/run.py', ENV, ('specs', 'config'))
+        self.assertEqual(got['results']['h']['observation'], 'helper-v1/cfg-v1')
+
     def test_suite_path_outside_repository_is_rejected_before_any_removal(self):
         sha = self.commit('hello', 'hello')
         outside = Path(self.tmp.name) / 'outside'; outside.mkdir(); (outside / 'keep.txt').write_text('x')
-        for path in (str(outside), '../outside', 'specs/../../outside', '.git', '.'):
+        for path in (str(outside), '../outside', 'specs/../../outside', '.git', '.GIT', 'specs/.Git/x', '.'):
             with self.subTest(path=path), self.assertRaises(parity.InputError):
                 parity.run(self.repo, sha, sha, 'true', ENV, (path,))
         self.assertTrue((outside / 'keep.txt').exists())
@@ -174,8 +193,9 @@ class RunTests(unittest.TestCase):
 
     def test_invalid_results_json_is_input_error(self):
         sha = self.commit('hello', 'hello')
-        with self.assertRaises(parity.InputError):
-            parity.run(self.repo, sha, sha, 'printf "{" > "$PARITY_RESULTS"', ENV)
+        for bad in ('printf "{" > "$PARITY_RESULTS"', 'mkdir "$PARITY_RESULTS"'):
+            with self.subTest(command=bad), self.assertRaises(parity.InputError):
+                parity.run(self.repo, sha, sha, bad, ENV)
         self.assertEqual(self.git('worktree', 'list').count('\n'), 0)
 
     def test_command_without_results_is_input_error(self):

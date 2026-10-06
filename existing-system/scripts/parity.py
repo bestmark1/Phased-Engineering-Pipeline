@@ -37,7 +37,8 @@ def safe_suite_paths(suite_paths):
     clean = []
     for rel in suite_paths:
         parts = Path(rel).parts
-        if not rel or Path(rel).is_absolute() or '..' in parts or (parts and parts[0] == '.git') or rel in ('.', ''):
+        # .git compared case-insensitively: on macOS/Windows .GIT is the same directory.
+        if not rel or Path(rel).is_absolute() or '..' in parts or any(x.lower() == '.git' for x in parts) or rel in ('.', ''):
             raise InputError(f'suite path must be a relative path inside the repository: {rel!r}')
         clean.append(Path(*parts).as_posix())
     return clean
@@ -74,8 +75,8 @@ def run(repo, suite_sha, product_sha, command, environment, suite_paths=('specs'
                 raise InputError(f'spec command wrote no results (exit {proc.returncode}): {proc.stderr[-500:]}')
             try:
                 data = json.loads(results.read_text(encoding='utf-8'))
-            except (UnicodeError, json.JSONDecodeError) as exc:
-                raise InputError(f'spec command wrote invalid results JSON: {exc}')
+            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                raise InputError(f'spec command wrote unreadable results: {exc}')
         finally:
             # Also after a partially failed `worktree add`; a cleanup error never hides the original one.
             subprocess.run(['git', '-C', str(repo), 'worktree', 'remove', '--force', str(tree)], capture_output=True)
