@@ -35,6 +35,7 @@ class GuardTests(unittest.TestCase):
         self.blocked(lambda: socket.socket(socket.AF_INET, socket.SOCK_DGRAM).sendto(b'x', ('127.0.0.1', 9)))
         self.blocked(lambda: socket.getaddrinfo('example.com', 443))
         self.assertEqual(len(guard.violations), 5)
+        self.assertEqual(len(guard.recorded()), 5)
 
     def test_allowlisted_local_endpoint_is_reachable(self):
         os.environ['HERMETIC_GUARD_ALLOW'] = '127.0.0.1:65530'
@@ -66,6 +67,22 @@ class GuardTests(unittest.TestCase):
         out = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
         self.assertEqual(out.stdout.strip(), 'GuardViolation', out.stderr)
 
+    def test_swallowed_violation_in_child_fails_the_session(self):
+        """PR #20 re-check: a child that catches its own violation and exits 0 still fails the run."""
+        code = 'import socket\ntry:\n    socket.create_connection(("example.com", 443))\nexcept Exception:\n    pass'
+        out = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        session = types.SimpleNamespace(exitstatus=0)
+        guard.pytest_sessionfinish(session, 0)
+        self.assertEqual(session.exitstatus, 1)
+
+    def test_allowlisted_hostname_matches_its_resolved_addresses(self):
+        os.environ['HERMETIC_GUARD_ALLOW'] = 'localhost:65530'
+        s = socket.socket()
+        s.connect_ex(('127.0.0.1', 65530))  # localhost resolves to 127.0.0.1: allowed, refused by the OS
+        s.close()
+        self.assertEqual(guard.recorded(), [])
+
     def test_swallowed_violation_still_fails_the_session(self):
         try:
             socket.create_connection(('127.0.0.1', 9))
@@ -84,7 +101,7 @@ class GuardTests(unittest.TestCase):
         self.assertEqual(socket.create_connection.__module__, 'socket')
         self.assertIsNone(os.environ.get('HERMETIC_GUARD'))
         guard.pytest_configure(None)
-        self.assertEqual(guard.violations, [])
+        self.assertEqual(guard.recorded(), [])
         session = types.SimpleNamespace(exitstatus=0)
         guard.pytest_sessionfinish(session, 0)
         self.assertEqual(session.exitstatus, 0)

@@ -22,6 +22,7 @@ from pathlib import Path
 import shlex
 import socket
 import subprocess
+import tempfile
 
 BLOCKED_TOOLS = frozenset({'curl', 'wget', 'ssh', 'scp', 'docker', 'kubectl', 'gh', 'git-remote-https',
                            'codex', 'claude', 'ollama', 'opencode', 'openai', 'aws', 'gcloud'})
@@ -36,7 +37,20 @@ class GuardViolation(RuntimeError):
 
 def _violate(what):
     violations.append(what)
+    log = os.environ.get('HERMETIC_GUARD_LOG')
+    if log:  # shared with child processes, so a swallowed child violation still fails the run
+        with open(log, 'a', encoding='utf-8') as fh:
+            fh.write(f'{os.getpid()}: {what}\n')
     raise GuardViolation(f'hermetic guard: {what}')
+
+
+def recorded():
+    """All violations of this run: in-process plus those logged by child processes."""
+    log = os.environ.get('HERMETIC_GUARD_LOG')
+    if log and os.path.exists(log):
+        with open(log, encoding='utf-8') as fh:
+            return [line.rstrip('\n') for line in fh if line.strip()]
+    return list(violations)
 
 
 def allowed():
@@ -51,11 +65,22 @@ def allowed():
     return pairs
 
 
+def _addresses(host):
+    """An allowed name plus the IPs it resolves to (localhost -> 127.0.0.1, ::1)."""
+    names = {host}
+    resolve = _originals.get('getaddrinfo', socket.getaddrinfo)
+    try:
+        names |= {info[4][0] for info in resolve(host, None)}
+    except OSError:
+        pass
+    return names
+
+
 def _is_allowed(address):
     if not (isinstance(address, tuple) and len(address) >= 2):
         return False  # unix sockets and odd shapes stay blocked
     host, port = str(address[0]), address[1]
-    return any(h == host and (p is None or p == port) for h, p in allowed())
+    return any(host in _addresses(h) and (p is None or p == port) for h, p in allowed())
 
 
 def blocked_tools():
@@ -89,7 +114,12 @@ def _check_spawn(args, shell=False, executable=None):
 
 
 def _child_env_install():
-    """Make child Python processes load the guard too."""
+    """Make child Python processes load the guard too and share one violation log."""
+    if not os.environ.get('HERMETIC_GUARD_LOG'):
+        fd, path = tempfile.mkstemp(prefix='hermetic-guard-', suffix='.log')
+        os.close(fd)
+        os.environ['HERMETIC_GUARD_LOG'] = path
+        _originals['created_log'] = path
     paths = [p for p in os.environ.get('PYTHONPATH', '').split(os.pathsep) if p]
     for needed in (str(SITE_DIR), str(SITE_DIR.parent)):
         if needed not in paths:
@@ -106,7 +136,7 @@ def install():
                       sendto=socket.socket.sendto, create_connection=socket.create_connection,
                       getaddrinfo=socket.getaddrinfo, popen_init=subprocess.Popen.__init__,
                       os_funcs={n: getattr(os, n) for n in names if hasattr(os, n)},
-                      environ={k: os.environ.get(k) for k in ('PYTHONPATH', 'HERMETIC_GUARD')})
+                      environ={k: os.environ.get(k) for k in ('PYTHONPATH', 'HERMETIC_GUARD', 'HERMETIC_GUARD_LOG')})
 
     def connect(self, address):
         if not _is_allowed(address):
@@ -169,6 +199,9 @@ def uninstall():
     subprocess.Popen.__init__ = _originals['popen_init']
     for name, original in _originals['os_funcs'].items():
         setattr(os, name, original)
+    created = _originals.get('created_log')
+    if created and os.path.exists(created):
+        os.remove(created)
     for key, value in _originals['environ'].items():
         if value is None:
             os.environ.pop(key, None)
@@ -188,11 +221,11 @@ def pytest_unconfigure(config):
 
 
 def pytest_sessionfinish(session, exitstatus):
-    if violations:
+    if recorded():
         session.exitstatus = 1
 
 
 def pytest_terminal_summary(terminalreporter):
-    if violations:
-        terminalreporter.write_line(f'HERMETIC GUARD: {len(violations)} violation(s): ' + '; '.join(violations[:5]),
-                                    red=True)
+    found = recorded()
+    if found:
+        terminalreporter.write_line(f'HERMETIC GUARD: {len(found)} violation(s): ' + '; '.join(found[:5]), red=True)
