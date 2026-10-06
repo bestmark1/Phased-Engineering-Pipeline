@@ -68,6 +68,13 @@ class RatchetTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             b, lim = Path(d) / 'b.json', Path(d) / 'l.json'
             b.write_text(json.dumps(snap(f=full()))); lim.write_text('[1]')
+            big = subprocess.run([sys.executable, str(SCRIPT), str(b), str(b), '--limits', str(lim)],
+                                 capture_output=True, text=True)
+            lim.write_text('{"cyclomatic": ' + '9' * 400 + '}')
+            big = subprocess.run([sys.executable, str(SCRIPT), str(b), str(b), '--limits', str(lim)],
+                                 capture_output=True, text=True)
+            self.assertEqual(big.returncode, 2); self.assertNotIn('Traceback', big.stderr)
+            lim.write_text('[1]')
             r = subprocess.run([sys.executable, str(SCRIPT), str(b), str(b), '--limits', str(lim)],
                                capture_output=True, text=True)
             self.assertEqual(r.returncode, 2); self.assertNotIn('Traceback', r.stderr)
@@ -76,6 +83,7 @@ class RatchetTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / 'm.json'
             for bad in (dict(f=dict(cyclomatic='3')), dict(f=dict(cyclomatic=True)), dict(f=None),
+                        dict(f=dict(cyclomatic=10 ** 400)),
                         dict(f=dict(cyclomatic=float('nan')))):
                 with self.subTest(bad=bad):
                     path.write_text(json.dumps(snap(**bad)))

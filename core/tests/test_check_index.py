@@ -90,6 +90,22 @@ class IndexTests(unittest.TestCase):
     def test_label_after_docstring_still_counts(self):
         self.assertEqual(self.run_check([row()], 'def t():\n    """doc"""\n    tag("req:AC-001")\n'), [])
 
+    # Final Codex review of PR #18.
+    def test_lua_haskell_blocks_and_nested_quotes_do_not_count(self):
+        for name, body in (('t.lua', '--[[\n"req:AC-001"\n]]\n'), ('t.hs', '{-\n"req:AC-001"\n-}\n'),
+                           ('t.py', 'x = "\'req:AC-001\'"\n')):
+            with self.subTest(name=name):
+                (self.root / 'test_login.py').unlink(missing_ok=True)
+                for old in self.root.glob('t.*'):
+                    old.unlink()
+                (self.root / name).write_text(body)
+                labels = ci.scan_labels(self.root, (self.root / 'INDEX.md').resolve())
+                self.assertNotIn('AC-001', labels)
+
+    def test_missing_separator_is_input_error(self):
+        with self.assertRaises(ValueError):
+            ci.parse_index(HEADER.splitlines()[0] + '\n' + row())
+
     def test_spec_behavior_needs_when_then(self):
         self.assertFinding(self.run_check([row(behavior='User sees name')]), 'must state When and Then')
 

@@ -30,9 +30,11 @@ artifacts, role prompts, gates and handoff shared with new-product-pipeline.
 | A new-product project that is **stale** (below) | this skill |
 | Unclear | ask the owner one question with a recommendation |
 
-**Stale** applies only after a project has had an accepted snapshot with a green `specs` job,
-and is judged on the last *accepted* snapshot, never on a red working commit: the `specs` job
-missing, disabled or red there, or the owner declares it. Back to new-product-pipeline after an
+The owner's declaration that a project is stale moves it to existing-system-pipeline at any
+time and takes precedence over every row above, bootstrap included. Otherwise **stale** applies
+only after a project has had an accepted snapshot with a green `specs` job, and is judged on the
+last *accepted* snapshot, never on a red working commit: the `specs` job missing, disabled or
+red there. Back to new-product-pipeline after an
 existing-system run restored `specs` to green on an accepted snapshot and updated
 `specs/INDEX.md`. The `specs` job is defined in `references/specs-contract.md`.
 

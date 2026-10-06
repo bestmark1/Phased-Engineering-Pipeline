@@ -12,54 +12,52 @@ COLUMNS = ['ID', 'Status', 'Behavior', 'Verify', 'Evidence', 'Origin']
 ID = re.compile(r'^(AC|QR|OBS)-\d+$')
 VERIFY = ('spec', 'static', 'contract', 'eval')
 ORIGIN = re.compile(r'^(PRD|delta|OBS|deviation:OBS-\d+)$')
-# A label opens a string literal in code: "req:AC-001", 'req:AC-001 shows name'.
-LABEL = re.compile(r'''(["'])req:((?:AC|QR|OBS)-\d+)(?=\1|\s)''')
-LINE_COMMENT = re.compile(r'^\s*(--|;|\*)')
+# A label is a string literal in code that starts with req:<ID>: "req:AC-001", 'req:AC-001 shows name'.
+LABEL = re.compile(r'req:((?:AC|QR|OBS)-\d+)(?=\s|$)')
 # Spec files are test code; data, fixtures and prose never carry labels.
 CODE_SUFFIXES = {'.py', '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.go', '.rs', '.java', '.kt', '.kts',
                  '.rb', '.php', '.cs', '.swift', '.scala', '.ex', '.exs', '.dart', '.lua', '.hs', '.clj', '.sh'}
-DASH_COMMENT = {'.lua', '.hs'}
-DOCSTRING = {'.py'}
+LINE_STARTS = {'.lua': ('--',), '.hs': ('--',)}
+BLOCKS = {'.lua': [('--[[', ']]')], '.hs': [('{-', '-}')], '.py': [('"""', '"""'), ("'''", "'''")]}
+COMMON_BLOCKS = [('/*', '*/'), ('<!--', '-->')]
 
 
-def code_only(lines, suffix=''):
-    """Yield (number, code) with //, #, /* */, <!-- -->, -- (Lua/Haskell) comments and Python
-    docstrings removed outside string literals."""
-    in_block = None
+def literals(lines, suffix=''):
+    """Yield (line number, content) of every single-line string literal outside comments.
+    Comments: //, #, block /* */ and <!-- -->, plus per-language -- / --[[ ]] / {- -} and Python
+    docstrings (treated as comments: a label there is documentation, not a label)."""
+    blocks = BLOCKS.get(suffix, []) + COMMON_BLOCKS
+    starts = ('//', '#') + LINE_STARTS.get(suffix, ())
+    closing = None
     for number, line in enumerate(lines, 1):
-        out, i, quote = [], 0, None
+        i = 0
+        if not closing and line.lstrip().startswith(('*', ';')):  # block-comment continuation, Lisp comment
+            continue
         while i < len(line):
-            if in_block:
-                end = line.find(in_block, i)
+            if closing:
+                end = line.find(closing, i)
                 if end < 0:
-                    i = len(line)
                     break
-                i, in_block = end + len(in_block), None
+                i, closing = end + len(closing), None
                 continue
-            ch = line[i]
-            if not quote and suffix in DOCSTRING and line.startswith(('"""', "'''"), i):
-                in_block, i = line[i:i + 3], i + 3
+            opener = next(((o, c) for o, c in blocks if line.startswith(o, i)), None)
+            if opener:
+                i, closing = i + len(opener[0]), opener[1]
                 continue
-            if quote:
-                out.append(ch)
-                if ch == '\\':
-                    out.append(line[i + 1:i + 2]); i += 2; continue
-                if ch == quote:
-                    quote = None
-            elif ch in '"\'`':
-                quote = ch; out.append(ch)
-            elif line.startswith('//', i) or ch == '#' or (suffix in DASH_COMMENT and line.startswith('--', i)):
+            if line.startswith(starts, i):
                 break
-            elif line.startswith('/*', i):
-                in_block, i = '*/', i + 2; continue
-            elif line.startswith('<!--', i):
-                in_block, i = '-->', i + 4; continue
-            else:
-                out.append(ch)
+            ch = line[i]
+            if ch in '"\'`':
+                j, content = i + 1, []
+                while j < len(line) and line[j] != ch:
+                    if line[j] == '\\':
+                        content.append(line[j + 1:j + 2]); j += 2; continue
+                    content.append(line[j]); j += 1
+                if j < len(line):  # closed on this line
+                    yield number, ''.join(content)
+                i = j + 1
+                continue
             i += 1
-        code = ''.join(out)
-        if not LINE_COMMENT.match(code):
-            yield number, code
 
 
 def parse_index(text):
@@ -68,6 +66,9 @@ def parse_index(text):
     cells = lambda l: [c.strip() for c in l.strip('|').split('|')]
     for i, line in enumerate(lines):
         if line.startswith('|') and cells(line) == COLUMNS:
+            separator = lines[i + 1] if i + 1 < len(lines) else ''
+            if not (separator.startswith('|') and all(re.fullmatch(r':?-{3,}:?', c) for c in cells(separator))):
+                raise ValueError('INDEX table: header must be followed by a |---| separator row')
             rows = []
             for row in lines[i + 2:]:
                 if not row.startswith('|'):
@@ -91,9 +92,10 @@ def scan_labels(spec_root, index_path):
             text = path.read_text(encoding='utf-8')
         except UnicodeDecodeError:
             continue
-        for number, code in code_only(text.splitlines(), path.suffix.lower()):
-            for _, req in LABEL.findall(code):
-                found.setdefault(req, []).append(f'{path.relative_to(spec_root)}:{number}')
+        for number, content in literals(text.splitlines(), path.suffix.lower()):
+            match = LABEL.match(content)
+            if match:
+                found.setdefault(match.group(1), []).append(f'{path.relative_to(spec_root)}:{number}')
     return found
 
 

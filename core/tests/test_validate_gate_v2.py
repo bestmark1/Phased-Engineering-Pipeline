@@ -237,6 +237,38 @@ class OpusReviewRegressionTests(Blocked):
                            initiative_receipt(), contains='previous_release')
 
 
+class FinalCodexRegressionTests(Blocked):
+    """Findings of the final Codex review of PR #18."""
+
+    def test_failing_index_check_cannot_use_baseline_exception(self):
+        f = 'AC-001: no executable spec'
+        waiver = dict(test_only=True, baseline_snapshot='base', scope='INDEX', approval='owner',
+                      evidence='log', failures=[f])
+        c = command(gate.INDEX_GATE, runner='local', command='python3 check_index.py', status='FAIL',
+                    exit_code=1, failures=[f], baseline_exception=waiver)
+        r = slice_receipt(c); r['index_present'] = True
+        self.assertBlocked(gate.validate, r, contains='cannot be waived')
+
+    def test_release_without_receipt_reference_fails(self):
+        rel = ReleaseTests().release(); del rel['receipt']
+        self.assertBlocked(gate.validate_release, rel, initiative_receipt(), contains='receipt required')
+
+    def test_cli_hashes_and_parses_the_same_read(self):
+        """The receipt file is read once; swapping its content between reads cannot pass."""
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            body = json.dumps(initiative_receipt()).encode()
+            (d / 'r.json').write_bytes(body)
+            (d / 'rel.json').write_text(json.dumps(ReleaseTests().release(
+                receipt_sha256=hashlib.sha256(body).hexdigest())))
+            argv = ['validate_gate.py', '--release', str(d / 'rel.json'), str(d / 'r.json')]
+            with mock.patch.object(sys, 'argv', argv), \
+                    mock.patch.object(Path, 'read_text', side_effect=AssertionError('second read of receipt')):
+                with mock.patch.object(gate, 'load_json', lambda p: json.loads(Path(p).read_bytes())):
+                    self.assertEqual(gate.main(), 0)
+
+
 class ReleaseTests(Blocked):
     def release(self, **over):
         r = dict(done_snapshot=SHA, deployed_sha=SHA, environment='prod', authorization='owner request 2026-10-05',
@@ -284,6 +316,22 @@ class DocumentationTests(unittest.TestCase):
         self.assertEqual(gate.validate(json.loads(block)), [])
 
 
+class RequirementSourceDocsTests(unittest.TestCase):
+    """After the first Released (and always in existing-system) every role reads AC/QR from INDEX."""
+
+    def test_roles_that_read_criteria_point_to_the_source_rule(self):
+        refs = Path(__file__).resolve().parents[1] / 'references'
+        role_inputs = (refs / 'role-inputs.md').read_text()
+        row = next(l for l in role_inputs.splitlines() if l.startswith('| PRD_ACCEPTANCE_CRITERIA |'))
+        self.assertIn('specs/INDEX.md', row)
+        for name in ('architect-prompt.md', 'consistency-prompt.md', 'developer-prompt.md',
+                     'artifact-changes.md', 'qa-prompt.md'):
+            with self.subTest(file=name):
+                text = (refs / name).read_text()
+                self.assertIn('specs/INDEX.md', text)
+                self.assertIn('references/specs-contract.md', text)
+
+
 class CLITests(unittest.TestCase):
     def run_cli(self, *args):
         return subprocess.run([sys.executable, str(SCRIPT), *map(str, args)], capture_output=True, text=True)
@@ -316,7 +364,12 @@ class CLITests(unittest.TestCase):
             (d / 'a.json').write_text(json.dumps(CIArtifactTests().artifact(commands=[dict(
                 command='pytest -q', exit_code=0, failures=123)])))
             bad = self.run_cli('--ci-artifact', d / 'a.json', d / 'r.json')
-            self.assertIn(bad.returncode, (1, 2)); self.assertNotIn('Traceback', bad.stderr)
+            # documented contract (gate-policy): invalid records = 1 (BLOCKED), unreadable input/CLI = 2
+            self.assertEqual(bad.returncode, 1); self.assertNotIn('Traceback', bad.stderr)
+            (d / 'bad.json').write_text('[]')
+            arr = self.run_cli(d / 'bad.json')
+            self.assertEqual(arr.returncode, 1); self.assertIn('BLOCKED', arr.stderr)
+            self.assertEqual(self.run_cli(d / 'missing.json').returncode, 2)
 
 
 if __name__ == '__main__':

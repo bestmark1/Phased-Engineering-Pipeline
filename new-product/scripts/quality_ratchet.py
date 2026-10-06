@@ -17,7 +17,10 @@ CRAP_AVG = 5
 
 
 def number(value):
-    return type(value) in (int, float) and math.isfinite(value)
+    # Integers beyond float range (e.g. 10**400) are not metrics; reject instead of overflowing.
+    if type(value) is int:
+        return abs(value) < 10 ** 15
+    return type(value) is float and math.isfinite(value)
 
 
 def load(path):

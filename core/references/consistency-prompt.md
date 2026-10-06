@@ -12,8 +12,8 @@ ambiguity in artifacts — at two moments. The job is the same; only the scope d
 
 | Invocation | `{{CHECK_SCOPE}}` | Inputs | Output | Gate |
 |---|---|---|---|---|
-| After product approval | `product` | PRD (+ Narrative, MRD) | `SPEC_PLAN/clarification-report.md` | shared JSON verdict |
-| After the plan | `full` | PRD + Architecture + Implementation Plan | `SPEC_PLAN/cross-artifact-analysis.md` | shared JSON verdict |
+| After product approval | `product` | PRD (+ Narrative, MRD); `specs/INDEX.md` when it is the requirement source | `SPEC_PLAN/clarification-report.md` | shared JSON verdict |
+| After the plan | `full` | Requirement source (PRD or `specs/INDEX.md`, `references/specs-contract.md`) + Architecture + Implementation Plan | `SPEC_PLAN/cross-artifact-analysis.md` | shared JSON verdict |
 
 **Independence matters here.** You are checking artifacts you did not write. Read them as
 someone who will have to build from them and cannot ask the author a question.

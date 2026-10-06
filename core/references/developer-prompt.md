@@ -149,7 +149,8 @@ documented, a requirement is impossible as written, two criteria contradict each
 do not quietly build something else, and do not bury it in tech debt and implement the
 wrong thing anyway.
 
-Update the earliest artifact the discovery invalidates (PRD for user-visible behavior,
+Update the earliest artifact the discovery invalidates (the requirement source for user-visible
+behavior — PRD, or `specs/INDEX.md` once it is the source per `references/specs-contract.md` —
 ARCHITECTURE for contracts, IMPLEMENTATION_PLAN for how a phase is built), propagate
 downstream, and record it in `HANDOFF.md`.
 

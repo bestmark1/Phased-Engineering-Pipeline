@@ -178,6 +178,10 @@ def validate(receipt):
         index = records.get(INDEX_GATE)
         require(index is not None and index['kind'] == 'command',
                 f'specs/INDEX.md exists: {INDEX_GATE} command gate is required in every receipt')
+    if INDEX_GATE in records:
+        index = records[INDEX_GATE]
+        require(index['status'] == 'PASS' and 'baseline_exception' not in index,
+                f'{INDEX_GATE}: must pass; untraced active requirements cannot be waived')
     if receipt['scope'] == 'initiative':
         validate_initiative(receipt, records)
     return exceptions
@@ -269,7 +273,8 @@ def main():
     parser.add_argument('path', type=Path)
     args = parser.parse_args()
     try:
-        content = args.path.read_text(encoding='utf-8')
+        raw = args.path.read_bytes()  # read once: the hash and the JSON come from the same bytes
+        content = raw.decode('utf-8')
         if args.prompt:
             remaining = unresolved(content)
             require(not remaining, 'unresolved placeholders: ' + ', '.join(remaining))
@@ -286,7 +291,7 @@ def main():
         if artifacts is not None:
             validate_ci_artifact(receipt, artifacts)
         if release is not None:
-            validate_release(release, receipt, args.path.read_bytes())
+            validate_release(release, receipt, raw)
             print('RELEASED: release record accepted')
             return 0
         suffix = '; agreed baseline exceptions: ' + ', '.join(exceptions) if exceptions else ''
