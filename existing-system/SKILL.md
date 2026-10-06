@@ -1,8 +1,8 @@
 ---
 name: existing-system-pipeline
 description: >
-  Enter and change an existing system safely: read-only archaeology and an exact test baseline
-  first, then product delta, architecture, vertical slices, independent review and QA. Use for
+  Safely change an existing system you did not build with new-product-pipeline: read-only
+  archaeology, an exact test baseline, characterization specs and a parity gate. Use for
   someone else's code, code built outside new-product-pipeline without executable specs, or a
   stale new-product project (specs job missing or red on the last accepted snapshot). For an
   empty repository, a project new-product-pipeline started, or one whose last accepted snapshot

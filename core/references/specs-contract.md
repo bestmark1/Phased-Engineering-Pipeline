@@ -76,6 +76,11 @@ parity gate with an approved delta pointing to that deviation row.
   — slice and initiative — sets `index_present: true` and includes the `index-check` command
   gate. The validator rejects a receipt with `index_present: true` and no such gate.
 
+Tests outside `specs/` (unit, integration) are not exempt from traceability: each still names
+the requirement, architectural constraint or regression it protects (core principles in
+`references/pipeline-core.md`). Moving a test out of `specs/` to avoid an AC is not allowed; a
+behavior worth testing with no requirement behind it goes to the owner as a candidate AC.
+
 ## Three separate checks
 
 1. Imports — the dependency linter (required gate).
