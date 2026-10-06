@@ -19,6 +19,8 @@ jobs:
         run: python3 -m unittest discover -s core/tests -v
       - name: new-product tests
         run: python3 -m unittest discover -s new-product/tests -v
+      - name: existing-system tests
+        run: python3 -m unittest discover -s existing-system/tests -v
       - name: Build tool tests
         run: python3 -m unittest discover -s tools -p 'test_*.py' -v
       - name: Packages build, are self-contained and dist/ is fresh

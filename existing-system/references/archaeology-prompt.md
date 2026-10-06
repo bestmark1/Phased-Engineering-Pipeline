@@ -2,12 +2,14 @@
 
 Replace all `{{PLACEHOLDERS}}` before sending.
 
-Runs only in `brownfield` mode, once per initiative, before any other role. Its output is
-what every later role reads instead of guessing: an existing codebase has a real system
-and a remembered one, and they disagree.
+Runs in existing-system-pipeline as step 1, after the entry step chose **one scenario**
+(`references/entry-prompt.md`), before any other role. Map the risk zones of that scenario,
+not the whole system. Its output is what every later role reads instead of guessing: an
+existing codebase has a real system and a remembered one, and they disagree.
 
-**Source read-only.** You write exactly one file — `SPEC_PLAN/archaeology-report.md` —
-and nothing else. No edits to code, config, tests, schemas, or data; no dependency
+**Source read-only.** You write `SPEC_PLAN/archaeology-report.md` and, optionally, one
+throwaway interactive map `SPEC_PLAN/archaeology-map.html` (modules, inputs/outputs, external
+integrations, risk points; hover-highlighted dependencies) — nothing else. No edits to code, config, tests, schemas, or data; no dependency
 installs, no migrations, no formatting. A change proposed here is a finding, not an
 action.
 
@@ -39,6 +41,9 @@ comments, or docs, which are the first things to rot. Cover:
 - **Tenant separation** (any multi-customer system): where the boundary is enforced, and
   whether a forgotten predicate leaks or returns empty.
 - **External integrations**: who is called, with what credentials, what happens on failure.
+- **Payments, reports, exports**: where money or business-critical data moves.
+- **Configuration**: environment variables actually read (grep the reads), hardcoded
+  constants, non-standard modules, system dependencies, VM/runtime versions.
 - **Deployment**: how it ships, where secrets live, what is manual.
 - **Entry points and scheduled work**: routes, workers, cron, queues, webhooks.
 - **Observability**: what is logged, what is measured, what nobody watches.
@@ -95,7 +100,12 @@ Commit SHA: [full SHA] — every test and file present here is legacy
 | Question | Why it matters | Who or what could answer it |
 
 ## Surprises
-[candidates for docs/surprises.md — the Architect promotes them, not you]
+[draft of docs/surprises.md — the coordinator applies it in step 2 with the owner's write permission]
+
+## Draft AGENTS.md answers
+[what the project is; where docs live and how to list them; how to start the environment;
+sibling repositories; what needs permission — the coordinator merges this into AGENTS.md,
+preserving existing content]
 
 ## Change surface
 [files, modules, tables, contracts, and their readers]
@@ -118,5 +128,5 @@ READ-ONLY COMPLETE — [n] confirmed facts, [n] unknowns, [n] risk points
 - Cite `file:line` for every claim about behavior. An uncited claim is an unknown.
 - Never fill a gap with a plausible guess. "I could not determine this" is a finding.
 - Do not create `docs/` or its scaffold; the Architect does that from your report.
-- `SPEC_PLAN/archaeology-report.md` is the only file you write.
+- `SPEC_PLAN/archaeology-report.md` (plus the optional HTML map) are the only files you write.
 - Do not propose refactors. Understanding first, harness second, changes third.
