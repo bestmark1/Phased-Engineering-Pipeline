@@ -5,6 +5,8 @@ scenario. Script: `scripts/parity.py`.
 
 ## Baseline (characterization slice)
 
+0. The runner creates `SPEC_PLAN/parity/<scenario>/` on first use. Commit an empty delta list
+   `SPEC_PLAN/parity/<scenario>/deltas.json` = `[]` with the baseline.
 1. The characterization specs are committed; that commit is `suite_sha`. Freeze with it the
    paths the specs need: `specs/` (including `specs/support/`) and, if outside it, fixtures,
    seed and test config (`--suite-path` per path).
@@ -33,9 +35,14 @@ python3 <skill-root>/scripts/parity.py compare SPEC_PLAN/parity/<scenario>/basel
 
 - Always the frozen `suite_sha`, never the current specs: specs edited together with the code
   would pass by construction. Editing current specs is allowed; it never replaces this run.
-- **Approved delta** = one entry in `deltas.json` per changed spec: `{spec, expected_old,
+- **Approved delta** = exactly one entry in `deltas.json` per changed spec: `{spec, expected_old,
   expected_new, obs, ac}` with the exact old and new result, and `ac` an active INDEX row with
-  Origin `deviation:<obs>` (an owner BUG decision, `references/entry-prompt.md`).
+  Origin `deviation:<obs>` (an owner BUG decision, `references/entry-prompt.md`). `--index` is
+  mandatory: without INDEX confirmation a changed spec is FAIL. Duplicate or malformed deltas
+  are input errors (exit 2).
+- **Suite paths** are repository-relative (`specs`, `fixtures/…`, `config/test…`); absolute paths,
+  `..` and `.git` are rejected before anything is touched. Freeze every fixture and config the
+  specs read, or a change to them hides a behavior change.
 - **Verdict:** PASS = every spec identical or matching its delta (the frozen spec may then
   exit nonzero — expected). FAIL = a change without a matching approved delta, a different
   suite, or specs outside the baseline. UNKNOWN = a spec not run or a different environment.

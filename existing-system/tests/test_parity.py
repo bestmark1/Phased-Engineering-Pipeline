@@ -23,6 +23,7 @@ def record(results, suite='suite-1', product='p', env=ENV):
 
 BASE = record({'login-wrong-password': OLD_LOGIN, 'logout': dict(outcome='pass', observation='204')}, product='old')
 DELTA = dict(spec='login-wrong-password', expected_old=OLD_LOGIN, expected_new=NEW_LOGIN, obs='OBS-003', ac='AC-007')
+INDEX = {'AC-007': dict(ID='AC-007', Status='active', Origin='deviation:OBS-003')}
 
 
 class CompareTests(unittest.TestCase):
@@ -39,11 +40,28 @@ class CompareTests(unittest.TestCase):
 
     def test_matching_delta_passes_even_though_frozen_spec_fails(self):
         current = self.run_of(**{'login-wrong-password': NEW_LOGIN}); current['exit_code'] = 1
-        self.assertEqual(parity.compare(BASE, current, [DELTA])[0], 'PASS')
+        self.assertEqual(parity.compare(BASE, current, [DELTA], INDEX)[0], 'PASS')
+
+    def test_delta_without_index_confirmation_fails(self):
+        verdict, reasons = parity.compare(BASE, self.run_of(**{'login-wrong-password': NEW_LOGIN}), [DELTA])
+        self.assertEqual(verdict, 'FAIL'); self.assertIn('INDEX confirmation', reasons[0])
+
+    def test_duplicate_or_malformed_deltas_are_input_errors(self):
+        current = self.run_of(**{'login-wrong-password': NEW_LOGIN})
+        bad_deltas = ([DELTA, dict(DELTA, expected_new=dict(outcome='fail', observation='403'))], [DELTA, DELTA],
+                      [dict(DELTA, spec=[])], [dict(DELTA, ac=[])], [dict(DELTA, obs='AC-1')],
+                      [dict(DELTA, expected_new='429')])
+        for deltas in bad_deltas:
+            with self.subTest(deltas=deltas), self.assertRaises(parity.InputError):
+                parity.compare(BASE, current, deltas, INDEX)
+
+    def test_empty_results_are_input_errors(self):
+        with self.assertRaises(parity.InputError):
+            parity.compare(record({}), record({}))
 
     def test_delta_must_match_exact_old_and_new(self):
         other = dict(outcome='fail', observation='500 boom')
-        verdict, reasons = parity.compare(BASE, self.run_of(**{'login-wrong-password': other}), [DELTA])
+        verdict, reasons = parity.compare(BASE, self.run_of(**{'login-wrong-password': other}), [DELTA], INDEX)
         self.assertEqual(verdict, 'FAIL'); self.assertIn('does not match its delta', reasons[0])
 
     def test_other_suite_sha_fails(self):
@@ -118,6 +136,48 @@ class RunTests(unittest.TestCase):
         self.assertEqual(own_suite['results']['greeting']['outcome'], 'pass')  # why freezing matters
         self.assertEqual(self.git('worktree', 'list').count('\n'), 0)  # temporary worktree removed
 
+    def test_suite_paths_freeze_support_and_fixtures(self):
+        (self.repo / 'fixtures').mkdir()
+        (self.repo / 'fixtures' / 'expected.txt').write_text('hello')
+        (self.repo / 'specs' ).mkdir()
+        (self.repo / 'specs' / 'support').mkdir()
+        (self.repo / 'specs' / 'support' / 'helper.py').write_text('EXPECTED_FILE = "fixtures/expected.txt"\n')
+        runner = ('import json, os, pathlib, sys\nsys.path.insert(0, "specs/support")\nfrom helper import EXPECTED_FILE\n'
+                  'want = pathlib.Path(EXPECTED_FILE).read_text().strip()\n'
+                  'got = pathlib.Path("app.txt").read_text().strip()\n'
+                  'pathlib.Path(os.environ["PARITY_RESULTS"]).write_text(json.dumps({"g": {"outcome": "pass" if want == got else "fail", "observation": got}}))\n')
+        (self.repo / 'specs' / 'run.py').write_text(runner)
+        (self.repo / 'app.txt').write_text('hello\n')
+        self.git('add', '-A'); self.git('commit', '-q', '-m', 'v1'); old = self.git('rev-parse', 'HEAD')
+        # the change edits the product AND the fixture and helper, trying to bless the new behavior
+        (self.repo / 'app.txt').write_text('hi\n'); (self.repo / 'fixtures' / 'expected.txt').write_text('hi')
+        self.git('add', '-A'); self.git('commit', '-q', '-m', 'v2'); new = self.git('rev-parse', 'HEAD')
+        cmd = f'{sys.executable} specs/run.py'
+        frozen_specs_only = parity.run(self.repo, old, new, cmd, ENV)
+        self.assertEqual(frozen_specs_only['results']['g']['outcome'], 'pass')  # fixture not frozen: hidden
+        frozen_all = parity.run(self.repo, old, new, cmd, ENV, ('specs', 'fixtures'))
+        self.assertEqual(frozen_all['results']['g']['outcome'], 'fail')  # fixture frozen too: caught
+
+    def test_suite_path_outside_repository_is_rejected_before_any_removal(self):
+        sha = self.commit('hello', 'hello')
+        outside = Path(self.tmp.name) / 'outside'; outside.mkdir(); (outside / 'keep.txt').write_text('x')
+        for path in (str(outside), '../outside', 'specs/../../outside', '.git', '.'):
+            with self.subTest(path=path), self.assertRaises(parity.InputError):
+                parity.run(self.repo, sha, sha, 'true', ENV, (path,))
+        self.assertTrue((outside / 'keep.txt').exists())
+
+    def test_failed_checkout_leaves_no_registered_worktree(self):
+        self.commit('hello', 'hello')
+        with self.assertRaises(parity.InputError):
+            parity.run(self.repo, 'HEAD', 'no-such-commit', 'true', ENV)
+        self.assertEqual(self.git('worktree', 'list').count('\n'), 0)
+
+    def test_invalid_results_json_is_input_error(self):
+        sha = self.commit('hello', 'hello')
+        with self.assertRaises(parity.InputError):
+            parity.run(self.repo, sha, sha, 'printf "{" > "$PARITY_RESULTS"', ENV)
+        self.assertEqual(self.git('worktree', 'list').count('\n'), 0)
+
     def test_command_without_results_is_input_error(self):
         sha = self.commit('hello', 'hello')
         with self.assertRaises(parity.InputError):
@@ -142,6 +202,9 @@ class RunTests(unittest.TestCase):
         self.assertEqual(cli(*args).returncode, 0)
         (d / 'INDEX.md').write_text(head + '| AC-007 | active | When locked Then 429 | spec | | PRD |\n')
         self.assertEqual(cli(*args).returncode, 1)
+        missing_index = cli('compare', str(d / 'b.json'), str(d / 'r.json'), '--deltas', str(d / 'deltas.json'),
+                            '--index', str(d / 'nope.md'))
+        self.assertEqual(missing_index.returncode, 2); self.assertNotIn('Traceback', missing_index.stderr)
         (d / 'r.json').write_text('{')
         broken = cli('compare', str(d / 'b.json'), str(d / 'r.json'))
         self.assertEqual(broken.returncode, 2); self.assertNotIn('Traceback', broken.stderr)

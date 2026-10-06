@@ -28,6 +28,27 @@ class StepTableTests(unittest.TestCase):
             with self.subTest(gate=gate):
                 self.assertIn(gate, self.table)
 
+    def test_index_is_created_before_characterization(self):
+        rows = {r.split('|')[1].strip(): r for r in self.table.splitlines() if r.startswith('| ') and r[2:3].isdigit()}
+        self.assertIn('specs/INDEX.md', rows['4'])
+        self.assertIn('characterization', rows['5'])
+        self.assertIn('OBS-n', rows['5'])
+
+    def test_obs_label_without_index_row_fails_index_check(self):
+        import importlib.util, tempfile
+        script = next(p for p in (ROOT / 'scripts' / 'check_index.py', ROOT.parent / 'core' / 'scripts' / 'check_index.py')
+                      if p.exists())
+        spec = importlib.util.spec_from_file_location('check_index', script)
+        ci = importlib.util.module_from_spec(spec); spec.loader.exec_module(ci)
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d) / 'specs'; root.mkdir()
+            (root / 'INDEX.md').write_text('| ID | Status | Behavior | Verify | Evidence | Origin |\n|---|---|---|---|---|---|\n'
+                                           '| OBS-001 | active | When x Then y | spec | | OBS |\n')
+            (root / 'test_obs.py').write_text('t("req:OBS-001")\nt("req:OBS-002")\n')
+            rows = ci.parse_index((root / 'INDEX.md').read_text())
+            errors = ci.check(rows, ci.scan_labels(root, (root / 'INDEX.md').resolve()))
+        self.assertTrue(any('req:OBS-002 not in INDEX' in e for e in errors), errors)
+
     def test_requirements_come_from_index_not_prd(self):
         role_inputs = reference('role-inputs.md').read_text()
         row = next(l for l in role_inputs.splitlines() if l.startswith('| ACTIVE_CRITERIA'))

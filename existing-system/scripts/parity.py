@@ -15,6 +15,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -31,33 +32,54 @@ def git(repo, *args, **kw):
     return subprocess.run(['git', '-C', str(repo), *args], check=True, capture_output=True, **kw)
 
 
+def safe_suite_paths(suite_paths):
+    """Suite paths are repository-relative, normalized, inside the tree and never .git."""
+    clean = []
+    for rel in suite_paths:
+        parts = Path(rel).parts
+        if not rel or Path(rel).is_absolute() or '..' in parts or (parts and parts[0] == '.git') or rel in ('.', ''):
+            raise InputError(f'suite path must be a relative path inside the repository: {rel!r}')
+        clean.append(Path(*parts).as_posix())
+    return clean
+
+
 def run(repo, suite_sha, product_sha, command, environment, suite_paths=('specs',)):
     """Execute the suite frozen at suite_sha against product_sha; return the run record."""
     repo = Path(repo).resolve()
+    suite_paths = safe_suite_paths(suite_paths)
     with tempfile.TemporaryDirectory() as tmp:
         tree = Path(tmp) / 'tree'
         results = Path(tmp) / 'results.json'
         try:
-            git(repo, 'worktree', 'add', '--detach', str(tree), product_sha)
-        except subprocess.CalledProcessError as exc:
-            raise InputError(f'cannot check out {product_sha}: {exc.stderr.decode().strip()}')
-        try:
+            try:
+                git(repo, 'worktree', 'add', '--detach', str(tree), product_sha)
+            except subprocess.CalledProcessError as exc:
+                raise InputError(f'cannot check out {product_sha}: {exc.stderr.decode().strip()}')
             for rel in suite_paths:
                 target = tree / rel
-                if target.exists():
-                    shutil.rmtree(target) if target.is_dir() else target.unlink()
+                if tree.resolve() not in target.resolve().parents:  # symlink escaping the tree
+                    raise InputError(f'suite path resolves outside the worktree: {rel}')
+                if target.is_symlink() or target.is_file():
+                    target.unlink()
+                elif target.is_dir():
+                    shutil.rmtree(target)
             try:
                 archive = git(repo, 'archive', suite_sha, '--', *suite_paths).stdout
             except subprocess.CalledProcessError as exc:
-                raise InputError(f'cannot read suite {suite_sha}: {exc.stderr.decode().strip()}')
+                raise InputError(f'cannot read suite paths {suite_paths} at {suite_sha}: {exc.stderr.decode().strip()}')
             subprocess.run(['tar', '-x', '-C', str(tree)], input=archive, check=True)
             proc = subprocess.run(command, shell=True, cwd=tree, capture_output=True, text=True,
                                   env=dict(os.environ, PARITY_RESULTS=str(results)))
             if not results.exists():
                 raise InputError(f'spec command wrote no results (exit {proc.returncode}): {proc.stderr[-500:]}')
-            data = json.loads(results.read_text())
+            try:
+                data = json.loads(results.read_text(encoding='utf-8'))
+            except (UnicodeError, json.JSONDecodeError) as exc:
+                raise InputError(f'spec command wrote invalid results JSON: {exc}')
         finally:
-            git(repo, 'worktree', 'remove', '--force', str(tree))
+            # Also after a partially failed `worktree add`; a cleanup error never hides the original one.
+            subprocess.run(['git', '-C', str(repo), 'worktree', 'remove', '--force', str(tree)], capture_output=True)
+            subprocess.run(['git', '-C', str(repo), 'worktree', 'prune'], capture_output=True)
     record = dict(product_sha=product_sha, suite_sha=suite_sha, environment=environment,
                   command=command, exit_code=proc.returncode, results=data)
     check_record(record, 'run')
@@ -73,8 +95,8 @@ def check_record(record, name):
     if not isinstance(record.get('environment'), dict):
         raise InputError(f'{name}: environment object required')
     results = record.get('results')
-    if not isinstance(results, dict):
-        raise InputError(f'{name}: results object required')
+    if not isinstance(results, dict) or not results:
+        raise InputError(f'{name}: results must record at least one spec')
     for spec, result in results.items():
         if not (isinstance(result, dict) and result.get('outcome') in OUTCOMES
                 and isinstance(result.get('observation'), str)):
@@ -92,7 +114,7 @@ def load_index_rows(index_path):
     spec.loader.exec_module(module)
     try:
         return {r['ID']: r for r in module.parse_index(Path(index_path).read_text(encoding='utf-8'))}
-    except ValueError as exc:
+    except (OSError, UnicodeError, ValueError) as exc:
         raise InputError(f'index: {exc}')
 
 
@@ -106,8 +128,17 @@ def compare(baseline, current, deltas=(), index=None):
         return 'UNKNOWN', ['environment differs from the baseline: results are not comparable']
     by_spec = {}
     for delta in deltas:
-        if not (isinstance(delta, dict) and all(k in delta for k in ('spec', 'expected_old', 'expected_new', 'obs', 'ac'))):
-            raise InputError('delta needs spec, expected_old, expected_new, obs, ac')
+        if not (isinstance(delta, dict) and isinstance(delta.get('spec'), str) and delta['spec']
+                and isinstance(delta.get('obs'), str) and re.fullmatch(r'OBS-\d+', delta['obs'])
+                and isinstance(delta.get('ac'), str) and re.fullmatch(r'AC-\d+', delta['ac'])):
+            raise InputError('delta needs spec (string), obs (OBS-n), ac (AC-n), expected_old, expected_new')
+        for key in ('expected_old', 'expected_new'):
+            result = delta.get(key)
+            if not (isinstance(result, dict) and result.get('outcome') in OUTCOMES
+                    and isinstance(result.get('observation'), str)):
+                raise InputError(f'{delta["spec"]}: {key} needs outcome pass|fail and an observation string')
+        if delta['spec'] in by_spec:
+            raise InputError(f'{delta["spec"]}: more than one delta for the same spec')
         by_spec[delta['spec']] = delta
     failures, unknown = [], []
     for spec, old in sorted(baseline['results'].items()):
@@ -123,7 +154,9 @@ def compare(baseline, current, deltas=(), index=None):
         elif delta['expected_old'] != old or delta['expected_new'] != new:
             failures.append(f'{spec}: change does not match its delta (expected {delta["expected_old"]} -> '
                             f'{delta["expected_new"]}, got {old} -> {new})')
-        elif index is not None:
+        elif index is None:
+            failures.append(f'{spec}: a changed behavior needs INDEX confirmation (--index specs/INDEX.md)')
+        else:
             row = index.get(delta['ac'])
             if not row or row['Status'] != 'active' or row['Origin'] != f'deviation:{delta["obs"]}':
                 failures.append(f'{spec}: INDEX has no active {delta["ac"]} with origin deviation:{delta["obs"]}')
@@ -168,6 +201,7 @@ def main(argv=None):
                 raise InputError('env-file must hold a JSON object')
             record = run(args.repo, args.suite_sha, args.product_sha, args.command, env,
                          tuple(args.suite_path or ['specs']))
+            Path(args.out).parent.mkdir(parents=True, exist_ok=True)
             Path(args.out).write_text(json.dumps(record, indent=2, sort_keys=True))
             print(f'RECORDED: {len(record["results"])} specs, spec command exit {record["exit_code"]}')
             return 0

@@ -42,9 +42,10 @@ One Markdown table with exactly these columns:
 
 `OBS-n` rows record what an existing system does today, found by the characterization slice:
 a protective safety net, not a requirement. The owner decides them per scenario in one batch
-(existing-system's entry reference): intended → an `AC` with Origin `OBS`; must change → an
-`AC` with Origin `deviation:OBS-n`. In both cases the spec is relabeled to the AC and the OBS row
-retired; undecided OBS rows stay active. A changed behavior is accepted only through the
+(existing-system's entry reference): intended → an `AC` with Origin `OBS`, applied at once;
+must change → an `AC` with Origin `deviation:OBS-n`, applied by the slice that implements the
+fix. Either way adding the AC, relabeling the spec and retiring the OBS row happen in one commit;
+undecided OBS rows stay active. A changed behavior is accepted only through the
 parity gate with an approved delta pointing to that deviation row.
 
 ## Executable specs

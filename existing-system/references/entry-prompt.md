@@ -41,8 +41,11 @@ procedure but only points to these files. Gate: owner approval of the procedures
 
 ## Step 4 onward
 
-Product delta (creates `specs/INDEX.md`, `references/specs-contract.md`), Consistency
-(`product`), Architect, Tech Lead, Consistency (`full`) as in `references/pipeline-core.md`.
+Product writes the scenario's **delta PRD** (`SPEC_PLAN/PRD.md`: scenario, goals, non-goals,
+constraints — framing only) and creates `specs/INDEX.md` with the change's AC/QR
+(`references/specs-contract.md`); the owner approves both. Roles take framing from the delta
+PRD and criteria only from INDEX. Then Consistency (`product`), Architect, Tech Lead,
+Consistency (`full`) as in `references/pipeline-core.md`.
 The plan's first slice is characterization; changing slices carry the `parity` gate
 (`references/parity.md`).
 
@@ -56,11 +59,15 @@ the owner **in one batch for this scenario only**:
 |---|---|---|---|
 | OBS-003 | wrong password → 401 forever, no lockout | BUG: lock after 5 tries | ← owner |
 
-- **→ AC (intended):** add `AC-m` restating the behavior with Origin `OBS`, relabel its spec
-  `req:AC-m` and retire `OBS-n`. Behavior does not change; parity stays identical.
-- **→ BUG (must change):** add `AC-m` with the desired behavior and Origin `deviation:OBS-n`.
-  The slice that implements it relabels the spec to `req:AC-m`, retires `OBS-n` and records the
-  parity delta (`references/parity.md`).
+Each decision changes INDEX and the specs **in one commit**, so `index-check` stays green:
+
+- **→ AC (intended):** applied right after the decision, inside the characterization slice:
+  add `AC-m` restating the behavior (Origin `OBS`), relabel its spec `req:AC-m`, retire `OBS-n`.
+  Behavior does not change; parity stays identical.
+- **→ BUG (must change):** record the decision in HANDOFF.md and the plan; INDEX keeps `OBS-n`
+  active until the fix. The slice that implements the fix, in the same commit: adds `AC-m` with
+  the desired behavior (Origin `deviation:OBS-n`), relabels the current spec to `req:AC-m` with
+  the new expectation, retires `OBS-n`, and appends the parity delta (`references/parity.md`).
 - **Undecided** OBS rows stay active and protective.
 - A dangerous observation (security, money, data loss) is raised to the owner immediately,
   before any change, not batched.
