@@ -1,38 +1,175 @@
 {
   "version": 1,
-  "note": "Phase-4 behavioral evals. Executor: fresh Sonnet subagent with both skills installed; read-only; returns JSON. Graded against `expect` by the coordinator.",
+  "note": "Phase-4 behavioral evals. Executor: fresh Sonnet subagent with both skills installed; read-only; returns JSON. Graded against `expect` by the coordinator. S9-S10 are ROLE-level: the executor gets only the rendered role prompt (+ pipeline context block where stated), no SKILL.md — this is how roles run in practice (seam audit G1-G19).",
   "scenarios": [
-    {"id": "S1-empty-repo", "area": "selection",
-     "situation": "The working directory is a brand-new empty git repository (only an empty README). No SPEC_PLAN, no code.",
-     "user": "Хочу сделать сервис учёта подписок для фрилансеров: напоминания о списаниях, аналитика трат. Давай спланируем и построим его по нормальному процессу.",
-     "expect": {"skill": "new-product-pipeline", "must": ["bootstrap / Full mode", "starts with product framing or a discovery interview, not code"], "must_not": ["existing-system-pipeline", "writing code first"]}},
-    {"id": "S2-mvp-in-progress", "area": "selection",
-     "situation": "Repository started two weeks ago with new-product-pipeline: SPEC_PLAN/ has Narrative, PRD, ARCHITECTURE, IMPLEMENTATION_PLAN; PROGRESS.md shows slices 3.1-3.2 Done, 3.3 In Progress. There is no specs/ directory and no CI 'specs' job yet; no snapshot with a green specs job has ever been accepted.",
-     "user": "Продолжи работу над проектом, следующий слайс по плану.",
-     "expect": {"skill": "new-product-pipeline", "must": ["not stale: bootstrap/MVP before the first accepted snapshot with a green specs job", "continue slice 3.3 per plan"], "must_not": ["switch to existing-system-pipeline", "archaeology"]}},
-    {"id": "S3-temporarily-red", "area": "selection",
-     "situation": "Project run by new-product-pipeline after its first release. The last accepted snapshot (receipt in SPEC_PLAN/gates/) has a green CI 'specs' job. The current working commit on the feature branch has 2 failing specs after an in-progress refactor.",
-     "user": "Тесты красные после рефакторинга. Это значит проект устарел и надо переходить на другой пайплайн?",
-     "expect": {"skill": "new-product-pipeline", "must": ["staleness judged on the last accepted snapshot, not the red working commit", "stay in new-product and repair"], "must_not": ["switch to existing-system-pipeline"]}},
-    {"id": "S4-stale", "area": "selection",
-     "situation": "Project originally built with new-product-pipeline. Months later someone removed the CI 'specs' job; the last accepted snapshot's receipt shows no specs job run, and specs/INDEX.md was not updated for several merged changes.",
-     "user": "Нужно доработать экспорт отчётов в этом проекте. С чего начнём?",
-     "expect": {"skill": "existing-system-pipeline", "must": ["identifies the project as stale (specs job missing on the last accepted snapshot)", "entry step: permissions, process map, one scenario; read-only archaeology"], "must_not": ["proceed in new-product-pipeline as if current"]}},
-    {"id": "S5-foreign-code", "area": "selection",
-     "situation": "A client's 4-year-old Django codebase in their GitHub repo, no pipeline artifacts, no executable specs, README outdated. You were given read access and a branch.",
-     "user": "Клиент просит переписать модуль оплаты подписок, старый код никто не помнит. Подключайся.",
-     "expect": {"skill": "existing-system-pipeline", "must": ["step 0: ask permissions (docs write, push in client's repo) and pick one scenario", "archaeology is source read-only before any change", "characterization/parity before changing payment behavior"], "must_not": ["edit code first", "new-product-pipeline"]}},
-    {"id": "S6-gate-skip", "area": "gates",
-     "situation": "new-product-pipeline project, Medium depth. Developer finished slice 3.4, all checks green locally. No independent review has run, no gate receipt exists for 3.4.",
-     "user": "Всё зелёное, давай отметим слайс 3.4 как Done и пойдём дальше, ревью потом.",
-     "expect": {"skill": "new-product-pipeline", "must": ["refuses to mark Done without the required independent review and a validated receipt", "explains ready-for-review stays In Progress", "offers to run the review / validator now"], "must_not": ["marks Done", "edits PROGRESS.md to Done"]}},
-    {"id": "S7-test-without-requirement", "area": "tests",
-     "situation": "new-product-pipeline project after first release; requirements live in specs/INDEX.md (AC-001..AC-014). Developer agent proposes adding test_parser_handles_unicode_emoji in specs/ with no req: label because 'more tests are good'. No AC mentions emoji.",
-     "user": "Добавь этот тест, лишним не будет.",
-     "expect": {"skill": "new-product-pipeline", "must": ["a test must name the requirement it protects (req: label / AC ID)", "raise a missing requirement to the owner (add AC via artifact-changes) instead of adding an orphan test"], "must_not": ["adds the test without an ID"]}},
-    {"id": "S8-blind-qa-inputs", "area": "qa",
-     "situation": "new-product-pipeline, initiative complete, final QA about to be dispatched. Available: PRD, specs/INDEX.md (not yet released, so PRD is the source), the full diff, Developer reports, previous review findings, run instructions, test credentials.",
-     "user": "Запусти финальный QA. Что именно передаёшь агенту?",
-     "expect": {"skill": "new-product-pipeline", "must": ["two passes: blind (qa-blind) then internal (qa-internal)", "blind pass gets only active AC, snapshot SHA, run instruction, test credentials/data", "diff/source/reports/findings withheld until the blind verdict is fixed"], "must_not": ["sends diff or Developer report to the blind pass"]}}
+    {
+      "id": "S1-empty-repo",
+      "area": "selection",
+      "situation": "The working directory is a brand-new empty git repository (only an empty README). No SPEC_PLAN, no code.",
+      "user": "Хочу сделать сервис учёта подписок для фрилансеров: напоминания о списаниях, аналитика трат. Давай спланируем и построим его по нормальному процессу.",
+      "expect": {
+        "skill": "new-product-pipeline",
+        "must": [
+          "bootstrap / Full mode",
+          "starts with product framing or a discovery interview, not code"
+        ],
+        "must_not": [
+          "existing-system-pipeline",
+          "writing code first"
+        ]
+      }
+    },
+    {
+      "id": "S2-mvp-in-progress",
+      "area": "selection",
+      "situation": "Repository started two weeks ago with new-product-pipeline: SPEC_PLAN/ has Narrative, PRD, ARCHITECTURE, IMPLEMENTATION_PLAN; PROGRESS.md shows slices 3.1-3.2 Done, 3.3 In Progress. There is no specs/ directory and no CI 'specs' job yet; no snapshot with a green specs job has ever been accepted.",
+      "user": "Продолжи работу над проектом, следующий слайс по плану.",
+      "expect": {
+        "skill": "new-product-pipeline",
+        "must": [
+          "not stale: bootstrap/MVP before the first accepted snapshot with a green specs job",
+          "continue slice 3.3 per plan"
+        ],
+        "must_not": [
+          "switch to existing-system-pipeline",
+          "archaeology"
+        ]
+      }
+    },
+    {
+      "id": "S3-temporarily-red",
+      "area": "selection",
+      "situation": "Project run by new-product-pipeline after its first release. The last accepted snapshot (receipt in SPEC_PLAN/gates/) has a green CI 'specs' job. The current working commit on the feature branch has 2 failing specs after an in-progress refactor.",
+      "user": "Тесты красные после рефакторинга. Это значит проект устарел и надо переходить на другой пайплайн?",
+      "expect": {
+        "skill": "new-product-pipeline",
+        "must": [
+          "staleness judged on the last accepted snapshot, not the red working commit",
+          "stay in new-product and repair"
+        ],
+        "must_not": [
+          "switch to existing-system-pipeline"
+        ]
+      }
+    },
+    {
+      "id": "S4-stale",
+      "area": "selection",
+      "situation": "Project originally built with new-product-pipeline. Months later someone removed the CI 'specs' job; the last accepted snapshot's receipt shows no specs job run, and specs/INDEX.md was not updated for several merged changes.",
+      "user": "Нужно доработать экспорт отчётов в этом проекте. С чего начнём?",
+      "expect": {
+        "skill": "existing-system-pipeline",
+        "must": [
+          "identifies the project as stale (specs job missing on the last accepted snapshot)",
+          "entry step: permissions, process map, one scenario; read-only archaeology"
+        ],
+        "must_not": [
+          "proceed in new-product-pipeline as if current"
+        ]
+      }
+    },
+    {
+      "id": "S5-foreign-code",
+      "area": "selection",
+      "situation": "A client's 4-year-old Django codebase in their GitHub repo, no pipeline artifacts, no executable specs, README outdated. You were given read access and a branch.",
+      "user": "Клиент просит переписать модуль оплаты подписок, старый код никто не помнит. Подключайся.",
+      "expect": {
+        "skill": "existing-system-pipeline",
+        "must": [
+          "step 0: ask permissions (docs write, push in client's repo) and pick one scenario",
+          "archaeology is source read-only before any change",
+          "characterization/parity before changing payment behavior"
+        ],
+        "must_not": [
+          "edit code first",
+          "new-product-pipeline"
+        ]
+      }
+    },
+    {
+      "id": "S6-gate-skip",
+      "area": "gates",
+      "situation": "new-product-pipeline project, Medium depth. Developer finished slice 3.4, all checks green locally. No independent review has run, no gate receipt exists for 3.4.",
+      "user": "Всё зелёное, давай отметим слайс 3.4 как Done и пойдём дальше, ревью потом.",
+      "expect": {
+        "skill": "new-product-pipeline",
+        "must": [
+          "refuses to mark Done without the required independent review and a validated receipt",
+          "explains ready-for-review stays In Progress",
+          "offers to run the review / validator now"
+        ],
+        "must_not": [
+          "marks Done",
+          "edits PROGRESS.md to Done"
+        ]
+      }
+    },
+    {
+      "id": "S7-test-without-requirement",
+      "area": "tests",
+      "situation": "new-product-pipeline project after first release; requirements live in specs/INDEX.md (AC-001..AC-014). Developer agent proposes adding test_parser_handles_unicode_emoji in specs/ with no req: label because 'more tests are good'. No AC mentions emoji.",
+      "user": "Добавь этот тест, лишним не будет.",
+      "expect": {
+        "skill": "new-product-pipeline",
+        "must": [
+          "a test must name the requirement it protects (req: label / AC ID)",
+          "raise a missing requirement to the owner (add AC via artifact-changes) instead of adding an orphan test"
+        ],
+        "must_not": [
+          "adds the test without an ID"
+        ]
+      }
+    },
+    {
+      "id": "S8-blind-qa-inputs",
+      "area": "qa",
+      "situation": "new-product-pipeline, initiative complete, final QA about to be dispatched. Available: PRD, specs/INDEX.md (not yet released, so PRD is the source), the full diff, Developer reports, previous review findings, run instructions, test credentials.",
+      "user": "Запусти финальный QA. Что именно передаёшь агенту?",
+      "expect": {
+        "skill": "new-product-pipeline",
+        "must": [
+          "two passes: blind (qa-blind) then internal (qa-internal)",
+          "blind pass gets only active AC, snapshot SHA, run instruction, test credentials/data",
+          "diff/source/reports/findings withheld until the blind verdict is fixed"
+        ],
+        "must_not": [
+          "sends diff or Developer report to the blind pass"
+        ]
+      }
+    },
+    {
+      "id": "S9-developer-label-prompt-only",
+      "area": "role-seam",
+      "situation": "Rendered developer-prompt.md only (no SKILL.md, no context block). Phase requires AC-007 (active in specs/INDEX.md): POST /invoices returns total with VAT. File to create: specs/test_invoices.py.",
+      "user": "Write specs/test_invoices.py; state how the test names its requirement.",
+      "expect": {
+        "must": [
+          "label is a string literal starting with req:AC-007 in a marker/name",
+          "black box through the public HTTP entry point",
+          "asserts the body, not only status"
+        ],
+        "must_not": [
+          "requirement ID only in a comment or docstring"
+        ]
+      }
+    },
+    {
+      "id": "S10-techlead-es-slice1",
+      "area": "role-seam",
+      "situation": "Rendered tech-lead-prompt.md + filled pipeline context block (existing-system, step 4), legacy Django billing, INDEX AC-1..AC-4 planned.",
+      "user": "Plan the phases with outcomes and gate ids; state what slice 1 delivers.",
+      "expect": {
+        "must": [
+          "slice 1 = characterization (OBS specs + parity baseline), no product behavior change, exempt from user-visible outcome",
+          "parity gate on changing slices",
+          "planned -> active with spec",
+          "initiative receipt with qa-blind/qa-internal"
+        ],
+        "must_not": [
+          "walking skeleton feature as slice 1",
+          "new-product PRD->INDEX transfer"
+        ]
+      }
+    }
   ]
 }
