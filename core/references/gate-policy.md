@@ -34,6 +34,9 @@ or a dependency bump. DEFAULT_REVIEW_DEPTH is a floor, never a ceiling.
 | Medium | Checks, advisory subtraction pass, recheck accepted edits, independent combined SOLID/SRE review, runtime slice check |
 | High | Checks, subtraction and recheck, separate independent SOLID and SRE reviews, phase QA of critical paths including applicable recovery checks, explicit owner diff approval |
 
+existing-system-pipeline adds a `parity` command gate to every slice touching the run's
+scenario (its parity reference); FAIL and UNKNOWN parity both block.
+
 **Done of a slice** needs the slice's required gates above (phase QA of its assigned
 criteria and affected regressions) — not the final QA. **Initiative completion** needs the
 final clean-checkout QA of every active AC/QR as two passes (`qa-blind`, `qa-internal`,

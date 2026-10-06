@@ -38,38 +38,33 @@ red there. Back to new-product-pipeline after an
 existing-system run restored `specs` to green on an accepted snapshot and updated
 `specs/INDEX.md`. The `specs` job is defined in `references/specs-contract.md`.
 
-## Flow
+## Flow — one scenario per run
 
-```text
-coordinator: inspect working tree, initialize PROGRESS.md once
-Archaeology (source read-only) → report → READ-ONLY COMPLETE
-Product: create or validate/reuse the delta's Narrative + PRD
-  → OWNER APPROVAL of new/materially changed product decisions
-Consistency (product) → resolve findings → gate accepted
-Architect: create or validate/reuse architecture, constitution and project map
-  → OWNER APPROVAL of new/materially changed architectural decisions
-Tech Lead: create or update phase plan → OWNER APPROVAL of the execution plan
-Consistency (full) → gate accepted
-for each active implementation slice (the first one starts with the regression harness):
-  Developer → self-check → ready for review (NOT Done)
-  deterministic checks → subtraction pass at Medium/High → re-check accepted edits
-  independent reviewer(s) and phase QA according to risk
-  findings → targeted repair → checks + review of fixes and their affected behavior
-  coordinator validates gate receipt → Done → next slice
-QA: clean checkout of exact commit → release readiness + active AC/QR evidence
-  → QA PASS, or FAIL/UNKNOWN with evidence; never silently waive gaps
-Retro: minimal documentation improvements, no product edits
-local handoff is a valid endpoint
-push / PR / deploy only when explicitly authorized for those actions
-```
+Load `references/entry-prompt.md` at the start (steps 0, 2, 3 and OBS decisions) and
+`references/parity.md` in every slice that touches the scenario.
 
-For every commit shown or implied by a role, first apply `references/gate-policy.md`.
-A dirty working tree is not permission to stash or overwrite other work. Branch creation
-must preserve the starting state; do not create the same branch twice.
+| # | Step | Role | May write | Exit gate |
+|---|---|---|---|---|
+| 0 | Entry: permissions, process map, choose **one** scenario | Coordinator + owner | PROGRESS.md, HANDOFF.md | owner approval of scenario and permissions |
+| 1 | Archaeology of the scenario's risk zones | Archaeology (`references/archaeology-prompt.md`), source read-only | `SPEC_PLAN/archaeology-report.md` (+ optional HTML map) | READ-ONLY COMPLETE |
+| 2 | Apply AGENTS.md answers and `docs/surprises.md` from the report | Coordinator | AGENTS.md (preserving it), `docs/surprises.md` | step-0 write permission |
+| 3 | Read-only access procedures (database, logs, CI) | Coordinator; owner creates credentials | `docs/access/*`, `scripts/access/*` | owner approval of the procedures |
+| 4 | Product delta incl. `specs/INDEX.md` → Consistency (`product`) → Architect → Tech Lead → Consistency (`full`) | Product, Consistency, Architect, Tech Lead | SPEC_PLAN artifacts, `specs/INDEX.md` | owner approvals + both Consistency gates |
+| 5 | Slice 1 = characterization: smoke + GWT specs of current behavior as `OBS-n`; golden set/eval if an algorithm/LLM; parity baseline | Developer → reviewers → phase QA | `specs/`, `specs/support/`, eval files, `SPEC_PLAN/parity/` | slice gates + owner's batch OBS decision |
+| 6 | Changing slices | Developer → reviewers → phase QA | per plan | core gates + `parity` |
+| 7 | Final QA, two passes | QA (`references/qa-prompt.md`) | reports | initiative receipt accepted |
+| 8 | Retro, incl. what past agent sessions stumbled on (if transcripts exist) | Retro | docs/pointers | advisory |
+
+Every slice: Developer → self-check → deterministic checks → subtraction pass at Medium/High
+→ independent review and phase QA by depth → targeted repair → coordinator validates the
+receipt → Done. Local handoff is a valid endpoint; push/PR/deploy follow
+`references/gate-policy.md`. A dirty working tree is not permission to stash or overwrite other
+work; do not create the same branch twice. Environment: Docker Compose or devcontainer; Nix only
+if the project already uses it.
 
 | Phase | Role | Prompt file | When |
 |---|------|-------------|------|
-| 0a | Archaeology | `references/archaeology-prompt.md` | read-only, once per initiative |
+| 1 | Archaeology | `references/archaeology-prompt.md` | read-only, once per run |
 
 The remaining roles are listed in `references/pipeline-core.md`.
 Requirements live in `specs/INDEX.md` from the Product delta on; any role that creates, reads

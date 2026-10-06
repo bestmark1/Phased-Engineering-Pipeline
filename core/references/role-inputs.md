@@ -11,7 +11,7 @@ Optional inputs get an explicit `none / not applicable: reason`, not fabricated 
 | CURRENT_DATE | Observed current date for the report, not a guessed placeholder |
 | PROJECT_DESCRIPTION | Owner's request + approved Narrative/PRD; preserve the original request verbatim in a separate brief block |
 | DOMAIN_RESEARCH | Existing research notes, or no research needed with reason |
-| PRD_SUMMARY, PRD_CONTENT | Approved PRD; summaries preserve active AC/QR IDs, constraints and non-goals; full document remains accessible |
+| PRD_SUMMARY, PRD_CONTENT | Approved PRD (in existing-system: the scenario's approved delta PRD — framing only, criteria live in INDEX); summaries preserve active AC/QR IDs, constraints and non-goals; full document remains accessible |
 | PRD_ACCEPTANCE_CRITERIA | Active AC/QR from the requirement source in `references/specs-contract.md` (PRD only before a new product's first Released; otherwise `specs/INDEX.md`), retired rows excluded |
 | ACTIVE_CRITERIA, active AC/QR (any role) | new-product: PRD until the first Released, then `specs/INDEX.md`; existing-system: `specs/INDEX.md` from the Product delta on, regardless of Released or PRD. See `references/specs-contract.md` |
 | QA blind-pass inputs | Active AC, snapshot SHA, run instruction, test credentials/data only — no source, diff, reports, outputs or prior findings (`references/qa-prompt.md`) |

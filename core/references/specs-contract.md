@@ -38,6 +38,16 @@ One Markdown table with exactly these columns:
   their check in **Evidence** (command or rule and scope).
 - **Origin** `PRD`, `delta`, `OBS`, or `deviation:OBS-n` (an approved change of observed behavior).
 
+## Observed behavior (existing-system)
+
+`OBS-n` rows record what an existing system does today, found by the characterization slice:
+a protective safety net, not a requirement. The owner decides them per scenario in one batch
+(existing-system's entry reference): intended → an `AC` with Origin `OBS`, applied at once;
+must change → an `AC` with Origin `deviation:OBS-n`, applied by the slice that implements the
+fix. Either way adding the AC, relabeling the spec and retiring the OBS row happen in one commit;
+undecided OBS rows stay active. A changed behavior is accepted only through the
+parity gate with an approved delta pointing to that deviation row.
+
 ## Executable specs
 
 - Given-When-Then, written in the project's existing test framework — no Cucumber or other
