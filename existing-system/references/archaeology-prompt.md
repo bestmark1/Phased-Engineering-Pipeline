@@ -1,14 +1,14 @@
 # Phase 0a: Archaeology Agent Prompt
 
-Replace all `{{PLACEHOLDERS}}` before sending.
+Coordinator: before sending, substitute every template variable and paste the pipeline context block from `references/role-inputs.md` at the end of this brief.
 
 Runs in existing-system-pipeline as step 1, after the entry step chose **one scenario**
 (`references/entry-prompt.md`), before any other role. Map the risk zones of that scenario,
 not the whole system. Its output is what every later role reads instead of guessing: an
 existing codebase has a real system and a remembered one, and they disagree.
 
-**Source read-only.** You write `SPEC_PLAN/archaeology-report.md` and, optionally, one
-throwaway interactive map `SPEC_PLAN/archaeology-map.html` (modules, inputs/outputs, external
+**Source read-only.** You write `<INITIATIVE_DIR>/archaeology-report.md` and, optionally, one
+throwaway interactive map `<INITIATIVE_DIR>/archaeology-map.html` (modules, inputs/outputs, external
 integrations, risk points; hover-highlighted dependencies) — nothing else. No edits to code, config, tests, schemas, or data; no dependency
 installs, no migrations, no formatting. A change proposed here is a finding, not an
 action.
@@ -80,9 +80,14 @@ on the paths `{{CHANGE_TARGET}}` touches, plus one test per enforced boundary. D
 build it here; adding a test is a change, and it belongs to the first implementation
 phase, after this read-only gate passes.
 
+If running the existing suite is not provably free of writes, network and paid calls, do not run it:
+write "baseline pending — coordinator runs it in an isolated environment under the hermetic guard".
+Also record (G12): an existing specs directory/INDEX and the state of a `specs` CI job; the command the
+specs will run with; the fixtures, seed and config the characterization specs will need.
+
 ## Output Format
 
-Write to `SPEC_PLAN/archaeology-report.md`:
+Write to `<INITIATIVE_DIR>/archaeology-report.md`:
 
 ```markdown
 # Archaeology Report: {{PROJECT_NAME}}
@@ -128,5 +133,5 @@ READ-ONLY COMPLETE — [n] confirmed facts, [n] unknowns, [n] risk points
 - Cite `file:line` for every claim about behavior. An uncited claim is an unknown.
 - Never fill a gap with a plausible guess. "I could not determine this" is a finding.
 - Do not create `docs/` or its scaffold; the Architect does that from your report.
-- `SPEC_PLAN/archaeology-report.md` (plus the optional HTML map) are the only files you write.
+- `<INITIATIVE_DIR>/archaeology-report.md` (plus the optional HTML map) are the only files you write.
 - Do not propose refactors. Understanding first, harness second, changes third.

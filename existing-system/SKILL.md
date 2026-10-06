@@ -1,8 +1,8 @@
 ---
 name: existing-system-pipeline
 description: >
-  Enter and change an existing system safely: read-only archaeology and an exact test baseline
-  first, then product delta, architecture, vertical slices, independent review and QA. Use for
+  Safely change an existing system you did not build with new-product-pipeline: read-only
+  archaeology, an exact test baseline, characterization specs and a parity gate. Use for
   someone else's code, code built outside new-product-pipeline without executable specs, or a
   stale new-product project (specs job missing or red on the last accepted snapshot). For an
   empty repository, a project new-product-pipeline started, or one whose last accepted snapshot
@@ -40,17 +40,19 @@ existing-system run restored `specs` to green on an accepted snapshot and update
 
 ## Flow — one scenario per run
 
+Paths: `SPECS_DIR`, `STATE_FILE`, `INITIATIVE_DIR` are chosen in step 0 (`references/pipeline-core.md`).
+Every role brief ends with the pipeline context block (`references/role-inputs.md`).
 Load `references/entry-prompt.md` at the start (steps 0, 2, 3 and OBS decisions) and
 `references/parity.md` in every slice that touches the scenario.
 
 | # | Step | Role | May write | Exit gate |
 |---|---|---|---|---|
-| 0 | Entry: permissions, process map, choose **one** scenario | Coordinator + owner | PROGRESS.md, HANDOFF.md | owner approval of scenario and permissions |
-| 1 | Archaeology of the scenario's risk zones | Archaeology (`references/archaeology-prompt.md`), source read-only | `SPEC_PLAN/archaeology-report.md` (+ optional HTML map) | READ-ONLY COMPLETE |
+| 0 | Entry: permissions, process map, choose **one** scenario | Coordinator + owner | `STATE_FILE` (PROGRESS.md/HANDOFF.md or an initiative file) | owner approval of scenario and permissions |
+| 1 | Archaeology of the scenario's risk zones | Archaeology (`references/archaeology-prompt.md`), source read-only | `<INITIATIVE_DIR>/archaeology-report.md` (+ optional HTML map) | READ-ONLY COMPLETE |
 | 2 | Apply AGENTS.md answers and `docs/surprises.md` from the report | Coordinator | AGENTS.md (preserving it), `docs/surprises.md` | step-0 write permission |
 | 3 | Read-only access procedures (database, logs, CI) | Coordinator; owner creates credentials | `docs/access/*`, `scripts/access/*` | owner approval of the procedures |
-| 4 | Product delta incl. `specs/INDEX.md` → Consistency (`product`) → Architect → Tech Lead → Consistency (`full`) | Product, Consistency, Architect, Tech Lead | SPEC_PLAN artifacts, `specs/INDEX.md` | owner approvals + both Consistency gates |
-| 5 | Slice 1 = characterization: smoke + GWT specs of current behavior as `OBS-n`; golden set/eval if an algorithm/LLM; parity baseline | Developer → reviewers → phase QA | `specs/`, `specs/support/`, eval files, `SPEC_PLAN/parity/` | slice gates + owner's batch OBS decision |
+| 4 | Product delta incl. `specs/INDEX.md` → Consistency (`product`) → Architect → Tech Lead → Consistency (`full`) | Product, Consistency, Architect, Tech Lead | `<INITIATIVE_DIR>` artifacts, `<SPECS_DIR>/INDEX.md` (new criteria `planned`) | owner approvals + both Consistency gates |
+| 5 | Slice 1 = characterization: smoke + GWT specs of current behavior as `OBS-n`; golden set/eval if an algorithm/LLM; parity baseline | Developer → reviewers → phase QA | `<SPECS_DIR>/`, its `support/`, eval files, `<INITIATIVE_DIR>/parity/` | slice gates + owner's batch OBS decision |
 | 6 | Changing slices | Developer → reviewers → phase QA | per plan | core gates + `parity` |
 | 7 | Final QA, two passes | QA (`references/qa-prompt.md`) | reports | initiative receipt accepted |
 | 8 | Retro, incl. what past agent sessions stumbled on (if transcripts exist) | Retro | docs/pointers | advisory |

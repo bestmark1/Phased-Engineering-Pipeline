@@ -1,6 +1,6 @@
 # Optional Research: Domain Analyst Agent Prompt
 
-Replace all `{{PLACEHOLDERS}}` before sending.
+Coordinator: before sending, substitute every template variable and paste the pipeline context block from `references/role-inputs.md` at the end of this brief.
 
 ---
 
@@ -56,6 +56,9 @@ What is IN scope vs explicitly OUT of scope.
 ```
 
 ## Additional Output — Reference Caching
+
+Write under `docs/` only when the owner allowed docs writes (existing-system step 0); otherwise keep
+the summary in `SPEC_PLAN/research.md` (G18).
 
 If `{{DOCS_URL}}` is provided, access the documentation and save a distilled summary to:
 `docs/references/{tool-name}-llms.txt`

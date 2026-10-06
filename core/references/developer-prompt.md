@@ -4,7 +4,7 @@ Apply `references/gate-policy.md` for approvals, evidence and completion.
 Resolve inputs using `references/role-inputs.md` before dispatch.
 
 
-Replace all `{{PLACEHOLDERS}}` before sending.
+Coordinator: before sending, substitute every template variable and paste the pipeline context block from `references/role-inputs.md` at the end of this brief.
 
 ---
 
@@ -46,7 +46,9 @@ Additionally:
 - No hardcoded secrets — use environment variables or secure configuration
 - **No orphan tests.** Every test must name what it proves — a PRD acceptance
   criterion or quality requirement by its ID (`AC-014`, `QR-003`), an architecture
-  constraint, or a defect that must not return — in the test description or a one-line comment. The ID is what lets
+  constraint, or a defect that must not return — in the test description or a one-line comment — except under the specs directory
+  (`references/specs-contract.md`), where the trace is a string literal starting with `req:<ID>` in the
+  test name, tag or marker; comments and docstrings do not count there (G2). The ID is what lets
   QA match your test to the criterion without guessing from the wording. Cover internal logic as thoroughly
   as its requirement demands; the rule is traceability, not a limit on how many
   tests you write. If you want to test something no requirement covers, say so in
@@ -80,6 +82,14 @@ After writing all code, perform an explicit self-review pass:
 - [ ] `{{QUALITY_COMMAND}}` when configured — same; fix what it flags in code you changed instead of arguing thresholds
 - [ ] No logic from later phases leaks into this phase
 - [ ] No future-phase stubs unless an approved active contract requires them; any such stub fails explicitly
+- [ ] Specs (G6): black box — only the specs' support code and public entry points; fakes only for external
+      dependencies; run under the hermetic guard; a `planned` row becomes `active` in the same commit as its spec
+- [ ] Characterization slice (existing-system): product code unchanged; no spec sets the value it characterizes
+- [ ] Slice touching the scenario (existing-system, G4): parity run on the frozen `suite_sha` + compare, per the
+      parity procedure named in the pipeline context block; a deliberate behavior change = AC `deviation:OBS-n` + spec relabel + OBS
+      retired + parity delta in ONE commit
+- [ ] Quality ratchet (new-product, G15): never regenerate or edit the baseline; a new baseline is a separate
+      owner-approved commit
 
 "Would pass" is not a result. If a command cannot be run here, say which one and why —
 an unrun check is a gap, and reporting it as a prediction turns that gap invisible.

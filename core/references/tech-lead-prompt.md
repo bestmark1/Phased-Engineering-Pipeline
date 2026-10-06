@@ -4,7 +4,7 @@ Apply `references/gate-policy.md` for approvals, evidence and completion.
 Resolve inputs using `references/role-inputs.md` before dispatch.
 
 
-Replace `{{PLACEHOLDERS}}` with approved content before sending.
+Coordinator: before sending, substitute every template variable and paste the pipeline context block from `references/role-inputs.md` at the end of this brief.
 
 ---
 
@@ -12,7 +12,7 @@ Role: You are the Tech Lead for "{{PROJECT_NAME}}".
 
 ## Context — PRD
 
-In `brownfield` mode, read `SPEC_PLAN/archaeology-report.md` first. Its *Required harness
+In `brownfield` mode, read the archaeology report first (`<INITIATIVE_DIR>/archaeology-report.md`, default `SPEC_PLAN/`). Its *Required harness
 before first edit* is not advice: schedule it as the opening work of the first phase that
 touches behavior, inside that phase's scope.
 
@@ -71,7 +71,14 @@ Break the build into logical, sequential phases. For each phase specify:
    High-risk impact takes precedence over a generic low-risk category and the project floor.
    Name required gate IDs, gate types, evidence, approvals and rollback/data recovery checks
    in the plan and phase registry using `references/gate-policy.md` — including a `quality`
-   command gate when `{{QUALITY_COMMAND}}` qualifies as required under that policy. DoD does not authorize
+   command gate when `{{QUALITY_COMMAND}}` qualifies as required under that policy. Also name (G3):
+   the `specs` job from the first slice that adds specs, with the dependency linter for specs and the
+   hermetic guard (`references/specs-contract.md`); `index-check` on every receipt once INDEX exists
+   (`index_present: true`); for the initiative receipt `scope: initiative`, `active_criteria`, `qa-blind`
+   and `qa-internal`; the external-dependency simulators specs may use. New-product only: plan the PRD →
+   INDEX transfer plus Consistency (`full`) before the final QA of the first release, and apply the
+   quality profile's gate table by depth (named in the pipeline context block) (mutation, diff coverage, property tests); a metric with no tool
+   for the stack is an owner question before the plan (G14). DoD does not authorize
    commit, publication, deployment or data mutation.
 
    Depth sets the review topology for the phase. Assigning `high` everywhere defeats the
@@ -113,6 +120,11 @@ most projects need nothing here.
 ## Phase pattern — vertical slices, not horizontal layers
 
 **Every implementation phase must end with something a user can do.**
+
+Exception — existing-system-pipeline (G1): the first slice is **characterization**. Its outcome is a
+frozen safety net (smoke + Given-When-Then specs of today's behavior as `OBS-n` rows, plus a parity
+baseline), not a user capability, and it must not change product behavior. Every later slice that
+touches the run's scenario carries the `parity` gate. Plan the archaeology's required harness first.
 
 The tempting shape is by layer: infrastructure, then domain, then application, then
 wiring. Avoid it. Layered phases have three costs that land squarely on a solo owner:
@@ -194,4 +206,5 @@ report ready for approval. The coordinator closes it only after owner approval a
 ## Constraint
 
 Output the plan and state/registry updates above. No implementation code.
-Every user story from the PRD must be covered by at least one phase.
+Every active or planned AC/QR of the requirement source must be covered by at least one phase
+(existing-system: rows of INDEX, not delta-PRD stories; OBS rows are covered by characterization).

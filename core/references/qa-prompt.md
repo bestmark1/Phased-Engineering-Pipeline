@@ -4,7 +4,7 @@ Apply `references/gate-policy.md` for approvals, evidence and completion.
 Resolve inputs using `references/role-inputs.md` before dispatch.
 
 
-Replace all `{{PLACEHOLDERS}}` before sending.
+Coordinator: before sending, substitute every template variable and paste the pipeline context block from `references/role-inputs.md` at the end of this brief.
 
 This role was two — QA and a separate Release Gate. They are one now, and the merge makes
 the check *stronger*: both need the product running, so both run against the same **clean
@@ -115,6 +115,9 @@ about which criterion is which. A criterion with no ID is a defect of that sourc
 is listed once as retired and excluded from every count and from the verdict; verifying a
 requirement the owner withdrew wastes the run and can fail a release for nothing.
 Each criterion carries a *Verified by* line — that is the check you run in Step 2.
+`OBS-n` and `planned` rows of INDEX are not QA criteria: OBS rows are guarded by the specs job and
+parity, planned rows have no implementation yet (G5). Scope creep and orphan tests are judged against
+the requirement source (INDEX in existing-system), not against legacy code or the delta PRD (G16).
 
 Include the **Quality Requirements** (QR rows of the same source) (security, privacy, performance,
 accessibility, data recovery) the same way, by their `QR-###` IDs. They ship or fail
@@ -160,6 +163,8 @@ approval, and this pipeline treats false approvals as worse than honest gaps.
 {{QUALITY_COMMAND}}
 {{EVAL_COMMAND}}
 ```
+Also run every other command gate the plan names — e.g. `specs`, `index-check`, `parity`
+(existing-system), `quality` — and report each in the commands table (G7).
 Report results for each command.
 
 `{{EVAL_COMMAND}}` applies only when the product contains an LLM component — its

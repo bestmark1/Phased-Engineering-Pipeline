@@ -31,7 +31,12 @@ One Markdown table with exactly these columns:
 | AC-002 | retired | Given … When … Then … | spec | | PRD |
 
 - **ID** `AC-n`, `QR-n` or `OBS-n` (observed behavior, existing-system); unique.
-- **Status** `active` or `retired`.
+- **Status** `active` (its spec/evidence must exist now), `planned` (approved, its spec arrives with
+  the slice that implements it — no spec and no label yet), or `retired`. The implementing slice sets
+  `planned` → `active` in the same commit as the spec, so `index-check` stays green on every receipt.
+  Product writes new delta criteria as `planned`. A `static`/`contract`/`eval` row becomes `active` with its
+  evidence check. At initiative completion `index-check` runs with `--final`: any `planned` row fails —
+  implement it, or the owner moves it out of scope (retire with a reason, or carry it to a later initiative).
 - **Behavior** the full normative statement, not a summary. A `spec`-verified row states
   When and Then (Given when there is a precondition); error conditions stay in the row.
 - **Verify** `spec` (executable spec), `static`, `contract` or `eval`. Non-`spec` rows name
@@ -50,6 +55,10 @@ parity gate with an approved delta pointing to that deviation row.
 
 ## Executable specs
 
+Paths below say `specs/`; read them as `{{SPECS_DIR}}` (`references/pipeline-core.md`) when the project
+uses another directory.
+
+
 - Given-When-Then, written in the project's existing test framework — no Cucumber or other
   new dependency. Specs live under `specs/`; shared helpers only under `specs/support/`.
 - **Label:** each spec carries its requirement at the start of a string literal in code:
@@ -61,6 +70,18 @@ parity gate with an approved delta pointing to that deviation row.
   (HTTP, UI driver, CLI, published SDK). Neither imports internal product modules; enforce
   with the stack's dependency linter (import-linter, dependency-cruiser or equivalent) as a
   required gate.
+- **Hermetic guard (required).** The `specs` job runs every spec under a clean environment (only PATH,
+  HOME, LANG, TZ and the run's own variables) and a guard that makes any socket connect, including
+  loopback, and any spawn of network/model/remote tools (curl, ssh, docker, model CLIs) fail the run —
+  even if the product swallows the error. Settings the specs need are set explicitly; nothing is read
+  from the caller's shell or env files. HTTP/UI specs reach the product under test or a local driver
+  only through endpoints listed in `HERMETIC_GUARD_ALLOW` (host:port), started by the spec run itself. A Python reference implementation ships as
+  `scripts/hermetic_guard.py`; other stacks provide an equivalent. Without the guard a spec can reach a
+  paid model or let the environment fake a parity result (trial finding F12).
+- **A characterization spec never sets the value it characterizes.** Pinned settings, fixtures and
+  fakes cover only the inputs and external dependencies of the Given; the observed value must come
+  from the product's own defaults or code. Reviewer check: change that value in the product (in a
+  scratch copy, under the guard) — the spec must fail (trial finding F14).
 - **No mock of the system under test.** Allowed: state setup through a public entry point or
   a documented seed/fixture; simulators of external dependencies (payments, LLM, third-party
   APIs) listed in the plan.
@@ -75,6 +96,11 @@ parity gate with an approved delta pointing to that deviation row.
 - **`index-check`**: once `specs/INDEX.md` exists in a snapshot, every receipt for that snapshot
   — slice and initiative — sets `index_present: true` and includes the `index-check` command
   gate. The validator rejects a receipt with `index_present: true` and no such gate.
+
+Tests outside `specs/` (unit, integration) are not exempt from traceability: each still names
+the requirement, architectural constraint or regression it protects (core principles in
+`references/pipeline-core.md`). Moving a test out of `specs/` to avoid an AC is not allowed; a
+behavior worth testing with no requirement behind it goes to the owner as a candidate AC.
 
 ## Three separate checks
 

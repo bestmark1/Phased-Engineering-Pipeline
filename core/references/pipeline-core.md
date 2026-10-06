@@ -53,6 +53,9 @@ Resolve project settings from the repository and approved decisions before the p
 | `{{STRICT_MODE}}` | Noncritical major findings block when `true`; `false` makes only those advisory. Safety, required checks, approvals and UNKNOWN are never bypassed | `true` |
 | `{{EVAL_COMMAND}}` | Eval suite for LLM behavior; empty only when no LLM behavior is in scope; otherwise record eval setup as pending | `npx promptfoo eval` |
 | `{{DEFAULT_REVIEW_DEPTH}}` | `low`, `medium`, or `high` — floor for this project | `medium` |
+| `{{SPECS_DIR}}` | Executable specs + `INDEX.md`; another dir when the project already uses `specs/` for something else | `specs` / `specs-exec` |
+| `{{STATE_FILE}}` | Run state; an initiative file when PROGRESS.md/HANDOFF.md are owned by other workflows | `PROGRESS.md` / `SPEC_PLAN/initiatives/<id>/PROGRESS.md` |
+| `{{INITIATIVE_DIR}}` | Initiative artifacts (archaeology, delta PRD, plan, parity, gates) | `SPEC_PLAN` / `SPEC_PLAN/initiatives/<id>` |
 
 
 ## Artifacts and ownership

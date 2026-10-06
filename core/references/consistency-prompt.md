@@ -4,7 +4,7 @@ Apply `references/gate-policy.md` for approvals, evidence and completion.
 Resolve inputs using `references/role-inputs.md` before dispatch.
 
 
-Replace all `{{PLACEHOLDERS}}` before sending.
+Coordinator: before sending, substitute every template variable and paste the pipeline context block from `references/role-inputs.md` at the end of this brief.
 
 One role, invoked **twice** at different points with different inputs. Clarifier and
 Analyzer were separate roles doing the same job — finding contradictions, gaps and
@@ -42,7 +42,8 @@ network failure); undefined domain terms; assumptions the author found obvious.
 opposite behavior; goals fighting non-goals.
 
 **3. Gaps** — flows that start with no defined end state; criteria that cannot be tested
-as written; stories with no acceptance criteria; a "Given" with no defined setup path;
+as written; stories with no acceptance criteria (not applicable to an existing-system delta PRD, whose criteria
+live in INDEX — G11); a "Given" with no defined setup path;
 a criterion whose *Verified by* line describes no observable check.
 
 **4. Dependencies** — external dependencies named but not constrained (API versions, data
@@ -71,7 +72,9 @@ constraints and `{{QUALITY_RULES}}` are reflected in phase Definitions of Done.
 
 **10. Slice integrity** — every phase states a user-visible outcome. A phase that only
 builds a layer with no scenario behind it is a planning defect: say which slice should
-absorb it.
+absorb it. Exception: in existing-system the first slice is characterization (OBS specs +
+parity baseline, no behavior change) — its outcome is a frozen safety net, not a user capability.
+Check instead that it precedes every behavior change and that changing slices carry `parity`.
 
 ## Output Format
 

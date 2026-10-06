@@ -18,6 +18,8 @@ This skill does not select or change models. It does not authorize publication o
 
 At the start of every run, load `references/pipeline-core.md`: principles, configuration,
 artifacts, role prompts, gates and handoff shared with existing-system-pipeline.
+Every role brief ends with the pipeline context block (`references/role-inputs.md`): role prompts
+are shared by both pipelines and do not know which one runs.
 Architect, Tech Lead and reviewers also load `references/quality-profile.md` (default quality
 limits, which gate applies at which depth, ratchet, observability decision). CI is set up in
 the first slice. Any role that creates, reads or checks `specs/INDEX.md` or `specs/` loads
