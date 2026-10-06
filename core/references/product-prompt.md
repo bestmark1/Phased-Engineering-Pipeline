@@ -4,7 +4,7 @@ Apply `references/gate-policy.md` for approvals, evidence and completion.
 Resolve inputs using `references/role-inputs.md` before dispatch.
 
 
-Replace all `{{PLACEHOLDERS}}` before sending.
+Coordinator: before sending, substitute every template variable and paste the pipeline context block from `references/role-inputs.md` at the end of this brief.
 
 Produces the product framing in one pass: `Narrative.md`, `MRD.md` (Full mode only), and
 `PRD.md`. These were three separate roles. They are one now because all three *author*
@@ -207,5 +207,9 @@ recorded approval and the product consistency gate; file existence alone is insu
 
 ## Constraint
 
+Requirement source (G8, F5): in new-product before the first release the PRD holds the criteria;
+after it, and always in existing-system, criteria are rows of `<SPECS_DIR>/INDEX.md` in the format of
+`references/specs-contract.md` — append only, never renumber, new rows `planned`, Origin `PRD`/`delta`;
+the (delta) PRD is framing only and changes after release flow BACKLOG.md → change → INDEX.
 Requirements only. Do not propose architecture, database schemas, or code. Output the
-artifacts and stop — one owner approval covers all applicable product artifacts and deltas, and it comes before any design.
+artifacts (including INDEX rows) and stop — one owner approval covers all applicable product artifacts and deltas, and it comes before any design.

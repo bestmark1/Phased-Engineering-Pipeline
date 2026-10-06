@@ -5,8 +5,13 @@ characterization slice reports observed behavior for the owner's decision.
 
 ## Step 0 — entry (coordinator + owner)
 
-Write only `PROGRESS.md` and `HANDOFF.md`. Ask once, record each answer in HANDOFF.md:
+Write only the run state (`STATE_FILE`, default `PROGRESS.md` and `HANDOFF.md`). Ask once, record each answer in `STATE_FILE`:
 
+0. **Where this run's files live.** If the project already uses `specs/` for something else, choose
+   another `SPECS_DIR` (e.g. `specs-exec`). If `PROGRESS.md`/`HANDOFF.md` are maintained by other
+   workflows or sessions, keep this run's state in `STATE_FILE` = `SPEC_PLAN/initiatives/<id>/PROGRESS.md`
+   and its artifacts in `INITIATIVE_DIR` = `SPEC_PLAN/initiatives/<id>/`, and record that choice;
+   every later "HANDOFF.md" instruction means `STATE_FILE`.
 1. **Permissions:** may the pipeline write `AGENTS.md` and `docs/` here; may it push working
    branches (own repository: yes by default; someone else's: ask); who sets up read-only
    access to the database, logs and CI.
@@ -14,7 +19,9 @@ Write only `PROGRESS.md` and `HANDOFF.md`. Ask once, record each answer in HANDO
    (mark red: guardrails and checks first) and where time goes (mark blue: candidates for
    docs, scripts or an eval loop). Automate the overlap of high repetition and low risk;
    put a check in front of high risk.
-3. **One scenario:** pick the single most painful scenario for this run. A full rewrite is
+3. **One scenario:** pick the single most painful scenario for this run. Before proposing it, check
+   that it is still open — its backlog entry, plan status and the recent commits: a scenario already
+   implemented has no current behavior left to characterize (trial finding F3). A full rewrite is
    a series of runs, one scenario each (strangler fig); parity grows run by run.
 
 Gate: owner approval of the scenario and the permissions.
@@ -42,7 +49,7 @@ procedure but only points to these files. Gate: owner approval of the procedures
 ## Step 4 onward
 
 Product writes the scenario's **delta PRD** (`SPEC_PLAN/PRD.md`: scenario, goals, non-goals,
-constraints — framing only) and creates `specs/INDEX.md` with the change's AC/QR
+constraints — framing only) and creates `<SPECS_DIR>/INDEX.md` with the change's AC/QR as `planned`
 (`references/specs-contract.md`); the owner approves both. Roles take framing from the delta
 PRD and criteria only from INDEX. Then Consistency (`product`), Architect, Tech Lead,
 Consistency (`full`) as in `references/pipeline-core.md`.
@@ -64,7 +71,7 @@ Each decision changes INDEX and the specs **in one commit**, so `index-check` st
 - **→ AC (intended):** applied right after the decision, inside the characterization slice:
   add `AC-m` restating the behavior (Origin `OBS`), relabel its spec `req:AC-m`, retire `OBS-n`.
   Behavior does not change; parity stays identical.
-- **→ BUG (must change):** record the decision in HANDOFF.md and the plan; INDEX keeps `OBS-n`
+- **→ BUG (must change):** record the decision in `STATE_FILE` and the plan; INDEX keeps `OBS-n`
   active until the fix. The slice that implements the fix, in the same commit: adds `AC-m` with
   the desired behavior (Origin `deviation:OBS-n`), relabels the current spec to `req:AC-m` with
   the new expectation, retires `OBS-n`, and appends the parity delta (`references/parity.md`).

@@ -1,6 +1,6 @@
 # Reviewer 1: Architecture & SOLID Agent Prompt
 
-Replace `{{PLACEHOLDERS}}` before sending.
+Coordinator: before sending, substitute every template variable and paste the pipeline context block from `references/role-inputs.md` at the end of this brief.
 
 ---
 
@@ -54,6 +54,14 @@ Review the following code for **{{CURRENT_PHASE}}** of the project.
    - If mutation or property-based tooling is configured, cite its output instead of guessing.
    A weak test that is the only evidence for an AC/QR is a major finding: it turns
    acceptance into a false pass. Otherwise it is minor.
+   For specs (`references/specs-contract.md`, G9): the label is a `req:<ID>` string literal, never a
+   comment or docstring; black box; no mock of the subject; a characterization spec must not set the
+   value it checks — change that value in the product in a scratch copy and confirm the spec fails.
+   Run such experiments only under the hermetic guard: without it a spec can reach a paid model (F13).
+
+**Combined review (G10).** At Low and Medium depth one reviewer applies this checklist and the SRE
+checklist (fault tolerance, security, secrets, hermeticity) in one pass and emits one envelope. Use
+the envelope `id` and `rubric_version` named in the plan's required gates, not the example's.
 
 ## Code to Review
 

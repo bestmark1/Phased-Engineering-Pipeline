@@ -4,7 +4,7 @@ Apply `references/gate-policy.md` for approvals, evidence and completion.
 Resolve inputs using `references/role-inputs.md` before dispatch.
 
 
-Replace all `{{PLACEHOLDERS}}` before sending.
+Coordinator: before sending, substitute every template variable and paste the pipeline context block from `references/role-inputs.md` at the end of this brief.
 
 Runs after accepted QA, before local handoff or an explicitly authorized PR. Findings
 are advisory; documentation changes that affect reproducibility still need rechecking.
@@ -87,5 +87,7 @@ Record what changed in `HANDOFF.md`.
 You may edit `AGENTS.md`, files under `docs/`, and `HANDOFF.md` / `PROGRESS.md` only.
 Inside `AGENTS.md` you may add and correct pointers; blocks between `<!-- BEGIN:... -->` /
 `<!-- END:... -->` markers are read-only.
-Never touch product code, tests, or `SPEC_PLAN/` artifacts — the requirements were
+If transcripts of earlier agent sessions are provided, include them in Step 1: where agents stalled,
+what they had to be told twice, which docs or scripts were missing (G19).
+Never touch product code, tests, the specs directory, parity files or `SPEC_PLAN/` artifacts — the requirements were
 approved by the owner and a retro does not get to reinterpret them.

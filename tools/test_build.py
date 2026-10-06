@@ -55,6 +55,20 @@ class BuildTests(unittest.TestCase):
                     with self.subTest(package=name, ref=rel):
                         self.assertIn(rel, entry)
 
+    def test_every_role_prompt_requires_the_pipeline_context_block(self):
+        """Seam audit G1-G19: role prompts are pipeline-agnostic; the coordinator must append the block."""
+        packages, _ = build.build()
+        for name, (files, _) in packages.items():
+            role_inputs = files['references/role-inputs.md'].read_text()
+            self.assertIn('## Pipeline context block', role_inputs)
+            self.assertIn('pipeline context block', files['SKILL.md'].read_text())
+            for rel in files:
+                if rel.startswith('references/') and rel.endswith('-prompt.md') and rel != 'references/entry-prompt.md':
+                    text = files[rel].read_text()
+                    with self.subTest(package=name, prompt=rel):
+                        self.assertIn('pipeline context block', text)
+                        self.assertNotRegex(text, r'Replace[^\n]*\{\{[A-Z_]+\}\}[^\n]*before sending')
+
     def test_skill_file_cannot_shadow_core(self):
         with self.assertRaises(ValueError):
             self.files({'new-product/references/gate.md': 'shadow'})

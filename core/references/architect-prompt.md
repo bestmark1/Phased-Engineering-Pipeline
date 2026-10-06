@@ -4,7 +4,7 @@ Apply `references/gate-policy.md` for approvals, evidence and completion.
 Resolve inputs using `references/role-inputs.md` before dispatch.
 
 
-Replace all `{{PLACEHOLDERS}}` before sending.
+Coordinator: before sending, substitute every template variable and paste the pipeline context block from `references/role-inputs.md` at the end of this brief.
 
 ---
 
@@ -138,6 +138,10 @@ One-paragraph description of what this project is and who it serves.
   until a phase edits one or cites it as evidence.
 - This is traceability, not scarcity. Internal logic may be covered as thoroughly
   as its requirement demands.
+- Executable specs follow `references/specs-contract.md`: requirement source per pipeline, label =
+  `req:<ID>` string literal, layer direction specs → specs support → public entry points, hermetic guard (G13).
+- New-product: propose the pipeline's default quality profile for owner approval and record the
+  observability decision (structured events always; event store per its checklist) as an ADR (G13).
 - A test wanted for behavior no requirement covers signals a missing requirement.
   Raise it with the owner instead of encoding it in a test.
 

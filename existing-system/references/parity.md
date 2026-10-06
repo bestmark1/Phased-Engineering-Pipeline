@@ -5,8 +5,11 @@ scenario. Script: `scripts/parity.py`.
 
 ## Baseline (characterization slice)
 
-0. The runner creates `SPEC_PLAN/parity/<scenario>/` on first use. Commit an empty delta list
-   `SPEC_PLAN/parity/<scenario>/deltas.json` = `[]` with the baseline.
+`<INITIATIVE_DIR>` is the project setting (`references/pipeline-core.md`; default `SPEC_PLAN`).
+The spec command runs under the hermetic guard and a clean environment (`references/specs-contract.md`).
+
+0. The runner creates `<INITIATIVE_DIR>/parity/<scenario>/` on first use. Commit an empty delta list
+   `<INITIATIVE_DIR>/parity/<scenario>/deltas.json` = `[]` with the baseline.
 1. The characterization specs are committed; that commit is `suite_sha`. Freeze with it the
    paths the specs need: `specs/` (including `specs/support/`) and, if outside it, fixtures,
    seed and test config (`--suite-path` per path).
@@ -16,20 +19,23 @@ scenario. Script: `scripts/parity.py`.
 
    ```bash
    python3 <skill-root>/scripts/parity.py run --suite-sha <suite_sha> --product-sha <baseline_sha> \
-     --command "<project spec command>" --env-file env.json --out SPEC_PLAN/parity/<scenario>/baseline.json
+     --command "<project spec command>" --env-file env.json --out <INITIATIVE_DIR>/parity/<scenario>/baseline.json
    ```
 
    The spec command writes `{spec_id: {"outcome": "pass"|"fail", "observation": "<observed
-   response/output>"}}` to `$PARITY_RESULTS`. Observations are concrete (status + body, rendered
+   response/output>"}}` to `$PARITY_RESULTS`. Record the **observed value on pass and on
+   fail** — never the assertion message, which is tool-version text an approved delta could not
+   match; if the product errors before the value exists, record `ERROR: <type>`. Two specs writing
+   the same id is an error, not an overwrite (trial finding F11). Observations are concrete (status + body, rendered
    text, exit code + output), so a changed message is a changed behavior.
 
 ## Every changing slice (`parity` command gate)
 
 ```bash
 python3 <skill-root>/scripts/parity.py run --suite-sha <suite_sha> --product-sha <snapshot> \
-  --command "<same command>" --env-file env.json --out SPEC_PLAN/parity/<scenario>/<snapshot>.json
-python3 <skill-root>/scripts/parity.py compare SPEC_PLAN/parity/<scenario>/baseline.json \
-  SPEC_PLAN/parity/<scenario>/<snapshot>.json --deltas SPEC_PLAN/parity/<scenario>/deltas.json \
+  --command "<same command>" --env-file env.json --out <INITIATIVE_DIR>/parity/<scenario>/<snapshot>.json
+python3 <skill-root>/scripts/parity.py compare <INITIATIVE_DIR>/parity/<scenario>/baseline.json \
+  <INITIATIVE_DIR>/parity/<scenario>/<snapshot>.json --deltas <INITIATIVE_DIR>/parity/<scenario>/deltas.json \
   --index specs/INDEX.md
 ```
 

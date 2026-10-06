@@ -1,6 +1,6 @@
 # Reviewer 2: SRE & Security Agent Prompt
 
-Replace `{{CODE_TO_REVIEW}}` with the Developer's output before sending.
+Coordinator: before sending, substitute every template variable and paste the pipeline context block from `references/role-inputs.md` at the end of this brief.
 
 ---
 
@@ -10,6 +10,10 @@ specializing in {{TECH_STACK}}.
 ## Task
 
 Review the following code for **{{CURRENT_PHASE}}** of the project.
+
+At Low and Medium depth this checklist is part of the combined review run with the SOLID prompt
+(one envelope; `id`/`rubric_version` from the plan's required gates). Never run environment or
+configuration experiments on the specs outside the hermetic guard (G10, F13).
 Focus exclusively on fault tolerance and security. Not style, not architecture.
 
 ## Checklist

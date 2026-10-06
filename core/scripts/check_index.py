@@ -108,8 +108,8 @@ def check(rows, labels):
         if rid in seen:
             errors.append(f'{rid}: duplicate ID'); continue
         seen[rid] = row
-        if row['Status'] not in ('active', 'retired'):
-            errors.append(f'{rid}: status must be active or retired')
+        if row['Status'] not in ('active', 'planned', 'retired'):
+            errors.append(f'{rid}: status must be active, planned or retired')
         if row['Verify'] not in VERIFY:
             errors.append(f'{rid}: verify must be one of {", ".join(VERIFY)}')
         if not row['Behavior']:
@@ -131,6 +131,9 @@ def check(rows, labels):
             errors.append(f'{where[0]}: label req:{rid} not in INDEX')
         elif seen[rid]['Status'] == 'retired':
             errors.append(f'{where[0]}: label req:{rid} points to a retired requirement')
+        elif seen[rid]['Status'] == 'planned':
+            errors.append(f'{where[0]}: label req:{rid} points to a planned requirement; '
+                          f'set it active in the same commit as its spec')
     return errors
 
 
@@ -150,7 +153,8 @@ def main(argv=None):
         print(f'FAIL: {error}', file=sys.stderr)
     if not errors:
         active = sum(r['Status'] == 'active' for r in rows)
-        print(f'PASS: {active} active requirements traced')
+        planned = sum(r['Status'] == 'planned' for r in rows)
+        print(f'PASS: {active} active requirements traced; {planned} planned')
     return 1 if errors else 0
 
 

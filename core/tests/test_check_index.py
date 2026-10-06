@@ -106,6 +106,18 @@ class IndexTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ci.parse_index(HEADER.splitlines()[0] + '\n' + row())
 
+    # Trial finding F8: requirements whose specs arrive in a later slice.
+    def test_planned_rows_need_no_spec_yet(self):
+        self.assertEqual(self.run_check([row(), row('AC-002', status='planned')]), [])
+
+    def test_label_on_planned_row_fails_until_activated(self):
+        errors = self.run_check([row(), row('AC-002', status='planned')], 'a="req:AC-001"\nb="req:AC-002"\n')
+        self.assertFinding(errors, 'points to a planned requirement')
+        self.assertEqual(self.run_check([row(), row('AC-002')], 'a="req:AC-001"\nb="req:AC-002"\n'), [])
+
+    def test_planned_rows_still_need_valid_schema(self):
+        self.assertFinding(self.run_check([row(), row('AC-002', status='planned', verify='manual')]), 'verify')
+
     def test_spec_behavior_needs_when_then(self):
         self.assertFinding(self.run_check([row(behavior='User sees name')]), 'must state When and Then')
 
