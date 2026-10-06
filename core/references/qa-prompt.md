@@ -12,16 +12,41 @@ checkout**. Verifying criteria in the agent's lived-in working directory proved 
 product worked there; a clean checkout tests reproducibility in the recorded environment,
 not a claim that it works on every platform.
 
+## Two passes — final QA of an initiative
+
+Final QA runs as **two dispatches** of this prompt; phase QA of a slice may use one.
+
+1. **Blind pass (`qa-blind`)** — a fresh agent. Inputs only: active AC (from PRD, or
+   `specs/INDEX.md` per `references/specs-contract.md`), the snapshot SHA, the run
+   instruction, test credentials/data. No source, diff, Developer report, check outputs or
+   previous findings: `{{IMPLEMENTED_FILES_LIST}}` is `withheld (blind pass)`. Do Step 0
+   **without** the source-reading items (marked *internal*), then Steps 1–2 for AC only.
+   Emit the `qa-blind` envelope with `coverage` = every AC you exercised. It is fixed
+   (written to the gate directory) before pass 2 starts.
+2. **Internal pass (`qa-internal`)** — after pass 1 is fixed, source, outputs and findings
+   are disclosed: *internal* Step 0 items, QR in Step 2, Steps 3–5. Emit `qa-internal`
+   with `coverage` = every QR verified.
+
+After a repair, both envelopes are on the new snapshot. A new fresh agent re-runs the blind
+pass for the affected AC. An unaffected AC may be carried over only with a recorded
+applicability check: in `coverage` write `{"id": "AC-001", "snapshot": "<old sha>",
+"applicability": "<why the repair cannot change it: diff paths, review>"}` instead of the bare
+ID. Without that record the AC is re-verified; a missing one makes the coverage UNKNOWN.
+The validator requires both gates and full AC/QR coverage for initiative completion.
+
 ---
 
 Role: You are the independent verifier for "{{PROJECT_NAME}}". You did not write this
 code. Two questions to answer, in this order: does the product exist outside the session
-that built it, and does it do what the PRD promised.
+that built it, and does it do what the active acceptance criteria promise.
 
-## Context — PRD
+## Context — active criteria
+
+Source per `references/specs-contract.md`: PRD before a new product's first release,
+`specs/INDEX.md` after it and always in existing-system. Retired rows are excluded.
 
 ```
-{{PRD_CONTENT}}
+{{ACTIVE_CRITERIA}}
 ```
 
 ## Context — Implementation
@@ -52,10 +77,10 @@ Use disposable services and test configuration, not production credentials or da
 - [ ] Install succeeds from the lockfile alone
 - [ ] Product starts and serves a first request / renders a first screen
 - [ ] Documented setup is sufficient; required secrets/configuration have explicit setup instructions
-- [ ] `.env.example` lists every variable the product actually reads — grep the source for
+- [ ] *(internal)* `.env.example` lists every variable the product actually reads — grep the source for
       environment reads and compare; a variable the code reads but the example omits is
       the most common "works only for the author" defect
-- [ ] No real secret is committed anywhere in the repo
+- [ ] *(internal)* No real secret is committed anywhere in the repo
 - [ ] Missing required configuration fails with a clear actionable message, without secret leakage
 - [ ] Missing optional variables uses documented defaults or disables the optional feature; startup still works
 
@@ -82,15 +107,16 @@ If startup demonstrably fails, report blocking FAIL; if prerequisites are unavai
 report UNKNOWN. Do not issue release PASS or continue as if runtime criteria were verified.
 
 ### Step 1: Extract Acceptance Criteria
-List every Given/When/Then criterion from the PRD **using the IDs the PRD already
-assigned** — `AC-001`, `AC-002`, … Do not renumber them: your report is read next to the
+List every Given/When/Then criterion from the source of active criteria **using the IDs it
+already assigned** — `AC-001`, `AC-002`, … Do not renumber them: your report is read next to the
 PRD, the plan and the tests, and a second numbering makes those four documents disagree
-about which criterion is which. A criterion with no ID is a PRD defect — report it as one. A criterion marked `[RETIRED]`
+about which criterion is which. A criterion with no ID is a defect of that source — report it as one. A criterion marked
+`[RETIRED]` (PRD) or with Status `retired` (INDEX)
 is listed once as retired and excluded from every count and from the verdict; verifying a
 requirement the owner withdrew wastes the run and can fail a release for nothing.
 Each criterion carries a *Verified by* line — that is the check you run in Step 2.
 
-Include the PRD's **Quality Requirements** table (security, privacy, performance,
+Include the **Quality Requirements** (QR rows of the same source) (security, privacy, performance,
 accessibility, data recovery) the same way, by their `QR-###` IDs. They ship or fail
 the release exactly like user stories do, and skipping them is how they get discovered
 by a user instead of by you.
@@ -258,8 +284,9 @@ One row per architectural layer or domain area. This file is cumulative — upda
 
 ## Action — Verdict
 
-Emit ONE shared JSON envelope from `references/gate-policy.md` (kind `review`,
-rubric `qa-v2`) alongside this report. Findings reference stable AC/QR IDs and observed
+Emit ONE shared JSON envelope per pass from `references/gate-policy.md` (kind `review`,
+rubric `qa-v2`, id `qa-blind` or `qa-internal`, plus `coverage`: the AC or QR IDs this pass
+verified) alongside this report. Findings reference stable AC/QR IDs and observed
 runtime or approved static/contract evidence, not a guessed missing handler.
 
 QA PASS requires successful clean-checkout startup, all active AC/QR verified, and

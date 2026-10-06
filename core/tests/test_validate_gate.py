@@ -14,10 +14,12 @@ spec.loader.exec_module(gate)
 
 
 def receipt():
-    return dict(schema_version=1, phase='3.1', snapshot='sha-a', strict_mode=True,
-                required_gates=['tests', 'review', 'owner'], gates=[
+    return dict(schema_version=2, phase='3.1', snapshot='sha-a', snapshot_kind='commit', scope='slice',
+                strict_mode=True, required_gates=['tests', 'review', 'owner'], gates=[
                     dict(id='tests', kind='command', snapshot='sha-a', status='PASS',
-                         evidence='test log', command='pytest', exit_code=0, failures=[]),
+                         evidence='test log', command='pytest', exit_code=0, failures=[],
+                         runner='local', local=dict(command='make ci', worktree='clean',
+                                                    head_sha='sha-a', reason='no CI configured')),
                     dict(id='review', kind='review', snapshot='sha-a', status='PASS',
                          evidence='diff review', rubric_version='solid-v2', findings=[]),
                     dict(id='owner', kind='approval', snapshot='sha-a', status='PASS',
@@ -88,7 +90,8 @@ class CompletionTests(unittest.TestCase):
             r = receipt(); r['gates'][0]['exit_code'] = code; self.assertBlocked(r)
 
     def test_schema_is_strict_about_types_and_status(self):
-        for key, val in [('schema_version', True), ('strict_mode', 'false'), ('snapshot', ''), ('gates', {})]:
+        for key, val in [('schema_version', True), ('schema_version', 1), ('strict_mode', 'false'), ('snapshot', ''),
+                         ('gates', {}), ('snapshot_kind', 'tree'), ('scope', None), ('require_ci', 'yes')]:
             r = receipt(); r[key] = val; self.assertBlocked(r)
         for kind in ('unknown', None):
             r = receipt(); r['gates'][0]['kind'] = kind; self.assertBlocked(r)

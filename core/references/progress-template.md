@@ -21,7 +21,8 @@ Pipeline mode: {{PIPELINE_MODE}} · Strict mode: {{STRICT_MODE}}
 | 2a | Consistency (full) | SPEC_PLAN/cross-artifact-analysis.md | ⬜ | |
 | 3.1 | Developer | <phase 1 scope> | ⬜ | |
 | 3.N | Developer | <phase N scope> | ⬜ | |
-| 4 | QA & Release | QA + release report | ⬜ | |
+| 4 | QA & Release (blind + internal) | QA report, initiative receipt | ⬜ | |
+| R | Released (only on explicit deploy request) | SPEC_PLAN/releases/<n>.json | ⬜ | |
 | 5 | Retro | AGENTS.md / docs updates | ⬜ | |
 
 ## Run cost per phase

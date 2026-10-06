@@ -10,7 +10,7 @@ implements the known-wrong thing. Both produce a product that contradicts its ow
 
 | What the discovery changes | Earliest artifact to update |
 |---|---|
-| What the product does for the user | `SPEC_PLAN/PRD.md` |
+| What the product does for the user | the requirement source: `SPEC_PLAN/PRD.md`, or `specs/INDEX.md` once it is the source (`references/specs-contract.md`) |
 | A contract, data shape, or dependency direction | `SPEC_PLAN/ARCHITECTURE.md` |
 | Only how a phase is built | `SPEC_PLAN/IMPLEMENTATION_PLAN.md` |
 | A project rule or convention | `SPEC_PLAN/CONSTITUTION.md` |

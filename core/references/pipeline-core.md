@@ -104,13 +104,15 @@ skill, not a role the agent should improvise.
 | 3 | Developer | `references/developer-prompt.md` | per slice |
 | 3r | Reviewer SOLID | `references/reviewer-solid-prompt.md` | per review depth |
 | 3r | Reviewer SRE | `references/reviewer-sre-prompt.md` | High depth, or Medium when combined |
-| 4 | QA & Release | `references/qa-prompt.md` | always — criteria exercised in a clean checkout |
+| 4 | QA & Release | `references/qa-prompt.md` | phase QA per slice; final QA of an initiative as two passes (blind, internal) in a clean checkout |
 | 5 | Retro | `references/retro-prompt.md` | after QA PASS, advisory |
 
 `references/docs-scaffold.md` is not a role — it is the canonical `docs/` tree definition.
 `references/piecemeal-growth.md` is not a role either — it is a review mode loaded for the
 subtraction pass and unloaded afterwards. `references/hillclimbing.md` is a slice mode for
 tuning model behavior against an eval, loaded only by such a slice.
+`references/specs-contract.md` is loaded whenever `specs/INDEX.md` or `specs/` is created,
+read or checked: requirement source, INDEX format, executable black-box specs.
 
 
 ## Gates, verdicts and completion
@@ -123,8 +125,10 @@ reports can accompany it but do not replace a verdict.
 Before dispatch, resolve the inputs described in `references/role-inputs.md`. Do not send
 unresolved placeholders; read the approved artifacts rather than ask the owner to retype them.
 
-Before marking a phase Done, the coordinator compares the receipt's required gates to the
-approved plan and runs the local validator (Python 3, no dependencies):
+Done of a slice and completion of an initiative are different receipts (`scope`), see
+`references/gate-policy.md`. Before marking either, the coordinator compares the receipt's
+required gates to the approved plan and runs the local validator (Python 3, no dependencies),
+with `--ci-artifact` when the evidence comes from CI:
 
 ```bash
 python3 <skill-root>/scripts/validate_gate.py <project>/SPEC_PLAN/gates/<phase>.json
@@ -161,7 +165,9 @@ claimed inside the eval's noise.
 ### Release and retro
 
 Final QA uses an isolated checkout of the recorded commit, not a copy of the dirty working
-tree. Provision disposable dependencies and explicitly provided test configuration; never
+tree, and runs as two passes (`references/qa-prompt.md`). Released is a later, separate
+record: the accepted commit deployed with explicit authorization and every approved smoke
+check PASS (`references/gate-policy.md`, Release record). Provision disposable dependencies and explicitly provided test configuration; never
 reuse production credentials/data for mutation. Acceptance criteria need runtime evidence;
 QRs may use the appropriate static, contract or runtime check specified in the plan.
 QA verifies and reports, never ships. If a commit is needed but not authorized, ask once;
@@ -178,4 +184,5 @@ and refresh the reviewed snapshot before claiming release readiness.
 - Update PROGRESS/HANDOFF, relevant debt and surprises; record the next bounded step.
 - Report observed checks, assumptions, gaps and risks. Record available run telemetry via
   `references/run-economics.md`; unavailable metrics stay unavailable, explicit budgets apply.
-- Stage/commit only authorized own changes; push/PR are optional, separately authorized.
+- Stage/commit only authorized own changes; push follows `references/gate-policy.md`
+  (own repository: working branches by default); PR/merge/deploy are separately authorized.

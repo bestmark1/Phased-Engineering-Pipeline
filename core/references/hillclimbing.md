@@ -49,6 +49,19 @@ has it; these rules govern what counts as evidence either way.
    - any regression beyond that metric's own measured noise → revert;
    - movement within that metric's own measured noise → no evidence, revert.
 
+## Experiment record
+
+Every round is an experiment with its own folder `experiments/<id>/`: hypothesis, baseline
+scores with noise, the single patch, tuning/guard scores after, cost, decision (keep/revert)
+and why. `experiments/INDEX.md` holds one line per experiment — id → hypothesis → decision →
+link — so the next session reads the index, not every folder, and does not retry a dead end.
+
+- **Keep:** commit the patch only after the slice's applicable gates and only when commit is
+  authorized (`references/gate-policy.md`); otherwise leave it staged as ready for review.
+- **Revert:** undo only this experiment's own patch (reverse-apply it or restore the files it
+  touched); never `reset --hard`, never touch other work. The record stays — a failed
+  experiment is knowledge, and the index line is what stops the same idea next time.
+
 ## Leak rules
 
 Overfitting is not only a score artifact; it is usually leaked case content.

@@ -3,10 +3,11 @@ name: existing-system-pipeline
 description: >
   Enter and change an existing system safely: read-only archaeology and an exact test baseline
   first, then product delta, architecture, vertical slices, independent review and QA. Use for
-  someone else's code, own code built outside new-product-pipeline, or a project whose pipeline
-  artifacts are stale or missing. For an empty repository or a project new-product-pipeline
-  already runs with current artifacts, use new-product-pipeline. Not for isolated bugs, small
-  edits or ordinary codebase questions.
+  someone else's code, code built outside new-product-pipeline without executable specs, or a
+  stale new-product project (specs job missing or red on the last accepted snapshot). For an
+  empty repository, a project new-product-pipeline started, or one whose last accepted snapshot
+  has a green specs job, use new-product-pipeline. Not for isolated bugs, small edits or
+  ordinary codebase questions.
 ---
 
 # Existing System Pipeline
@@ -22,10 +23,20 @@ artifacts, role prompts, gates and handoff shared with new-product-pipeline.
 
 | Situation | Pipeline |
 |---|---|
-| Someone else's code; own code built outside new-product-pipeline; stale or missing artifacts | this skill |
-| Empty repository / no product code yet | new-product-pipeline |
-| Project run by new-product-pipeline, approved artifacts current | new-product-pipeline |
+| Empty repository / no product code yet | new-product-pipeline (bootstrap) |
+| Started by new-product-pipeline, no accepted snapshot with a green `specs` job yet (bootstrap / MVP in progress) | new-product-pipeline |
+| Run by new-product-pipeline; last accepted snapshot has a green `specs` job (CI or local evidence) | new-product-pipeline |
+| Someone else's code; own code built outside new-product-pipeline (including the former single pipeline) without executable specs | this skill |
+| A new-product project that is **stale** (below) | this skill |
 | Unclear | ask the owner one question with a recommendation |
+
+The owner's declaration that a project is stale moves it to existing-system-pipeline at any
+time and takes precedence over every row above, bootstrap included. Otherwise **stale** applies
+only after a project has had an accepted snapshot with a green `specs` job, and is judged on the
+last *accepted* snapshot, never on a red working commit: the `specs` job missing, disabled or
+red there. Back to new-product-pipeline after an
+existing-system run restored `specs` to green on an accepted snapshot and updated
+`specs/INDEX.md`. The `specs` job is defined in `references/specs-contract.md`.
 
 ## Flow
 
@@ -61,6 +72,8 @@ must preserve the starting state; do not create the same branch twice.
 | 0a | Archaeology | `references/archaeology-prompt.md` | read-only, once per initiative |
 
 The remaining roles are listed in `references/pipeline-core.md`.
+Requirements live in `specs/INDEX.md` from the Product delta on; any role that creates, reads
+or checks `specs/INDEX.md` or `specs/` loads `references/specs-contract.md`.
 
 ## Mode
 

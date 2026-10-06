@@ -174,8 +174,9 @@ Create the project knowledge base structure per `references/docs-scaffold.md`.
 ## 9. Logging Format (structured, with example)
 ## 10. PRD Traceability Matrix
     | Criterion ID | User Story | Architectural Component | Notes |
-    (one row per active AC/QR ID from the PRD — an ID with no component is a gap, and an
-     ID that does not exist in the PRD is a mistake in this table. Retired IDs keep a row
+    (one row per active AC/QR ID from the requirement source — PRD, or `specs/INDEX.md` once
+     it is the source per `references/specs-contract.md` — an ID with no component is a gap, and an
+     ID that does not exist in that source is a mistake in this table. Retired IDs keep a row
      marked RETIRED and need no component)
 ## 11. Open Questions (your clarifying questions — see constraint below)
 ```

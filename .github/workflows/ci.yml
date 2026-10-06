@@ -17,6 +17,8 @@ jobs:
       - uses: actions/checkout@v7
       - name: Validator tests (core)
         run: python3 -m unittest discover -s core/tests -v
+      - name: new-product tests
+        run: python3 -m unittest discover -s new-product/tests -v
       - name: Build tool tests
         run: python3 -m unittest discover -s tools -p 'test_*.py' -v
       - name: Packages build, are self-contained and dist/ is fresh
