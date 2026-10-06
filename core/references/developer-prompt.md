@@ -86,7 +86,7 @@ After writing all code, perform an explicit self-review pass:
       dependencies; run under the hermetic guard; a `planned` row becomes `active` in the same commit as its spec
 - [ ] Characterization slice (existing-system): product code unchanged; no spec sets the value it characterizes
 - [ ] Slice touching the scenario (existing-system, G4): parity run on the frozen `suite_sha` + compare, per the
-      pipeline's parity reference; a deliberate behavior change = AC `deviation:OBS-n` + spec relabel + OBS
+      parity procedure named in the pipeline context block; a deliberate behavior change = AC `deviation:OBS-n` + spec relabel + OBS
       retired + parity delta in ONE commit
 - [ ] Quality ratchet (new-product, G15): never regenerate or edit the baseline; a new baseline is a separate
       owner-approved commit

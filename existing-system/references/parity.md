@@ -19,7 +19,7 @@ The spec command runs under the hermetic guard and a clean environment (`referen
 
    ```bash
    python3 <skill-root>/scripts/parity.py run --suite-sha <suite_sha> --product-sha <baseline_sha> \
-     --command "<project spec command>" --env-file env.json --out <INITIATIVE_DIR>/parity/<scenario>/baseline.json
+     --suite-path <SPECS_DIR> [--suite-path <fixtures/config>...] --command "<project spec command>" --env-file env.json --out <INITIATIVE_DIR>/parity/<scenario>/baseline.json
    ```
 
    The spec command writes `{spec_id: {"outcome": "pass"|"fail", "observation": "<observed
@@ -33,10 +33,10 @@ The spec command runs under the hermetic guard and a clean environment (`referen
 
 ```bash
 python3 <skill-root>/scripts/parity.py run --suite-sha <suite_sha> --product-sha <snapshot> \
-  --command "<same command>" --env-file env.json --out <INITIATIVE_DIR>/parity/<scenario>/<snapshot>.json
+  --suite-path <SPECS_DIR> [--suite-path <fixtures/config>...] --command "<same command>" --env-file env.json --out <INITIATIVE_DIR>/parity/<scenario>/<snapshot>.json
 python3 <skill-root>/scripts/parity.py compare <INITIATIVE_DIR>/parity/<scenario>/baseline.json \
   <INITIATIVE_DIR>/parity/<scenario>/<snapshot>.json --deltas <INITIATIVE_DIR>/parity/<scenario>/deltas.json \
-  --index specs/INDEX.md
+  --index <SPECS_DIR>/INDEX.md
 ```
 
 - Always the frozen `suite_sha`, never the current specs: specs edited together with the code

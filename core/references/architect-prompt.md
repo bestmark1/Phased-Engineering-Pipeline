@@ -134,7 +134,7 @@ One-paragraph description of what this project is and who it serves.
   implementation, and future sessions maintain the test instead of reconsidering
   the code.
 - In `brownfield` mode this binds tests written or modified after the baseline SHA in
-  `SPEC_PLAN/archaeology-report.md`. Pre-existing tests are baseline debt, not orphans,
+  the archaeology report (`<INITIATIVE_DIR>/archaeology-report.md`). Pre-existing tests are baseline debt, not orphans,
   until a phase edits one or cites it as evidence.
 - This is traceability, not scarcity. Internal logic may be covered as thoroughly
   as its requirement demands.

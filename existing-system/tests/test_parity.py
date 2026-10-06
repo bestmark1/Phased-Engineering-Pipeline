@@ -86,6 +86,12 @@ class CompareTests(unittest.TestCase):
             with self.subTest(index=bad):
                 self.assertEqual(parity.compare(BASE, current, [DELTA], bad)[0], 'FAIL')
 
+    def test_duplicate_spec_ids_are_input_errors(self):
+        """F11 / PR #20 review: two specs writing one id must not silently overwrite each other."""
+        with self.assertRaises(parity.InputError):
+            parity.loads('{"x": {"outcome": "fail", "observation": "a"}, "x": {"outcome": "pass", "observation": "b"}}')
+        self.assertEqual(parity.loads('{"x": 1}'), {'x': 1})
+
     def test_malformed_records_are_input_errors(self):
         for bad in ([], dict(BASE, results={'x': dict(outcome='ok', observation='')}), dict(BASE, environment=None)):
             with self.subTest(bad=bad), self.assertRaises(parity.InputError):

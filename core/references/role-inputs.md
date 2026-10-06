@@ -27,6 +27,7 @@ Optional inputs get an explicit `none / not applicable: reason`, not fabricated 
 | PROJECT_NAME, PIPELINE_MODE, CHANGE_TARGET, TECH_STACK, QUALITY_RULES, INTERFACE_STYLE, DOCS_URL | Project settings in `references/pipeline-core.md` + approved decisions |
 | BUILD_COMMAND, RUN_COMMAND, TEST_COMMAND, LINT_COMMAND, TYPECHECK_COMMAND, QUALITY_COMMAND, ROLLBACK_COMMAND, EVAL_COMMAND | Repository scripts/tooling and approved plan; no guessed commands; applicability/pending state follows gate-policy.md |
 | STRICT_MODE, DEFAULT_REVIEW_DEPTH | Explicit project setting or documented defaults: true and medium |
+| REVIEW_DEPTH | This slice's depth from the approved plan/phase registry (never below DEFAULT_REVIEW_DEPTH); Low/Medium = one combined SOLID+SRE review |
 | SPECS_DIR, STATE_FILE, INITIATIVE_DIR | Project settings (`references/pipeline-core.md`): where executable specs + INDEX, run state and initiative artifacts live |
 
 The coordinator also attaches snapshot identity, required gates/check outputs, existing
@@ -46,6 +47,7 @@ PIPELINE CONTEXT (overrides the generic prompt where they differ)
   Phase/row numbers in the prompt that belong to the other pipeline (e.g. 0a, 0c, 2a) do not apply;
   state lives in <STATE_FILE>.
 - Requirement source: <PRD | SPECS_DIR/INDEX.md> (references/specs-contract.md). Take AC/QR only from it.
+  At initiative completion no row may remain planned (check_index --final).
   In existing-system the delta PRD is framing only; its stories need no AC of their own.
 - INDEX statuses: active = needs its spec/evidence now; planned = spec arrives in a later slice (no spec yet,
   no label yet); retired = ignore. OBS-n rows = observed current behavior, a safety net, not a requirement:
@@ -57,6 +59,10 @@ PIPELINE CONTEXT (overrides the generic prompt where they differ)
 - Gates of this slice/run: <ids from the approved plan, e.g. specs, index-check, parity, quality, review ids,
   approvals>; receipt schema 2 (references/gate-policy.md).
 - This role may write: <exact paths>. docs/ writes need the step-0 permission (existing-system).
+- Slices: existing-system slice 1 = characterization (OBS specs + parity baseline, no behavior change,
+  exempt from the user-visible-outcome rule); every later slice touching the scenario carries `parity`.
+- Pipeline-specific references this role must load (name them; P10): existing-system — the parity
+  procedure and the entry OBS rules; new-product — the quality profile.
 - Extra inputs: <archaeology report, transcripts for Retro, parity files, ...>.
 ```
 

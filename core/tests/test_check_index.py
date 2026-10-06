@@ -115,6 +115,15 @@ class IndexTests(unittest.TestCase):
         self.assertFinding(errors, 'points to a planned requirement')
         self.assertEqual(self.run_check([row(), row('AC-002')], 'a="req:AC-001"\nb="req:AC-002"\n'), [])
 
+    def test_final_check_rejects_planned_rows(self):
+        """PR #20 review P1: an initiative must not complete with approved criteria left planned."""
+        rows = [row(), row('AC-002', status='planned')]
+        self.assertEqual(self.run_check(rows), [])
+        (self.root / 'INDEX.md').write_text('# R\n\n' + HEADER + ''.join(rows))
+        labels = ci.scan_labels(self.root, (self.root / 'INDEX.md').resolve())
+        errors = ci.check(ci.parse_index((self.root / 'INDEX.md').read_text()), labels, final=True)
+        self.assertTrue(any('AC-002: still planned' in e for e in errors), errors)
+
     def test_planned_rows_still_need_valid_schema(self):
         self.assertFinding(self.run_check([row(), row('AC-002', status='planned', verify='manual')]), 'verify')
 

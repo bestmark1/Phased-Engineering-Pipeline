@@ -72,7 +72,9 @@ constraints and `{{QUALITY_RULES}}` are reflected in phase Definitions of Done.
 
 **10. Slice integrity** — every phase states a user-visible outcome. A phase that only
 builds a layer with no scenario behind it is a planning defect: say which slice should
-absorb it.
+absorb it. Exception: in existing-system the first slice is characterization (OBS specs +
+parity baseline, no behavior change) — its outcome is a frozen safety net, not a user capability.
+Check instead that it precedes every behavior change and that changing slices carry `parity`.
 
 ## Output Format
 

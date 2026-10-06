@@ -12,7 +12,7 @@ Role: You are the Tech Lead for "{{PROJECT_NAME}}".
 
 ## Context — PRD
 
-In `brownfield` mode, read `SPEC_PLAN/archaeology-report.md` first. Its *Required harness
+In `brownfield` mode, read the archaeology report first (`<INITIATIVE_DIR>/archaeology-report.md`, default `SPEC_PLAN/`). Its *Required harness
 before first edit* is not advice: schedule it as the opening work of the first phase that
 touches behavior, inside that phase's scope.
 
@@ -77,7 +77,7 @@ Break the build into logical, sequential phases. For each phase specify:
    (`index_present: true`); for the initiative receipt `scope: initiative`, `active_criteria`, `qa-blind`
    and `qa-internal`; the external-dependency simulators specs may use. New-product only: plan the PRD →
    INDEX transfer plus Consistency (`full`) before the final QA of the first release, and apply the
-   quality profile's gate table by depth (mutation, diff coverage, property tests); a metric with no tool
+   quality profile's gate table by depth (named in the pipeline context block) (mutation, diff coverage, property tests); a metric with no tool
    for the stack is an owner question before the plan (G14). DoD does not authorize
    commit, publication, deployment or data mutation.
 

@@ -34,7 +34,9 @@ One Markdown table with exactly these columns:
 - **Status** `active` (its spec/evidence must exist now), `planned` (approved, its spec arrives with
   the slice that implements it — no spec and no label yet), or `retired`. The implementing slice sets
   `planned` → `active` in the same commit as the spec, so `index-check` stays green on every receipt.
-  Product writes new delta criteria as `planned`.
+  Product writes new delta criteria as `planned`. A `static`/`contract`/`eval` row becomes `active` with its
+  evidence check. At initiative completion `index-check` runs with `--final`: any `planned` row fails —
+  implement it, or the owner moves it out of scope (retire with a reason, or carry it to a later initiative).
 - **Behavior** the full normative statement, not a summary. A `spec`-verified row states
   When and Then (Given when there is a precondition); error conditions stay in the row.
 - **Verify** `spec` (executable spec), `static`, `contract` or `eval`. Non-`spec` rows name
@@ -72,7 +74,8 @@ uses another directory.
   HOME, LANG, TZ and the run's own variables) and a guard that makes any socket connect, including
   loopback, and any spawn of network/model/remote tools (curl, ssh, docker, model CLIs) fail the run —
   even if the product swallows the error. Settings the specs need are set explicitly; nothing is read
-  from the caller's shell or env files. A Python reference implementation ships as
+  from the caller's shell or env files. HTTP/UI specs reach the product under test or a local driver
+  only through endpoints listed in `HERMETIC_GUARD_ALLOW` (host:port), started by the spec run itself. A Python reference implementation ships as
   `scripts/hermetic_guard.py`; other stacks provide an equivalent. Without the guard a spec can reach a
   paid model or let the environment fake a parity result (trial finding F12).
 - **A characterization spec never sets the value it characterizes.** Pinned settings, fixtures and

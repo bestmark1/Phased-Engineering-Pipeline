@@ -22,6 +22,18 @@ real project.
 - F5 product-prompt unaware of "delta PRD = framing, criteria in INDEX".
 - F6 consistency-prompt refers to new-product PROGRESS rows (`0c`).
 - F7 tech-lead-prompt unaware of characterization slice / OBS / parity gate.
+- F8 (design defect) index-check required on every receipt + "every active spec row needs a spec" made
+  a characterization slice impossible to pass (delta ACs get specs later). Fixed: status `planned`.
+- F9 suite_sha needs committed specs + INDEX; the skill did not say who commits initiative artifacts under
+  which permission. Addressed by gate-policy's commit rules + owner permission recorded at step 0.
+- F10 parity output path hard-coded to SPEC_PLAN/parity/. Fixed: `<INITIATIVE_DIR>`.
+- F11 failing frozen spec recorded pytest's message instead of the observed value. Fixed in parity.md; the
+  script rejects duplicate spec ids.
+- F12 "no network / paid calls" was declared, not enforced. Fixed: scripts/hermetic_guard.py + required guard.
+- F13 a reviewer ran env-sensitivity probes without a guard (likely 2 real `codex exec` calls, synthetic
+  text). Fixed: reviewer prompts forbid unguarded experiments.
+- F14 characterization specs pinned the value they characterized (timezone, then freshness window).
+  Fixed: contract rule + mutation check in review.
 
 ## Seam audit by reading (G1–G19)
 Only archaeology is fully pipeline-aware; 10 of 11 role prompts need pointers or edits.

@@ -28,6 +28,19 @@ class InputError(Exception):
     pass
 
 
+def _unique_keys(pairs):
+    seen = {}
+    for key, value in pairs:
+        if key in seen:
+            raise InputError(f'duplicate key {key!r} (two specs wrote the same id)')
+        seen[key] = value
+    return seen
+
+
+def loads(text):
+    return json.loads(text, object_pairs_hook=_unique_keys)
+
+
 def git(repo, *args, **kw):
     return subprocess.run(['git', '-C', str(repo), *args], check=True, capture_output=True, **kw)
 
@@ -74,7 +87,7 @@ def run(repo, suite_sha, product_sha, command, environment, suite_paths=('specs'
             if not results.exists():
                 raise InputError(f'spec command wrote no results (exit {proc.returncode}): {proc.stderr[-500:]}')
             try:
-                data = json.loads(results.read_text(encoding='utf-8'))
+                data = loads(results.read_text(encoding='utf-8'))
             except (OSError, UnicodeError, json.JSONDecodeError) as exc:
                 raise InputError(f'spec command wrote unreadable results: {exc}')
         finally:
@@ -173,7 +186,7 @@ def compare(baseline, current, deltas=(), index=None):
 
 def load_json(path):
     try:
-        return json.loads(Path(path).read_text(encoding='utf-8'))
+        return loads(Path(path).read_text(encoding='utf-8'))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise InputError(f'{path}: {exc}')
 

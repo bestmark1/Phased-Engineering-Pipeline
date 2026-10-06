@@ -11,7 +11,8 @@ specializing in {{TECH_STACK}}.
 
 Review the following code for **{{CURRENT_PHASE}}** of the project.
 
-At Low and Medium depth this checklist is part of the combined review run with the SOLID prompt
+Review depth of this slice: {{REVIEW_DEPTH}}. At Low and Medium depth this checklist is part of the
+combined review run with the SOLID prompt
 (one envelope; `id`/`rubric_version` from the plan's required gates). Never run environment or
 configuration experiments on the specs outside the hermetic guard (G10, F13).
 Focus exclusively on fault tolerance and security. Not style, not architecture.

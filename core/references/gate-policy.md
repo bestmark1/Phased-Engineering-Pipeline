@@ -175,7 +175,8 @@ Receipt fields: `snapshot_kind` (`commit` or `manifest`), `scope` (`slice` or
 `specs/INDEX.md` exists; then the `index-check` command gate is required in every receipt). An initiative receipt also
 lists `active_criteria` (every active AC/QR ID) and contains `qa-blind` and `qa-internal`
 review gates whose `coverage` lists the AC resp. QR they verified; missing coverage is
-UNKNOWN. A coverage entry is an ID verified on this snapshot, or after a repair a carried-over
+UNKNOWN. The initiative's `index-check` runs `check_index.py --final`, so no approved row is left
+`planned`. A coverage entry is an ID verified on this snapshot, or after a repair a carried-over
 record `{id, snapshot (earlier), applicability}` (`references/qa-prompt.md`). The validator accepts schema 2 only; receipts of phases accepted before the
 split stay as history and are not revalidated.
 
