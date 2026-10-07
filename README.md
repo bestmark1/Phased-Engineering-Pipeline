@@ -1,7 +1,8 @@
 # Phased engineering pipelines
 
-Two skills for substantial end-to-end initiatives — product framing, architecture, vertical
-slices, independent review and reproducible QA — built from one shared core.
+Two agent skills for substantial end-to-end initiatives — product framing, architecture,
+vertical slices, independent review and reproducible QA — built from one shared core. They
+work in Claude Code and Codex (same package, installed into each host's skill directory).
 Not a default process for small fixes.
 
 | Skill | Use for |
@@ -9,18 +10,43 @@ Not a default process for small fixes.
 | `new-product-pipeline` | an empty repository, or a project this pipeline already runs with current artifacts (modes Full / Lite) |
 | `existing-system-pipeline` | someone else's code, own code built outside the pipeline, or stale/missing artifacts (read-only archaeology + exact baseline first) |
 
-The design and its review history live in [docs/plans/](docs/plans/). Planned changes beyond
-the split (CI evidence, quality profile, executable specs, parity) arrive in later phases.
+What both share:
+
+- **Executable specs and a requirement registry.** Acceptance criteria become Given/When/Then
+  specs labelled `req:<ID>`; `specs/INDEX.md` lists every requirement with its status and how
+  it is verified. `check_index.py` keeps the two in sync.
+- **Evidence before opinion.** Deterministic checks (build, lint, typecheck, tests, specs) run
+  before any LLM reviewer; their results go into a phase receipt (schema v2) that records
+  whether they ran in CI or locally and on which snapshot. `validate_gate.py` checks the receipt.
+- **Blind two-pass QA** in a clean checkout: the first pass sees only the criteria and the
+  running product, the second the internal artifacts.
+- **Hermetic specs.** `hermetic_guard.py` (pytest plugin) blocks network calls and paid tools
+  during spec runs.
+
+Skill-specific:
+
+- `new-product-pipeline` — optional quality profile: `quality_ratchet.py` holds new code to
+  absolute complexity limits and existing code to "no worse than the baseline".
+- `existing-system-pipeline` — read-only archaeology of the current code, then a
+  characterization slice that pins current behavior as `OBS-n` specs, then a parity gate:
+  `parity.py` runs the frozen spec suite against the changed code and fails on any behavior
+  change that is not an approved deviation.
+
+Design and review history: [docs/plans/](docs/plans/). Eval scenarios and the trial run on a
+real project: [evals/](evals/).
 
 ## Repository layout
 
 ```text
-core/             shared by both packages: references/, scripts/validate_gate.py, tests/
-new-product/      SKILL.md of new-product-pipeline
-existing-system/  SKILL.md + references/archaeology-prompt.md of existing-system-pipeline
+core/             shared by both packages: references/ (contract, role prompts, gate policy,
+                  specs contract), scripts/ (validate_gate.py, check_index.py,
+                  hermetic_guard.py), tests/
+new-product/      SKILL.md, references/quality-profile.md, scripts/quality_ratchet.py, tests/
+existing-system/  SKILL.md, references/ (archaeology, entry, parity), scripts/parity.py, tests/
 tools/build.py    assembles dist/*.skill (core + skill dir), checks package-local links,
                   runs each package's tests in isolation; deterministic output
 dist/             built packages (committed; CI fails if stale)
+evals/            scenarios.json and recorded results
 ```
 
 `core/references/pipeline-core.md` is the shared contract (principles, configuration,
@@ -31,6 +57,8 @@ directory may not contain a file that shadows a core file — the build fails.
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s core/tests -v
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s new-product/tests -v
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s existing-system/tests -v
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tools -p 'test_*.py' -v
 python3 tools/build.py          # rebuild dist/
 python3 tools/build.py --check  # what CI runs
@@ -42,32 +70,40 @@ Python 3.11.4+ (stdlib only). Edit sources in `core/` and the skill dirs, never 
 
 Review the source and any local modifications first; never extract over a modified
 installation — back up and compare. A `.skill` file is a gzipped tar. Into a **new empty**
-directory under the host's skill root:
+directory under the host's skill root — `~/.claude/skills/` for Claude Code,
+`~/.codex/skills/` for Codex:
 
 ```bash
 mkdir -p ~/.claude/skills/new-product-pipeline
 tar -xzf dist/new-product-pipeline.skill -C ~/.claude/skills/new-product-pipeline
 ```
 
-Same for `existing-system-pipeline`. Each package is self-contained: SKILL.md, references/,
-scripts/, tests/. Migrating from the single `phased-engineering-pipeline` skill:
-see [docs/migration.md](docs/migration.md).
+Same for `existing-system-pipeline` and for the Codex directory. Each package is
+self-contained: SKILL.md, references/, scripts/, tests/. Migrating from the single
+`phased-engineering-pipeline` skill: see [docs/migration.md](docs/migration.md).
 
 ## Local validation inside a package
 
 ```bash
 python3 scripts/validate_gate.py /path/to/project/SPEC_PLAN/gates/3.1.json
+python3 scripts/validate_gate.py --ci-artifact ci-job.json /path/to/gates/3.1.json
 python3 scripts/validate_gate.py --prompt /path/to/rendered-brief.txt
+python3 scripts/check_index.py --index specs/INDEX.md --specs specs [--final]
+python3 scripts/quality_ratchet.py baseline.json current.json           # new-product
+python3 scripts/parity.py compare baseline.json run.json --index specs/INDEX.md  # existing-system
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 ```
 
-The validator checks supplied evidence records and unresolved tokens. It neither executes
-project checks, installs a hook, changes progress nor verifies that an approval is genuine.
+The scripts check supplied records and files. `validate_gate.py` neither executes project
+checks, installs a hook, changes progress nor verifies that an approval or a CI run is genuine;
+`parity.py run` is the only one that executes the project's spec command.
 
 ## Verification scope
 
-The tests exercise the receipt validator and the package build, not autonomous model
-behavior. A live multi-role run is a separate integration test (phase 4 of the plan).
+Unit tests cover the scripts and the package build. Model behavior is covered by the eval
+scenarios in [evals/](evals/) (S1–S10) and one trial of `existing-system-pipeline` on a real
+project (steps 0–5, offline). Not yet verified in a live run: `new-product-pipeline` end to
+end, two-pass QA, and parity across several changing slices.
 
 ## Historical release notes (not the current execution contract)
 
