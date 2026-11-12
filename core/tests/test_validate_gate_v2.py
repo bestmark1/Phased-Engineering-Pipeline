@@ -310,8 +310,8 @@ class ReleaseTests(Blocked):
 
 
 class DocumentationTests(unittest.TestCase):
-    def test_gate_policy_example_receipt_is_valid(self):
-        policy = (Path(__file__).resolve().parents[1] / 'references' / 'gate-policy.md').read_text()
+    def test_receipt_contract_example_receipt_is_valid(self):
+        policy = (Path(__file__).resolve().parents[1] / 'references' / 'receipt-contract.md').read_text()
         block = policy.split('## Receipt (minimal complete example)', 1)[1].split('```json', 1)[1].split('```', 1)[0]
         self.assertEqual(gate.validate(json.loads(block)), [])
 

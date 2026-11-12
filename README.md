@@ -39,7 +39,7 @@ real project: [evals/](evals/).
 
 ```text
 core/             shared by both packages: references/ (contract, role prompts, gate policy,
-                  specs contract), scripts/ (validate_gate.py, check_index.py,
+                  receipt contract, specs contract), scripts/ (validate_gate.py, check_index.py,
                   hermetic_guard.py), tests/
 new-product/      SKILL.md, references/quality-profile.md, scripts/quality_ratchet.py, tests/
 existing-system/  SKILL.md, references/ (archaeology, entry, parity), scripts/parity.py, tests/

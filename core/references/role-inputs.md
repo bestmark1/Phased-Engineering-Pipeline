@@ -57,7 +57,7 @@ PIPELINE CONTEXT (overrides the generic prompt where they differ)
   or docstring; black box through public entry points; fakes only for external dependencies; run under the
   hermetic guard; a characterization spec never sets the value it characterizes.
 - Gates of this slice/run: <ids from the approved plan, e.g. specs, index-check, parity, quality, review ids,
-  approvals>; receipt schema 2 (references/gate-policy.md).
+  approvals>; receipt schema 2 (references/receipt-contract.md).
 - This role may write: <exact paths>. docs/ writes need the step-0 permission (existing-system).
 - Slices: existing-system slice 1 = characterization (OBS specs + parity baseline, no behavior change,
   exempt from the user-visible-outcome rule); every later slice touching the scenario carries `parity`.
