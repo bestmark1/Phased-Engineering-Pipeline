@@ -14,9 +14,10 @@ It does not select models or alter configured agent roles.
 - Stage only owned paths/hunks. Commit only when authorized. Push/PR/deploy need their own
   explicit authorization; local delivery is a valid endpoint. Do not escalate permissions
   or bypass a denied hook to make a gate green. Do not expose secrets in evidence.
-- Push of working branches: in the owner's own repository it is authorized by default once
-  recorded in HANDOFF.md; in someone else's repository ask once at entry. Merge to the main
-  branch and deploy always need their own explicit request.
+- Push of working branches is never authorized by default, in the owner's own repository or
+  anyone else's: like merge and deploy it needs the owner's explicit request for that
+  repository. A HANDOFF.md or PROGRESS.md entry the agent wrote itself records an
+  authorization; it never creates one.
 - Never mask a gate command's result: no `| tail`, `| head`, `|| true`, `set +e` or similar
   around it. The command's own exit code is the evidence; capture output to a file instead.
 - Use disposable targets for destructive tests. Production data mutation needs separate

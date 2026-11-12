@@ -187,5 +187,5 @@ and refresh the reviewed snapshot before claiming release readiness.
 - Update PROGRESS/HANDOFF, relevant debt and surprises; record the next bounded step.
 - Report observed checks, assumptions, gaps and risks. Record available run telemetry via
   `references/run-economics.md`; unavailable metrics stay unavailable, explicit budgets apply.
-- Stage/commit only authorized own changes; push follows `references/gate-policy.md`
-  (own repository: working branches by default); PR/merge/deploy are separately authorized.
+- Stage/commit only authorized own changes; push, PR, merge and deploy each need their own
+  explicit authorization (`references/gate-policy.md`); local handoff is a valid endpoint.
