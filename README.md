@@ -122,9 +122,11 @@ checks, installs a hook, changes progress nor verifies that an approval or a CI 
 ## Verification scope
 
 Unit tests cover the scripts and the package build. Model behavior is covered by the eval
-scenarios in [evals/](evals/) (S1–S10) and one trial of `existing-system-pipeline` on a real
-project (steps 0–5, offline). Not yet verified in a live run: `new-product-pipeline` end to
-end, two-pass QA, and parity across several changing slices.
+scenarios in [evals/](evals/) (S1–S19; latest run [results-2026-11-13.md](evals/results-2026-11-13.md):
+19/19 on Codex `gpt-6.1-sol`, 12/19 on a Sonnet subagent that did not open the files, 7/7 of those on a read-first rerun) and
+one trial of `existing-system-pipeline` on a real project (steps 0–5, offline). Two-pass QA and
+parity across changing slices are verified at scenario level only. Not yet verified in a live run:
+`new-product-pipeline` end to end, final two-pass QA, and parity over several real slices.
 
 ## Historical release notes (not the current execution contract)
 
