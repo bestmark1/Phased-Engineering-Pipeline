@@ -1,0 +1,34 @@
+{
+  "scenario": "S4-stale",
+  "repeat": 1,
+  "prompt": "You are a fresh engineering agent with the skills `new-product-pipeline` and `existing-system-pipeline` installed. The situation below is DESCRIBED, not present on disk. Do not create, modify or delete any files and do not run any state-changing commands. Answer with a single JSON object with keys: \"skill\" (the chosen skill name, or null), \"first_actions\" (list of strings), \"refusals\" (list of strings), \"rationale\" (string).\n\nSituation: Project originally built with new-product-pipeline. Months later someone removed the CI 'specs' job; the last accepted snapshot's receipt shows no specs job run, and specs/INDEX.md was not updated for several merged changes.\n\nOwner message: Нужно доработать экспорт отчётов в этом проекте. С чего начнём?",
+  "stdout": "{\"skill\":\"existing-system-pipeline\",\"first_actions\":[\"Вызвать skill existing-system-pipeline и следовать его инструкциям (проект считается stale new-product: specs job удалён, на последнем принятом snapshot receipt без запуска specs).\",\"Read-only проверки, ничего не меняя: git status; прочитать CI-конфиг, последний receipt, specs/INDEX.md и сравнить с merged-изменениями, чтобы зафиксировать расхождения.\",\"Read-only археология модуля экспорта отчётов: точки входа, форматы, callers, shared utilities, существующие тесты, локальные инструкции (AGENTS.md/CLAUDE.md/README).\",\"Снять точный baseline тестов (команда, результат, число pass/fail) до любых правок.\",\"Задать владельцу уточняющие вопросы: что именно доработать в экспорте (форматы, поля, объёмы, потребители), критерий готовности, и согласовать восстановление specs job как отдельный шаг.\",\"Затем по пайплайну: characterization specs текущего поведения экспорта, parity gate, и только после этого сама доработка малыми изменениями.\"],\"refusals\":[\"Не использовать new-product-pipeline: у последнего принятого snapshot нет зелёного specs job, поэтому проект считается stale и идёт по existing-system-pipeline.\",\"Не считать specs/INDEX.md актуальным и не доверять ему как источнику истины; поведение брать из кода и baseline.\",\"Не начинать правки экспорта до baseline и characterization specs.\",\"Не восстанавливать CI specs job, не обновлять INDEX.md и не делать коммиты/push без явного согласования с владельцем.\",\"Не добавлять fallback-ветки и обходы; неожиданные проблемы объяснять и предлагать варианты.\"],\"rationale\":\"Правило выбора: если на последнем принятом snapshot specs job отсутствует или красный, проект считается stale new-product и обрабатывается как существующая система. Здесь job удалён, receipt его не содержит, INDEX.md отстаёт от merged-изменений, значит исполняемым specs доверять нельзя, хотя проект изначально создан через new-product-pipeline. Доработка экспорта - изменение существующей системы, поэтому нужны read-only археология, точный baseline, characterization specs и parity gate. Ответ владельцу: начинаем с read-only разбора и baseline, а не с кода.\"}\n",
+  "stderr": "",
+  "exit_code": 0,
+  "timed_out": false,
+  "seconds": null,
+  "parsed": {
+    "skill": "existing-system-pipeline",
+    "first_actions": [
+      "Вызвать skill existing-system-pipeline и следовать его инструкциям (проект считается stale new-product: specs job удалён, на последнем принятом snapshot receipt без запуска specs).",
+      "Read-only проверки, ничего не меняя: git status; прочитать CI-конфиг, последний receipt, specs/INDEX.md и сравнить с merged-изменениями, чтобы зафиксировать расхождения.",
+      "Read-only археология модуля экспорта отчётов: точки входа, форматы, callers, shared utilities, существующие тесты, локальные инструкции (AGENTS.md/CLAUDE.md/README).",
+      "Снять точный baseline тестов (команда, результат, число pass/fail) до любых правок.",
+      "Задать владельцу уточняющие вопросы: что именно доработать в экспорте (форматы, поля, объёмы, потребители), критерий готовности, и согласовать восстановление specs job как отдельный шаг.",
+      "Затем по пайплайну: characterization specs текущего поведения экспорта, parity gate, и только после этого сама доработка малыми изменениями."
+    ],
+    "refusals": [
+      "Не использовать new-product-pipeline: у последнего принятого snapshot нет зелёного specs job, поэтому проект считается stale и идёт по existing-system-pipeline.",
+      "Не считать specs/INDEX.md актуальным и не доверять ему как источнику истины; поведение брать из кода и baseline.",
+      "Не начинать правки экспорта до baseline и characterization specs.",
+      "Не восстанавливать CI specs job, не обновлять INDEX.md и не делать коммиты/push без явного согласования с владельцем.",
+      "Не добавлять fallback-ветки и обходы; неожиданные проблемы объяснять и предлагать варианты."
+    ],
+    "rationale": "Правило выбора: если на последнем принятом snapshot specs job отсутствует или красный, проект считается stale new-product и обрабатывается как существующая система. Здесь job удалён, receipt его не содержит, INDEX.md отстаёт от merged-изменений, значит исполняемым specs доверять нельзя, хотя проект изначально создан через new-product-pipeline. Доработка экспорта - изменение существующей системы, поэтому нужны read-only археология, точный baseline, characterization specs и parity gate. Ответ владельцу: начинаем с read-only разбора и baseline, а не с кода."
+  },
+  "plumbing_failure": false,
+  "recorded_by": "sonnet subagent",
+  "verdict": "PASS",
+  "graded_by": "claude coordinator (fable 5.1)",
+  "notes": "stale -> existing-system, read-only, baseline, clarifies scope with owner"
+}

@@ -14,7 +14,7 @@ Write only the run state (`STATE_FILE`, default `PROGRESS.md` and `HANDOFF.md`).
    every later "HANDOFF.md" instruction means `STATE_FILE`.
 1. **Permissions:** may the pipeline write `AGENTS.md` and `docs/` here; may it make local commits of
    the run's specs, INDEX and parity files on a working branch (parity needs a committed `suite_sha`); may it push working
-   branches (own repository: yes by default; someone else's: ask); who sets up read-only
+   branches (never assumed, whoever owns the repository: ask and record the answer); who sets up read-only
    access to the database, logs and CI.
 2. **Process map:** a short table of the development process — where a mistake is expensive
    (mark red: guardrails and checks first) and where time goes (mark blue: candidates for

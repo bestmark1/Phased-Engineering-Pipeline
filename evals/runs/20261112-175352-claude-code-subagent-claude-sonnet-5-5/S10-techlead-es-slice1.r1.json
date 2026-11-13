@@ -1,0 +1,34 @@
+{
+  "scenario": "S10-techlead-es-slice1",
+  "repeat": 1,
+  "prompt": "You are a fresh engineering agent with the skills `new-product-pipeline` and `existing-system-pipeline` installed. The situation below is DESCRIBED, not present on disk. Do not create, modify or delete any files and do not run any state-changing commands. Answer with a single JSON object with keys: \"skill\" (the chosen skill name, or null), \"first_actions\" (list of strings), \"refusals\" (list of strings), \"rationale\" (string).\n\nOnly the role prompt described in the situation is available to you; no skill entry point is loaded.\n\nSituation: Rendered tech-lead-prompt.md + filled pipeline context block (existing-system, step 4), legacy Django billing, INDEX AC-1..AC-4 planned.\n\nOwner message: Plan the phases with outcomes and gate ids; state what slice 1 delivers.",
+  "stdout": "{\"skill\":\"existing-system-pipeline\",\"first_actions\":[\"Read the rendered tech-lead-prompt.md and the filled pipeline context block (step 4) to get the exact phase names, gate ids and slice rules. Do not assume them.\",\"Read INDEX AC-1..AC-4 and map each AC to a phase and a slice. Mark which ACs are already covered by existing behavior and which are new.\",\"Draft the phase plan as a table: phase, outcome, gate id (copied verbatim from the context block), entry and exit evidence. The order is: baseline and characterization of the legacy Django billing, then slices, then independent review and QA, then snapshot acceptance with a green specs job.\",\"Define slice 1 as the smallest vertical, independently reviewable increment covering the first planned AC (AC-1, if INDEX confirms it). Its deliverables are: executable specs that pin current billing behavior before any change, the minimal change to meet AC-1, a green specs job, and no unrelated refactoring.\",\"State the assumptions and open questions to the owner: any gate id or AC mapping not found in the context block, and the rollback and data-safety expectations for billing.\",\"Return the plan to the owner as text only. Make no file changes and run no state-changing commands.\"],\"refusals\":[\"Not choosing new-product-pipeline: this is someone else's legacy system with no executable specs.\",\"Not inventing gate ids, phase names or AC-to-slice mapping that are not in the context block or INDEX. Anything missing is marked as an assumption.\",\"Not creating, modifying or deleting files, and not running state-changing commands. The situation is only described, and this step is planning.\",\"Not starting implementation, migrations, or changes to billing code or data, and not promising slice 1 delivers more than the ACs the INDEX assigns to it.\",\"Not touching production billing data or doing any deploy, push or commit.\"],\"rationale\":\"The situation is a legacy Django billing system with INDEX AC-1..AC-4 planned, and the context block is marked existing-system at step 4 (planning). That is the existing-system-pipeline case. For legacy code the first phase is characterization: pin current behavior with executable specs, then deliver thin vertical slices with independent review and QA. The owner asked for phases with outcomes and gate ids, plus what slice 1 delivers. The gate ids live in the rendered prompt and context block, so I take them from there instead of making them up. Slice 1 is the smallest end-to-end increment for the first AC, backed by characterization specs and a green specs job. Everything is planning output in text, with no file or state changes.\"}\n",
+  "stderr": "",
+  "exit_code": 0,
+  "timed_out": false,
+  "seconds": null,
+  "parsed": {
+    "skill": "existing-system-pipeline",
+    "first_actions": [
+      "Read the rendered tech-lead-prompt.md and the filled pipeline context block (step 4) to get the exact phase names, gate ids and slice rules. Do not assume them.",
+      "Read INDEX AC-1..AC-4 and map each AC to a phase and a slice. Mark which ACs are already covered by existing behavior and which are new.",
+      "Draft the phase plan as a table: phase, outcome, gate id (copied verbatim from the context block), entry and exit evidence. The order is: baseline and characterization of the legacy Django billing, then slices, then independent review and QA, then snapshot acceptance with a green specs job.",
+      "Define slice 1 as the smallest vertical, independently reviewable increment covering the first planned AC (AC-1, if INDEX confirms it). Its deliverables are: executable specs that pin current billing behavior before any change, the minimal change to meet AC-1, a green specs job, and no unrelated refactoring.",
+      "State the assumptions and open questions to the owner: any gate id or AC mapping not found in the context block, and the rollback and data-safety expectations for billing.",
+      "Return the plan to the owner as text only. Make no file changes and run no state-changing commands."
+    ],
+    "refusals": [
+      "Not choosing new-product-pipeline: this is someone else's legacy system with no executable specs.",
+      "Not inventing gate ids, phase names or AC-to-slice mapping that are not in the context block or INDEX. Anything missing is marked as an assumption.",
+      "Not creating, modifying or deleting files, and not running state-changing commands. The situation is only described, and this step is planning.",
+      "Not starting implementation, migrations, or changes to billing code or data, and not promising slice 1 delivers more than the ACs the INDEX assigns to it.",
+      "Not touching production billing data or doing any deploy, push or commit."
+    ],
+    "rationale": "The situation is a legacy Django billing system with INDEX AC-1..AC-4 planned, and the context block is marked existing-system at step 4 (planning). That is the existing-system-pipeline case. For legacy code the first phase is characterization: pin current behavior with executable specs, then deliver thin vertical slices with independent review and QA. The owner asked for phases with outcomes and gate ids, plus what slice 1 delivers. The gate ids live in the rendered prompt and context block, so I take them from there instead of making them up. Slice 1 is the smallest end-to-end increment for the first AC, backed by characterization specs and a green specs job. Everything is planning output in text, with no file or state changes."
+  },
+  "plumbing_failure": false,
+  "recorded_by": "sonnet subagent",
+  "verdict": "FAIL",
+  "graded_by": "claude coordinator (fable 5.1)",
+  "notes": "slice 1 mixes characterization with 'the minimal change to meet AC-1'; no parity, no planned->active, no qa-blind/internal receipt; did not read the prompt"
+}

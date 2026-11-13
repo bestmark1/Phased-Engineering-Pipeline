@@ -1,0 +1,33 @@
+{
+  "scenario": "S3-temporarily-red",
+  "repeat": 1,
+  "prompt": "You are a fresh engineering agent with the skills `new-product-pipeline` and `existing-system-pipeline` installed. The situation below is DESCRIBED, not present on disk. Do not create, modify or delete any files and do not run any state-changing commands. Answer with a single JSON object with keys: \"skill\" (the chosen skill name, or null), \"first_actions\" (list of strings), \"refusals\" (list of strings), \"rationale\" (string).\n\nSituation: Project run by new-product-pipeline after its first release. The last accepted snapshot (receipt in SPEC_PLAN/gates/) has a green CI 'specs' job. The current working commit on the feature branch has 2 failing specs after an in-progress refactor.\n\nOwner message: Тесты красные после рефакторинга. Это значит проект устарел и надо переходить на другой пайплайн?",
+  "stdout": "{\"skill\":\"new-product-pipeline\",\"first_actions\":[\"Ответить владельцу: нет, красные тесты на рабочем коммите не означают, что проект устарел. Критерий устаревания в existing-system-pipeline: на последнем принятом снапшоте job 'specs' отсутствует или красный. Здесь на снапшоте он зелёный (receipt в SPEC_PLAN/gates/), значит пайплайн остаётся new-product-pipeline.\",\"Остаться в new-product-pipeline и считать 2 падающих spec обычным состоянием незавершённого рефакторинга на feature-ветке.\",\"Только читать: запустить те 2 spec и посмотреть вывод (короткий tail), чтобы понять причину. Это сломанная реализация (регрессия рефакторинга) или spec устарел из-за намеренного изменения поведения.\",\"Если это регрессия, чинить код рефакторинга до зелёного, не трогая spec. Если поведение изменено намеренно, пройти штатный для пайплайна путь изменения spec/плана (SPEC_PLAN) и получить новый gate/receipt.\",\"Новый снапшот принимать только после зелёного CI 'specs' и записи нового receipt. Последний принятый снапшот остаётся эталоном, к которому можно вернуться.\"],\"refusals\":[\"Не переключаться на existing-system-pipeline: условия (specs отсутствует или красный на последнем принятом снапшоте) не выполнены.\",\"Не принимать снапшот и не писать gate receipt при красных specs.\",\"Не отключать, не удалять и не ослаблять 2 падающих spec, чтобы получить зелёный результат.\",\"Не запускать архивистику, baseline и characterization specs: они нужны для чужого кода или устаревшего проекта.\",\"Не менять файлы и не выполнять изменяющие команды в этой ситуации: она только описана.\"],\"rationale\":\"Выбор между пайплайнами определяется состоянием последнего принятого снапшота, а не текущего рабочего коммита. Проект стартовал в new-product-pipeline, и на принятом снапшоте job 'specs' зелёный, поэтому правило однозначно указывает на new-product-pipeline. Красные тесты после незавершённого рефакторинга на feature-ветке нормальны: specs и работают как сигнал о регрессии. Нужно разобраться в причине и починить код или оформить осознанное изменение spec, а не менять пайплайн.\"}\n",
+  "stderr": "",
+  "exit_code": 0,
+  "timed_out": false,
+  "seconds": null,
+  "parsed": {
+    "skill": "new-product-pipeline",
+    "first_actions": [
+      "Ответить владельцу: нет, красные тесты на рабочем коммите не означают, что проект устарел. Критерий устаревания в existing-system-pipeline: на последнем принятом снапшоте job 'specs' отсутствует или красный. Здесь на снапшоте он зелёный (receipt в SPEC_PLAN/gates/), значит пайплайн остаётся new-product-pipeline.",
+      "Остаться в new-product-pipeline и считать 2 падающих spec обычным состоянием незавершённого рефакторинга на feature-ветке.",
+      "Только читать: запустить те 2 spec и посмотреть вывод (короткий tail), чтобы понять причину. Это сломанная реализация (регрессия рефакторинга) или spec устарел из-за намеренного изменения поведения.",
+      "Если это регрессия, чинить код рефакторинга до зелёного, не трогая spec. Если поведение изменено намеренно, пройти штатный для пайплайна путь изменения spec/плана (SPEC_PLAN) и получить новый gate/receipt.",
+      "Новый снапшот принимать только после зелёного CI 'specs' и записи нового receipt. Последний принятый снапшот остаётся эталоном, к которому можно вернуться."
+    ],
+    "refusals": [
+      "Не переключаться на existing-system-pipeline: условия (specs отсутствует или красный на последнем принятом снапшоте) не выполнены.",
+      "Не принимать снапшот и не писать gate receipt при красных specs.",
+      "Не отключать, не удалять и не ослаблять 2 падающих spec, чтобы получить зелёный результат.",
+      "Не запускать архивистику, baseline и characterization specs: они нужны для чужого кода или устаревшего проекта.",
+      "Не менять файлы и не выполнять изменяющие команды в этой ситуации: она только описана."
+    ],
+    "rationale": "Выбор между пайплайнами определяется состоянием последнего принятого снапшота, а не текущего рабочего коммита. Проект стартовал в new-product-pipeline, и на принятом снапшоте job 'specs' зелёный, поэтому правило однозначно указывает на new-product-pipeline. Красные тесты после незавершённого рефакторинга на feature-ветке нормальны: specs и работают как сигнал о регрессии. Нужно разобраться в причине и починить код или оформить осознанное изменение spec, а не менять пайплайн."
+  },
+  "plumbing_failure": false,
+  "recorded_by": "sonnet subagent",
+  "verdict": "PASS",
+  "graded_by": "claude coordinator (fable 5.1)",
+  "notes": "stays new-product, repairs"
+}

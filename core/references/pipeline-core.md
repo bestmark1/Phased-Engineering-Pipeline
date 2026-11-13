@@ -129,7 +129,7 @@ Before dispatch, resolve the inputs described in `references/role-inputs.md`. Do
 unresolved placeholders; read the approved artifacts rather than ask the owner to retype them.
 
 Done of a slice and completion of an initiative are different receipts (`scope`), see
-`references/gate-policy.md`. Before marking either, the coordinator compares the receipt's
+`references/receipt-contract.md` (load it with gate-policy when writing or validating a receipt). Before marking either, the coordinator compares the receipt's
 required gates to the approved plan and runs the local validator (Python 3, no dependencies),
 with `--ci-artifact` when the evidence comes from CI:
 
@@ -170,7 +170,7 @@ claimed inside the eval's noise.
 Final QA uses an isolated checkout of the recorded commit, not a copy of the dirty working
 tree, and runs as two passes (`references/qa-prompt.md`). Released is a later, separate
 record: the accepted commit deployed with explicit authorization and every approved smoke
-check PASS (`references/gate-policy.md`, Release record). Provision disposable dependencies and explicitly provided test configuration; never
+check PASS (`references/receipt-contract.md`, Release record). Provision disposable dependencies and explicitly provided test configuration; never
 reuse production credentials/data for mutation. Acceptance criteria need runtime evidence;
 QRs may use the appropriate static, contract or runtime check specified in the plan.
 QA verifies and reports, never ships. If a commit is needed but not authorized, ask once;
@@ -187,5 +187,5 @@ and refresh the reviewed snapshot before claiming release readiness.
 - Update PROGRESS/HANDOFF, relevant debt and surprises; record the next bounded step.
 - Report observed checks, assumptions, gaps and risks. Record available run telemetry via
   `references/run-economics.md`; unavailable metrics stay unavailable, explicit budgets apply.
-- Stage/commit only authorized own changes; push follows `references/gate-policy.md`
-  (own repository: working branches by default); PR/merge/deploy are separately authorized.
+- Stage/commit only authorized own changes; push, PR, merge and deploy each need their own
+  explicit authorization (`references/gate-policy.md`); local handoff is a valid endpoint.

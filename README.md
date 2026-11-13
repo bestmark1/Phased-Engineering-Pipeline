@@ -39,14 +39,15 @@ real project: [evals/](evals/).
 
 ```text
 core/             shared by both packages: references/ (contract, role prompts, gate policy,
-                  specs contract), scripts/ (validate_gate.py, check_index.py,
+                  receipt contract, specs contract), scripts/ (validate_gate.py, check_index.py,
                   hermetic_guard.py), tests/
 new-product/      SKILL.md, references/quality-profile.md, scripts/quality_ratchet.py, tests/
 existing-system/  SKILL.md, references/ (archaeology, entry, parity), scripts/parity.py, tests/
+tools/check_install.py  compares installed skill copies with dist/*.skill (read-only)
 tools/build.py    assembles dist/*.skill (core + skill dir), checks package-local links,
                   runs each package's tests in isolation; deterministic output
 dist/             built packages (committed; CI fails if stale)
-evals/            scenarios.json and recorded results
+evals/            scenarios.json, run_scenarios.py (eval runner), recorded results
 ```
 
 `core/references/pipeline-core.md` is the shared contract (principles, configuration,
@@ -66,6 +67,25 @@ python3 tools/build.py --check  # what CI runs
 
 Python 3.11.4+ (stdlib only). Edit sources in `core/` and the skill dirs, never inside `dist/`.
 
+Every behavioral defect found in a trial, a real run or a review becomes a scenario in
+`evals/scenarios.json` (new or extended) in the same change as the fix, so the eval set grows
+from observed failures rather than from new requirements.
+
+### Eval runs
+
+`evals/run_scenarios.py` replays `scenarios.json` against a named executor; grading stays manual.
+
+```bash
+python3 evals/run_scenarios.py run --executor 'claude -p --model {model} --output-format text' \
+  --model <id> --host claude-code [--only S1,S6] [--repeats 3] [--dry-run]
+python3 evals/run_scenarios.py grade evals/runs/<run> S1-empty-repo PASS --by <name> [--notes "..."]
+python3 evals/run_scenarios.py report evals/runs/<run>
+```
+
+The prompt goes to the executor on stdin; `expect` is never sent. Each run writes `manifest.json`
+(git HEAD, dirty flag, `dist/*.skill` hashes, model, host) and one record per scenario and repeat.
+Timeouts, non-zero exits and unparsable answers are plumbing failures: gradable only as UNKNOWN.
+
 ## Install / update
 
 Review the source and any local modifications first; never extract over a modified
@@ -78,7 +98,8 @@ mkdir -p ~/.claude/skills/new-product-pipeline
 tar -xzf dist/new-product-pipeline.skill -C ~/.claude/skills/new-product-pipeline
 ```
 
-Same for `existing-system-pipeline` and for the Codex directory. Each package is
+Same for `existing-system-pipeline` and for the Codex directory. Check installed copies for
+drift: `python3 tools/check_install.py [--root <dir>]... [--json]` (exit 0 = all match). Each package is
 self-contained: SKILL.md, references/, scripts/, tests/. Migrating from the single
 `phased-engineering-pipeline` skill: see [docs/migration.md](docs/migration.md).
 
@@ -101,9 +122,11 @@ checks, installs a hook, changes progress nor verifies that an approval or a CI 
 ## Verification scope
 
 Unit tests cover the scripts and the package build. Model behavior is covered by the eval
-scenarios in [evals/](evals/) (S1–S10) and one trial of `existing-system-pipeline` on a real
-project (steps 0–5, offline). Not yet verified in a live run: `new-product-pipeline` end to
-end, two-pass QA, and parity across several changing slices.
+scenarios in [evals/](evals/) (S1–S19; latest run [results-2026-11-13.md](evals/results-2026-11-13.md):
+19/19 on Codex `gpt-6.1-sol`, 12/19 on a Sonnet subagent that did not open the files, 7/7 of those on a read-first rerun) and
+one trial of `existing-system-pipeline` on a real project (steps 0–5, offline). Two-pass QA and
+parity across changing slices are verified at scenario level only. Not yet verified in a live run:
+`new-product-pipeline` end to end, final two-pass QA, and parity over several real slices.
 
 ## Historical release notes (not the current execution contract)
 

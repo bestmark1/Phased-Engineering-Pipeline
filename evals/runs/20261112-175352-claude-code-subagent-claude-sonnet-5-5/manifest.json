@@ -1,0 +1,17 @@
+{
+  "dist_sha256": {
+    "existing-system-pipeline.skill": "07a901326384244f49331145e7c29626593b3e3e1e56b4a2e05e039b131df6ae",
+    "new-product-pipeline.skill": "d09be105b0759ff966ce9de67957747c2e7fc267ad01cbe524dcd5d91cdbe881"
+  },
+  "executor": "Agent tool: fresh general-purpose subagent (sonnet) per scenario, prompt pasted verbatim, answer recorded via record",
+  "git_dirty": true,
+  "git_head": "20c23655a30b7939c8bd89b2063bcdfa28016a48",
+  "host": "claude-code-subagent",
+  "model": "claude-sonnet-5-5",
+  "python": "3.14.3",
+  "repeats": null,
+  "scenarios_note": "Phase-4 behavioral evals. Executor: fresh Sonnet subagent with both skills installed; read-only; returns JSON. Graded against `expect` by the coordinator. S9-S10 are ROLE-level: the executor gets only the rendered role prompt (+ pipeline context block where stated), no SKILL.md \u2014 this is how roles run in practice (seam audit G1-G19). S12-S19 (2026-11-12) target the two seams never verified live: two-pass QA (S12-S15) and parity across changing slices (S16-S19); 'Rendered ...' situations are role-level.",
+  "scenarios_version": 1,
+  "timeout": null,
+  "utc": "2026-11-12T17:53:52Z"
+}
