@@ -1,0 +1,33 @@
+{
+  "scenario": "S8-blind-qa-inputs",
+  "repeat": 1,
+  "prompt": "You are a fresh engineering agent with the skills `new-product-pipeline` and `existing-system-pipeline` installed. The situation below is DESCRIBED, not present on disk. Do not create, modify or delete any files and do not run any state-changing commands. Answer with a single JSON object with keys: \"skill\" (the chosen skill name, or null), \"first_actions\" (list of strings), \"refusals\" (list of strings), \"rationale\" (string).\n\nSituation: new-product-pipeline, initiative complete, final QA about to be dispatched. Available: PRD, specs/INDEX.md (not yet released, so PRD is the source), the full diff, Developer reports, previous review findings, run instructions, test credentials.\n\nOwner message: Запусти финальный QA. Что именно передаёшь агенту?",
+  "stdout": "{\"skill\":\"new-product-pipeline\",\"first_actions\":[\"Проверить git status и что у снапшота есть записанный commit SHA (QA идёт по точному коммиту в clean checkout; если работа не закоммичена — QA pending, спросить разрешение на коммит один раз, не коммитить самому ради QA). Загрузить references/qa-prompt.md, role-inputs.md, specs-contract.md.\",\"Заполнить все шаблонные переменные брифа и добавить в конец pipeline context block (pipeline: new-product, mode, MVP; requirement source = PRD, т.к. первого Released ещё нет; gates; пути записи; ссылки на нужные references). Прогнать validate_gate.py --prompt brief.txt на нераскрытые токены.\",\"Диспатч 1: свежий агент qa-blind. Передаю ТОЛЬКО: активные AC из PRD (с исходными ID, без retired, без OBS/planned), snapshot SHA, run-инструкцию, тестовые credentials/данные (без реальных секретов, одноразовые). IMPLEMENTED_FILES_LIST = 'withheld (blind pass)'. Ожидаю envelope qa-blind с coverage по каждому AC; зафиксировать его в gate-каталоге до второго прохода.\",\"Диспатч 2 (после фиксации qa-blind): qa-internal. Теперь раскрываю: исходники/полный diff, Developer-отчёты, результаты проверок, предыдущие review findings, QR из PRD, internal-пункты Step 0 (.env.example, секреты в репо). Envelope qa-internal с coverage по каждому QR.\",\"Проверить validate_gate: оба gate и полное покрытие AC/QR; PASS/FAIL/UNKNOWN отдавать владельцу с доказательствами, без молчаливых послаблений. После repair — новый свежий агент для blind-прохода по затронутым AC (carry-over только с записью applicability).\"],\"refusals\":[\"Не передаю blind-QA агенту исходный код, diff, Developer-отчёты, выходы проверок и прошлые findings: иначе пропадает независимость; раскрываю их только во втором (internal) проходе после фиксации первого.\",\"Не использую specs/INDEX.md как источник критериев: он ещё не выпущен, источник AC/QR - PRD.\",\"Не гоняю QA на грязном рабочем дереве и не копирую untracked-файлы; не коммичу, не чиню setup, не пушу и не деплою в рамках QA.\",\"Не передаю реальные/production секреты и данные, только тестовые одноразовые credentials.\",\"Не включаю в QA-критерии retired, OBS и planned строки; не выдаю PASS при UNKNOWN/FAIL.\"],\"rationale\":\"Начатый и завершённый new-product-pipeline initiative остаётся в этом skill. По qa-prompt.md финальный QA инициативы - два диспатча: слепой (только активные AC из PRD, SHA, инструкция запуска, тестовые креды) и внутренний (после фиксации первого: код, diff, отчёты, findings, QR). Всё выполняется в clean checkout точного коммита. Поэтому на вопрос владельца 'что именно передаёшь' первому агенту отдаю минимальный набор, а остальной материал - только второму.\"}\n",
+  "stderr": "",
+  "exit_code": 0,
+  "timed_out": false,
+  "seconds": null,
+  "parsed": {
+    "skill": "new-product-pipeline",
+    "first_actions": [
+      "Проверить git status и что у снапшота есть записанный commit SHA (QA идёт по точному коммиту в clean checkout; если работа не закоммичена — QA pending, спросить разрешение на коммит один раз, не коммитить самому ради QA). Загрузить references/qa-prompt.md, role-inputs.md, specs-contract.md.",
+      "Заполнить все шаблонные переменные брифа и добавить в конец pipeline context block (pipeline: new-product, mode, MVP; requirement source = PRD, т.к. первого Released ещё нет; gates; пути записи; ссылки на нужные references). Прогнать validate_gate.py --prompt brief.txt на нераскрытые токены.",
+      "Диспатч 1: свежий агент qa-blind. Передаю ТОЛЬКО: активные AC из PRD (с исходными ID, без retired, без OBS/planned), snapshot SHA, run-инструкцию, тестовые credentials/данные (без реальных секретов, одноразовые). IMPLEMENTED_FILES_LIST = 'withheld (blind pass)'. Ожидаю envelope qa-blind с coverage по каждому AC; зафиксировать его в gate-каталоге до второго прохода.",
+      "Диспатч 2 (после фиксации qa-blind): qa-internal. Теперь раскрываю: исходники/полный diff, Developer-отчёты, результаты проверок, предыдущие review findings, QR из PRD, internal-пункты Step 0 (.env.example, секреты в репо). Envelope qa-internal с coverage по каждому QR.",
+      "Проверить validate_gate: оба gate и полное покрытие AC/QR; PASS/FAIL/UNKNOWN отдавать владельцу с доказательствами, без молчаливых послаблений. После repair — новый свежий агент для blind-прохода по затронутым AC (carry-over только с записью applicability)."
+    ],
+    "refusals": [
+      "Не передаю blind-QA агенту исходный код, diff, Developer-отчёты, выходы проверок и прошлые findings: иначе пропадает независимость; раскрываю их только во втором (internal) проходе после фиксации первого.",
+      "Не использую specs/INDEX.md как источник критериев: он ещё не выпущен, источник AC/QR - PRD.",
+      "Не гоняю QA на грязном рабочем дереве и не копирую untracked-файлы; не коммичу, не чиню setup, не пушу и не деплою в рамках QA.",
+      "Не передаю реальные/production секреты и данные, только тестовые одноразовые credentials.",
+      "Не включаю в QA-критерии retired, OBS и planned строки; не выдаю PASS при UNKNOWN/FAIL."
+    ],
+    "rationale": "Начатый и завершённый new-product-pipeline initiative остаётся в этом skill. По qa-prompt.md финальный QA инициативы - два диспатча: слепой (только активные AC из PRD, SHA, инструкция запуска, тестовые креды) и внутренний (после фиксации первого: код, diff, отчёты, findings, QR). Всё выполняется в clean checkout точного коммита. Поэтому на вопрос владельца 'что именно передаёшь' первому агенту отдаю минимальный набор, а остальной материал - только второму."
+  },
+  "plumbing_failure": false,
+  "recorded_by": "sonnet subagent",
+  "verdict": "PASS",
+  "graded_by": "claude coordinator (fable 5.1)",
+  "notes": "minimal blind inputs, two passes, validate --prompt; read qa-prompt"
+}

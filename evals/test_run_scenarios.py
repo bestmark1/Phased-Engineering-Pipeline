@@ -127,3 +127,34 @@ class RunScenarioTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class InitRecordTests(unittest.TestCase):
+    def setUp(self):
+        self.out = tempfile.mkdtemp()
+
+    def test_init_then_record_and_report(self):
+        code, out, _ = call('init', '--executor', 'manual', '--model', 'm', '--host', 'h', '--out', self.out)
+        self.assertEqual(code, 0)
+        run_dir = Path(out.strip())
+        self.assertTrue((run_dir / 'manifest.json').is_file())
+        good = Path(self.out) / 'good.txt'
+        good.write_text('prose before {"skill": "new-product-pipeline", "first_actions": ["a"], "refusals": [], "rationale": "r"} after')
+        code, out, _ = call('record', str(run_dir), 'S1-empty-repo', '--answer-file', str(good), '--by', 'tester')
+        self.assertEqual(code, 0, out)
+        rec = json.loads((run_dir / 'S1-empty-repo.r1.json').read_text())
+        self.assertFalse(rec['plumbing_failure'])
+        self.assertEqual(rec['parsed']['skill'], 'new-product-pipeline')
+        self.assertIn('Owner message:', rec['prompt'])
+        bad = Path(self.out) / 'bad.txt'
+        bad.write_text('I refuse to answer in JSON')
+        code, out, _ = call('record', str(run_dir), 'S6-gate-skip', '--answer-file', str(bad), '--by', 'tester')
+        self.assertEqual(code, 0)
+        self.assertTrue(json.loads((run_dir / 'S6-gate-skip.r1.json').read_text())['plumbing_failure'])
+        code, _, _ = call('grade', str(run_dir), 'S6-gate-skip', 'PASS', '--by', 'x')
+        self.assertEqual(code, 1)
+        code, _, _ = call('record', str(run_dir), 'S99-nope', '--answer-file', str(good), '--by', 'tester')
+        self.assertEqual(code, 2)
+        code, out, _ = call('report', str(run_dir))
+        self.assertEqual(code, 0)
+        self.assertIn('S1-empty-repo', out)

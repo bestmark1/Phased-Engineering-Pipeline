@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import threading
 import sys
 import time
 
@@ -91,8 +92,8 @@ def manifest_for(args, now, scenarios_data):
         'scenarios_version': scenarios_data.get('version'),
         'scenarios_note': scenarios_data.get('note'),
         'python': sys.version.split()[0],
-        'repeats': args.repeats,
-        'timeout': args.timeout,
+        'repeats': getattr(args, 'repeats', None),
+        'timeout': getattr(args, 'timeout', None),
     }
 
 
@@ -102,15 +103,54 @@ def text_of(value):
     return value.decode(errors='replace') if isinstance(value, bytes) else value
 
 
-def execute(command, prompt, timeout):
+def execute(command, prompt, timeout, echo=None):
+    """Run the executor; stdout is captured for the record, stderr is captured and, when
+    `echo` is given, also relayed line by line so a watcher sees the executor work."""
     start = time.monotonic()
+    proc = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, text=True)
+    chunks = {'stdout': '', 'stderr': []}
+
+    def pump_stderr():
+        for line in proc.stderr:
+            chunks['stderr'].append(line)
+            if echo:
+                echo(line)
+
+    def pump_stdout():
+        chunks['stdout'] = proc.stdout.read()
+
+    threads = [threading.Thread(target=pump_stderr, daemon=True),
+               threading.Thread(target=pump_stdout, daemon=True)]
+    for t in threads:
+        t.start()
     try:
-        done = subprocess.run(command, shell=True, input=prompt, capture_output=True, text=True,
-                              timeout=timeout)
-        stdout, stderr, code, timed_out = done.stdout, done.stderr, done.returncode, False
-    except subprocess.TimeoutExpired as exc:
-        stdout, stderr, code, timed_out = text_of(exc.stdout), text_of(exc.stderr), None, True
-    return stdout, stderr, code, timed_out, round(time.monotonic() - start, 2)
+        proc.stdin.write(prompt)
+        proc.stdin.close()
+    except (BrokenPipeError, OSError):
+        pass
+    timed_out = False
+    try:
+        code = proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
+        code, timed_out = None, True
+    for t in threads:
+        t.join(timeout=5)
+    return chunks['stdout'], ''.join(chunks['stderr']), code, timed_out, round(time.monotonic() - start, 2)
+
+
+def make_run_dir(args, data):
+    """Create `<out>/<utc>-<host>-<model>` with its manifest; suffix on a same-second clash."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    run_dir = Path(args.out) / f'{now.strftime("%Y%m%d-%H%M%S")}-{sanitize(args.host)}-{sanitize(args.model)}'
+    base, n = run_dir, 2
+    while run_dir.exists():
+        run_dir = base.with_name(f'{base.name}-{n}')
+        n += 1
+    run_dir.mkdir(parents=True, exist_ok=False)
+    return run_dir, now
 
 
 def cmd_run(args):
@@ -130,9 +170,7 @@ def cmd_run(args):
         for s in selected:
             print(f'=== {s["id"]} ===\n{render_prompt(s)}\n')
         return 0
-    now = datetime.datetime.now(datetime.timezone.utc)
-    run_dir = Path(args.out) / f'{now.strftime("%Y%m%d-%H%M%S")}-{sanitize(args.host)}-{sanitize(args.model)}'
-    run_dir.mkdir(parents=True, exist_ok=False)
+    run_dir, now = make_run_dir(args, data)
     (run_dir / 'manifest.json').write_text(
         json.dumps(manifest_for(args, now, data), indent=2, sort_keys=True) + '\n')
     command = args.executor.replace('{model}', args.model)
@@ -140,7 +178,11 @@ def cmd_run(args):
     for s in selected:
         prompt = render_prompt(s)
         for r in range(1, args.repeats + 1):
-            stdout, stderr, code, timed_out, secs = execute(command, prompt, args.timeout)
+            echo = None
+            if args.watch:
+                print(f'--- {s["id"]} r{r}: executor output ---', flush=True)
+                echo = lambda line: print('  | ' + line.rstrip('\n'), flush=True)
+            stdout, stderr, code, timed_out, secs = execute(command, prompt, args.timeout, echo)
             parsed = extract_json(stdout)
             failed = timed_out or code != 0 or parsed is None
             plumbing += failed
@@ -155,6 +197,48 @@ def cmd_run(args):
             print(f'{s["id"]} r{r}: {"PLUMBING FAILURE" if failed else "ok"} ({secs}s)')
     print(f'run dir: {run_dir}')
     print(f'{plumbing} plumbing failure(s); grade with: run_scenarios.py grade {run_dir} <id> <verdict> --by <name>')
+    return 0
+
+
+def cmd_init(args):
+    """Create a run dir + manifest for executions done outside this script (e.g. one fresh
+    in-process subagent per scenario); answers are added with `record`."""
+    try:
+        data, _ = load_scenarios()
+    except (OSError, ValueError, KeyError) as exc:
+        print(f'cannot read scenarios: {exc}', file=sys.stderr)
+        return 2
+    run_dir, now = make_run_dir(args, data)
+    (run_dir / 'manifest.json').write_text(
+        json.dumps(manifest_for(args, now, data), indent=2, sort_keys=True) + '\n')
+    print(run_dir)
+    return 0
+
+
+def cmd_record(args):
+    """Store an answer produced elsewhere as a record with the same shape `run` writes.
+    The prompt is re-rendered from scenarios.json so the record stays comparable."""
+    try:
+        _, scenarios = load_scenarios()
+        answer = Path(args.answer_file).read_text()
+    except (OSError, ValueError, KeyError) as exc:
+        print(f'cannot read input: {exc}', file=sys.stderr)
+        return 2
+    scenario = next((s for s in scenarios if s['id'] == args.scenario), None)
+    if scenario is None or not Path(args.run_dir, 'manifest.json').is_file():
+        print('unknown scenario id or run dir without manifest.json', file=sys.stderr)
+        return 2
+    parsed = extract_json(answer)
+    record = {
+        'scenario': scenario['id'], 'repeat': args.repeat, 'prompt': render_prompt(scenario),
+        'stdout': answer, 'stderr': '', 'exit_code': None if parsed is None else 0,
+        'timed_out': False, 'seconds': args.seconds, 'parsed': parsed,
+        'plumbing_failure': parsed is None, 'recorded_by': args.by,
+        'verdict': None, 'graded_by': None, 'notes': None,
+    }
+    path = record_path(args.run_dir, scenario['id'], args.repeat)
+    path.write_text(json.dumps(record, indent=2, ensure_ascii=False) + '\n')
+    print(f'{path.name}: {"PLUMBING FAILURE (no JSON answer)" if parsed is None else "ok"}')
     return 0
 
 
@@ -237,7 +321,24 @@ def main(argv=None):
     run.add_argument('--timeout', type=float, default=600)
     run.add_argument('--out', default=str(Path(__file__).resolve().parent / 'runs'))
     run.add_argument('--dry-run', action='store_true')
+    run.add_argument('--watch', action='store_true', help='relay executor stderr to the terminal while it runs')
     run.set_defaults(func=cmd_run)
+
+    init = sub.add_parser('init', help='create a run dir + manifest for answers recorded with `record`')
+    init.add_argument('--executor', required=True, help='label of how answers are produced, e.g. "Agent tool: fresh sonnet subagent per scenario"')
+    init.add_argument('--model', required=True)
+    init.add_argument('--host', required=True)
+    init.add_argument('--out', default=str(Path(__file__).resolve().parent / 'runs'))
+    init.set_defaults(func=cmd_init)
+
+    rec = sub.add_parser('record', help='store an externally produced answer as a run record')
+    rec.add_argument('run_dir')
+    rec.add_argument('scenario')
+    rec.add_argument('--answer-file', required=True)
+    rec.add_argument('--by', required=True, help='who/what produced the answer')
+    rec.add_argument('--repeat', type=int, default=1)
+    rec.add_argument('--seconds', type=float, default=None)
+    rec.set_defaults(func=cmd_record)
     grade = sub.add_parser('grade', help='record a verdict')
     grade.add_argument('run_dir')
     grade.add_argument('scenario')
